@@ -15,13 +15,16 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Await params to solve the Next.js dynamic route parameters issue
+    const { id } = await params;
+
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const image = await prisma.image.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!image) {
@@ -36,7 +39,7 @@ export async function PATCH(
     const body = updateImageSchema.parse(json);
 
     const updatedImage = await prisma.image.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         title: body.title,
         description: body.description,
