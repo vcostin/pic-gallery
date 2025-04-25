@@ -41,9 +41,10 @@ export async function PATCH(
         title: body.title,
         description: body.description,
         tags: body.tags ? {
-          deleteMany: {},
-          create: body.tags.map(tag => ({
-            name: tag,
+          set: [], // First disconnect all existing tags
+          connectOrCreate: body.tags.map(tag => ({
+            where: { name: tag },
+            create: { name: tag },
           })),
         } : undefined,
       },
