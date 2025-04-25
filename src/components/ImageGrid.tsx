@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useMemo, useState } from 'react';
+import { EditImageDialog } from './EditImageDialog';
 
 interface Tag {
   id: string;
@@ -21,7 +22,8 @@ interface ImageGridProps {
 }
 
 export function ImageGrid({ images }: ImageGridProps) {
-  const [selectedTag, setSelectedTag] = useState<string>('');
+  const [selectedTag, setSelectedTag] = useState('');
+  const [editingImage, setEditingImage] = useState<ImageType | null>(null);
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -74,8 +76,19 @@ export function ImageGrid({ images }: ImageGridProps) {
                 src={image.url}
                 alt={image.title}
                 fill
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                priority
                 className="object-cover"
+                unoptimized
               />
+              <div className="absolute inset-0 bg-opacity-0 group-hover:bg-gray-900/30 transition-all duration-200 flex items-center justify-center">
+                <button
+                  onClick={() => setEditingImage(image)}
+                  className="opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                >
+                  Edit
+                </button>
+              </div>
             </div>
             <div className="p-4">
               <h3 className="font-semibold mb-2">{image.title}</h3>
@@ -98,6 +111,14 @@ export function ImageGrid({ images }: ImageGridProps) {
           </div>
         ))}
       </div>
+
+      {editingImage && (
+        <EditImageDialog
+          image={editingImage}
+          isOpen={true}
+          onClose={() => setEditingImage(null)}
+        />
+      )}
     </div>
   );
 }

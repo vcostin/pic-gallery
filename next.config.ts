@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
         hostname: 'localhost',
       },
     ],
+    domains: ['localhost'],
+    unoptimized: true
   },
 };
 
