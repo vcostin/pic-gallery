@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { getServerSession } from "next-auth";
 import { SessionProvider } from "@/components/SessionProvider";
 import { Navigation } from "@/components/Navigation";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { authOptions } from "@/lib/auth";
 import "./globals.css";
 
@@ -33,6 +34,7 @@ export default async function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gray-50 dark:bg-gray-900`}>
         <SessionProvider session={session}>
           <Navigation />
+          <Breadcrumbs />
           <main className="min-h-[calc(100vh-4rem)]">
             {children}
           </main>
