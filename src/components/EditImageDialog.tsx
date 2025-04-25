@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 interface EditImageDialogProps {
   image: {
@@ -9,6 +10,7 @@ interface EditImageDialogProps {
     title: string;
     description?: string | null;
     tags?: { name: string }[];
+    url: string;  // Add url property to the interface
   };
   isOpen: boolean;
   onClose: () => void;
@@ -57,6 +59,20 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
         <h2 className="text-xl font-semibold mb-4">Edit Image</h2>
+        
+        {/* Image thumbnail */}
+        <div className="mb-4 flex justify-center">
+          <div className="relative w-40 h-40 rounded-md overflow-hidden">
+            <Image
+              src={image.url}
+              alt={title}
+              fill
+              className="object-cover"
+              unoptimized
+            />
+          </div>
+        </div>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Title</label>
