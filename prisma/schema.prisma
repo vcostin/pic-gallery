@@ -92,6 +92,7 @@ model ImageInGallery {
   imageId     String
   galleryId   String
   description String?  @db.Text
+  order       Int      @default(0)  // New field to track image order in the gallery
   image       Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
   gallery     Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())

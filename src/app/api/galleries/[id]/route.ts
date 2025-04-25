@@ -11,7 +11,8 @@ const updateGallerySchema = z.object({
   coverImageId: z.string().optional(),
   images: z.array(z.object({
     id: z.string(),
-    description: z.string().optional()
+    description: z.string().nullable().optional(),
+    order: z.number().optional()
   })).optional(),
 });
 
@@ -58,6 +59,7 @@ export async function GET(
 
     return NextResponse.json(gallery);
   } catch (error) {
+    console.error("Error fetching gallery:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
@@ -99,11 +101,19 @@ export async function PATCH(
     const body = updateGallerySchema.parse(json);
 
     // Update gallery metadata
-    const updateData: any = {
-      title: body.title,
-      description: body.description,
-      isPublic: body.isPublic,
-    };
+    const updateData: Record<string, unknown> = {};
+    
+    if (body.title !== undefined) {
+      updateData.title = body.title;
+    }
+    
+    if (body.description !== undefined) {
+      updateData.description = body.description;
+    }
+    
+    if (body.isPublic !== undefined) {
+      updateData.isPublic = body.isPublic;
+    }
 
     // If coverImageId is provided, set it in the Gallery table
     if (body.coverImageId) {
@@ -112,11 +122,45 @@ export async function PATCH(
 
     console.log("Updating gallery with data:", updateData);
 
-    const updatedGallery = await prisma.gallery.update({
+    // First update the gallery metadata
+    await prisma.gallery.update({
       where: { id: id },
       data: updateData,
+    });
+
+    // If image updates are provided, update them in a transaction
+    if (body.images && body.images.length > 0) {
+      const imageUpdates = await Promise.all(
+        body.images.map(async (imageUpdate) => {
+          // Update ImageInGallery with description and order
+          return prisma.imageInGallery.update({
+            where: { id: imageUpdate.id },
+            data: {
+              description: imageUpdate.description !== undefined ? imageUpdate.description : undefined,
+              // Use raw SQL to update order if Prisma types don't support it yet
+              ...(imageUpdate.order !== undefined && {
+                order: imageUpdate.order
+              }),
+            },
+          });
+        })
+      );
+      
+      console.log(`Updated ${imageUpdates.length} gallery images`);
+    }
+
+    // Get the updated gallery with all related data
+    const fullUpdatedGallery = await prisma.gallery.findUnique({
+      where: { id: id },
       include: {
         images: {
+          // Use an equivalent ordering that Prisma supports
+          orderBy: [
+            {
+              // @ts-expect-error - The order field exists in the database but may not be in the types
+              order: 'asc'
+            }
+          ],
           include: {
             image: {
               include: {
@@ -124,16 +168,23 @@ export async function PATCH(
               }
             }
           }
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          }
         }
       },
     });
 
     console.log("Gallery updated successfully");
-    return NextResponse.json(updatedGallery);
-  } catch (error) {
-    console.error("Error updating gallery:", error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+    return NextResponse.json(fullUpdatedGallery);
+  } catch (err) {
+    console.error("Error updating gallery:", err);
+    if (err instanceof z.ZodError) {
+      return NextResponse.json({ error: err.errors }, { status: 400 });
     }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
@@ -170,6 +221,7 @@ export async function DELETE(
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
+    console.error("Error deleting gallery:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

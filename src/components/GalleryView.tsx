@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ImageCarousel } from "@/components/ImageCarousel";
-import { EditGalleryDialog } from "@/components/EditGalleryDialog";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 interface Tag {
   id: string;
@@ -43,16 +44,23 @@ interface GalleryViewProps {
 
 export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <Breadcrumbs
+        items={[
+          { label: 'Galleries', href: '/galleries' },
+          { label: gallery.title, href: `/galleries/${gallery.id}` },
+        ]}
+      />
+      
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-3xl font-bold">{gallery.title}</h1>
           {isOwner && (
             <button
-              onClick={() => setIsEditDialogOpen(true)}
+              onClick={() => router.push(`/galleries/${gallery.id}/edit`)}
               className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
             >
               Edit Gallery
@@ -137,14 +145,6 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
         isOpen={selectedImageIndex !== null}
         onClose={() => setSelectedImageIndex(null)}
       />
-
-      {isOwner && (
-        <EditGalleryDialog
-          gallery={gallery}
-          isOpen={isEditDialogOpen}
-          onClose={() => setIsEditDialogOpen(false)}
-        />
-      )}
     </div>
   );
 }
