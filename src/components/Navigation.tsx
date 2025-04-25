@@ -2,9 +2,22 @@
 
 import Link from 'next/link';
 import { useSession, signIn, signOut } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 
 export function Navigation() {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
+
+  const getLinkClassName = (path: string) => {
+    const baseStyles = "px-3 py-2 rounded-md text-sm font-medium transition-colors";
+    const isActive = pathname === path;
+    
+    return `${baseStyles} ${
+      isActive 
+        ? "bg-blue-500 text-white hover:bg-blue-600" 
+        : "text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white"
+    }`;
+  };
 
   return (
     <nav className="bg-white dark:bg-gray-800 shadow">
@@ -18,13 +31,13 @@ export function Navigation() {
               <div className="ml-10 flex items-baseline space-x-4">
                 <Link
                   href="/images"
-                  className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                  className={getLinkClassName('/images')}
                 >
                   My Images
                 </Link>
                 <Link
                   href="/galleries"
-                  className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                  className={getLinkClassName('/galleries')}
                 >
                   My Galleries
                 </Link>
