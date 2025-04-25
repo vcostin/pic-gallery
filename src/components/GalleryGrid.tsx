@@ -24,6 +24,7 @@ interface Gallery {
   title: string;
   description: string | null;
   isPublic: boolean;
+  coverImageId?: string | null;
   images: ImageInGallery[];
 }
 
@@ -33,6 +34,15 @@ interface GalleryGridProps {
 }
 
 export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
+  // Helper function to find the cover image or return the first image
+  const getCoverImage = (gallery: Gallery) => {
+    if (gallery.coverImageId) {
+      const coverImage = gallery.images.find(img => img.image.id === gallery.coverImageId);
+      if (coverImage) return coverImage;
+    }
+    return gallery.images[0];
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {galleries.map(gallery => (
@@ -43,9 +53,9 @@ export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
         >
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <div className="aspect-square relative">
-              {gallery.images[0] ? (
+              {gallery.images.length > 0 ? (
                 <Image
-                  src={gallery.images[0].image.url}
+                  src={getCoverImage(gallery).image.url}
                   alt={gallery.title}
                   fill
                   className="object-cover group-hover:opacity-90 transition-opacity"
@@ -59,6 +69,11 @@ export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
                 {!isOwner && gallery.isPublic && (
                   <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded">
                     Public
+                  </span>
+                )}
+                {isOwner && !gallery.isPublic && (
+                  <span className="bg-gray-500 text-white text-xs px-2 py-1 rounded">
+                    Private
                   </span>
                 )}
                 <span className="bg-gray-900 bg-opacity-75 text-white text-xs px-2 py-1 rounded">

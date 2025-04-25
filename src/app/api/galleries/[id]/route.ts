@@ -8,6 +8,7 @@ const updateGallerySchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
   isPublic: z.boolean().optional(),
+  coverImageId: z.string().optional(),
   images: z.array(z.object({
     id: z.string(),
     description: z.string().optional()
@@ -19,10 +20,13 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Await params to solve the Next.js dynamic route parameters issue
+    const { id } = await params;
+    
     const session = await getServerSession(authOptions);
     const gallery = await prisma.gallery.findUnique({
       where: {
-        id: params.id,
+        id: id,
       },
       include: {
         images: {
@@ -63,14 +67,23 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Await params to solve the Next.js dynamic route parameters issue
+    const { id } = await params;
+    
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const gallery = await prisma.gallery.findUnique({
-      where: { id: params.id },
-      include: { images: true },
+      where: { id: id },
+      include: { 
+        images: {
+          include: {
+            image: true
+          }
+        } 
+      },
     });
 
     if (!gallery) {
@@ -82,22 +95,26 @@ export async function PATCH(
     }
 
     const json = await req.json();
+    console.log("Received update request:", JSON.stringify(json));
     const body = updateGallerySchema.parse(json);
 
+    // Update gallery metadata
+    const updateData: any = {
+      title: body.title,
+      description: body.description,
+      isPublic: body.isPublic,
+    };
+
+    // If coverImageId is provided, set it in the Gallery table
+    if (body.coverImageId) {
+      updateData.coverImageId = body.coverImageId;
+    }
+
+    console.log("Updating gallery with data:", updateData);
+
     const updatedGallery = await prisma.gallery.update({
-      where: { id: params.id },
-      data: {
-        title: body.title,
-        description: body.description,
-        isPublic: body.isPublic,
-        images: body.images ? {
-          deleteMany: {},
-          create: body.images.map(img => ({
-            image: { connect: { id: img.id } },
-            description: img.description,
-          }))
-        } : undefined,
-      },
+      where: { id: id },
+      data: updateData,
       include: {
         images: {
           include: {
@@ -111,8 +128,10 @@ export async function PATCH(
       },
     });
 
+    console.log("Gallery updated successfully");
     return NextResponse.json(updatedGallery);
   } catch (error) {
+    console.error("Error updating gallery:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 });
     }
@@ -125,13 +144,16 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Await params to solve the Next.js dynamic route parameters issue
+    const { id } = await params;
+    
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const gallery = await prisma.gallery.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!gallery) {
@@ -143,7 +165,7 @@ export async function DELETE(
     }
 
     await prisma.gallery.delete({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     return new NextResponse(null, { status: 204 });

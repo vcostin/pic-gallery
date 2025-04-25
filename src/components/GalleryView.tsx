@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ImageCarousel } from "@/components/ImageCarousel";
+import { EditGalleryDialog } from "@/components/EditGalleryDialog";
 
 interface Tag {
   id: string;
@@ -33,6 +34,7 @@ interface GalleryViewProps {
     description: string | null;
     isPublic: boolean;
     userId: string;
+    coverImageId?: string | null;
     images: GalleryImage[];
     user: GalleryUser;
   };
@@ -41,11 +43,22 @@ interface GalleryViewProps {
 
 export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">{gallery.title}</h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-3xl font-bold">{gallery.title}</h1>
+          {isOwner && (
+            <button
+              onClick={() => setIsEditDialogOpen(true)}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            >
+              Edit Gallery
+            </button>
+          )}
+        </div>
         {gallery.description && (
           <p className="text-gray-600 dark:text-gray-300">{gallery.description}</p>
         )}
@@ -62,9 +75,13 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
           <span className="text-sm text-gray-600 dark:text-gray-300">
             By {gallery.user.name}
           </span>
-          {gallery.isPublic && !isOwner && (
-            <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded">
+          {gallery.isPublic ? (
+            <span className="bg-green-500 text-white text-xs px-2 py-1 rounded">
               Public
+            </span>
+          ) : isOwner && (
+            <span className="bg-gray-500 text-white text-xs px-2 py-1 rounded">
+              Private
             </span>
           )}
         </div>
@@ -74,7 +91,9 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
         {gallery.images.map((galleryImage, index) => (
           <div
             key={galleryImage.id}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden cursor-pointer"
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden cursor-pointer ${
+              gallery.coverImageId === galleryImage.image.id ? 'ring-2 ring-blue-500' : ''
+            }`}
             onClick={() => setSelectedImageIndex(index)}
           >
             <div className="aspect-square relative">
@@ -84,6 +103,11 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
                 fill
                 className="object-cover hover:opacity-90 transition-opacity"
               />
+              {gallery.coverImageId === galleryImage.image.id && isOwner && (
+                <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                  Cover
+                </div>
+              )}
             </div>
             <div className="p-4">
               <h3 className="font-semibold mb-2">{galleryImage.image.title}</h3>
@@ -113,6 +137,14 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
         isOpen={selectedImageIndex !== null}
         onClose={() => setSelectedImageIndex(null)}
       />
+
+      {isOwner && (
+        <EditGalleryDialog
+          gallery={gallery}
+          isOpen={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+        />
+      )}
     </div>
   );
 }

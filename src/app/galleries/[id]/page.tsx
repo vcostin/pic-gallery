@@ -9,10 +9,13 @@ export default async function GalleryPage({
 }: {
   params: { id: string };
 }) {
+  // Await params to solve the Next.js dynamic route parameters issue
+  const { id } = await params;
+  
   const session = await getServerSession(authOptions);
   const gallery = await prisma.gallery.findUnique({
     where: {
-      id: params.id,
+      id: id,
     },
     include: {
       images: {
