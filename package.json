@@ -2,6 +2,7 @@
   "name": "pic-gallery",
   "version": "0.1.0",
   "private": true,
+  "description": "A modern web application for artists to showcase and organize their artwork in customizable galleries",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
