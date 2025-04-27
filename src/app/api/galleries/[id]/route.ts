@@ -130,6 +130,28 @@ export async function PATCH(
 
     // If image updates are provided, update them in a transaction
     if (body.images && body.images.length > 0) {
+      // First, get the current image IDs in the gallery
+      const currentImageIds = gallery.images.map(img => img.id);
+      
+      // Find the image IDs in the request
+      const requestImageIds = body.images.map(img => img.id);
+      
+      // Find images that should be removed (in current but not in request)
+      const imageIdsToRemove = currentImageIds.filter(id => !requestImageIds.includes(id));
+      
+      // Remove images that are no longer in the gallery
+      if (imageIdsToRemove.length > 0) {
+        await prisma.imageInGallery.deleteMany({
+          where: {
+            id: {
+              in: imageIdsToRemove
+            }
+          }
+        });
+        console.log(`Removed ${imageIdsToRemove.length} images from gallery`);
+      }
+      
+      // Update the remaining images with new order and description
       const imageUpdates = await Promise.all(
         body.images.map(async (imageUpdate) => {
           // Update ImageInGallery with description and order

@@ -116,6 +116,7 @@ function SortableImage({ galleryImage, isCover, onDescriptionChange, setCoverIma
       </div>
       
       <button
+        type="button"
         onClick={() => onRemoveImage(galleryImage.id)}
         className="text-red-500 text-sm hover:underline"
       >
