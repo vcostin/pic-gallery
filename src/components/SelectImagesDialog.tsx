@@ -19,14 +19,16 @@ interface ImageType {
 interface SelectImagesDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (selectedImages: ImageType[]) => void;
+  galleryId: string;
+  onImagesSelected: () => void;
   existingImageIds?: string[]; // To filter out images already in the gallery
 }
 
 export function SelectImagesDialog({ 
   isOpen, 
   onClose, 
-  onSelect,
+  galleryId,
+  onImagesSelected,
   existingImageIds = [] 
 }: SelectImagesDialogProps) {
   const [images, setImages] = useState<ImageType[]>([]);
@@ -34,6 +36,7 @@ export function SelectImagesDialog({
   const [error, setError] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
+  const [addingImages, setAddingImages] = useState(false);
   
   // Fetch user's images when component mounts
   useEffect(() => {
@@ -61,6 +64,7 @@ export function SelectImagesDialog({
 
     if (isOpen) {
       fetchImages();
+      setSelectedImages(new Set()); // Reset selection when dialog opens
     }
   }, [isOpen, existingImageIds]);
 
@@ -91,12 +95,44 @@ export function SelectImagesDialog({
     });
   };
 
-  const handleAddImages = () => {
-    const selectedImagesArray = images.filter(image => 
-      selectedImages.has(image.id)
-    );
-    onSelect(selectedImagesArray);
-    onClose();
+  const handleAddImages = async () => {
+    if (selectedImages.size === 0) return;
+    
+    try {
+      setAddingImages(true);
+      setError(null);
+      const selectedImageIds = Array.from(selectedImages);
+      
+      console.log(`Adding ${selectedImageIds.length} images to gallery ${galleryId}`);
+      
+      const response = await fetch(`/api/galleries/${galleryId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageIds: selectedImageIds }),
+        credentials: 'include' // Ensure cookies are sent for authentication
+      });
+      
+      if (!response.ok) {
+        // Try to extract error message from the response
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to add images (${response.status})`);
+      }
+      
+      // Successfully added images
+      onImagesSelected();
+    } catch (error) {
+      console.error('Error adding images to gallery:', error);
+      setError(error instanceof Error ? error.message : 'Failed to add images to gallery');
+      setAddingImages(false);
+      // Don't close the dialog on error so user can see the error message
+    } finally {
+      if (!error) {
+        setAddingImages(false);
+        onClose();
+      }
+    }
   };
 
   if (!isOpen) return null;
@@ -223,10 +259,17 @@ export function SelectImagesDialog({
               <button
                 type="button"
                 onClick={handleAddImages}
-                disabled={selectedImages.size === 0}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+                disabled={selectedImages.size === 0 || addingImages}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400 flex items-center"
               >
-                Add Selected ({selectedImages.size})
+                {addingImages ? (
+                  <>
+                    <span className="animate-spin h-4 w-4 mr-2 border-t-2 border-b-2 border-white rounded-full"></span>
+                    Adding...
+                  </>
+                ) : (
+                  `Add Selected (${selectedImages.size})`
+                )}
               </button>
             </div>
           </>

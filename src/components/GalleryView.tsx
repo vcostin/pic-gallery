@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ImageCarousel } from "@/components/ImageCarousel";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { SelectImagesDialog } from "@/components/SelectImagesDialog";
 
 interface Tag {
   id: string;
@@ -44,7 +45,17 @@ interface GalleryViewProps {
 
 export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [isSelectImagesOpen, setIsSelectImagesOpen] = useState(false);
   const router = useRouter();
+
+  const handleSelectImages = () => {
+    setIsSelectImagesOpen(true);
+  };
+
+  const handleImagesSelected = () => {
+    setIsSelectImagesOpen(false);
+    router.refresh();
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -59,12 +70,20 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-3xl font-bold">{gallery.title}</h1>
           {isOwner && (
-            <button
-              onClick={() => router.push(`/galleries/${gallery.id}/edit`)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-            >
-              Edit Gallery
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => router.push(`/galleries/${gallery.id}/edit`)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                Edit Gallery
+              </button>
+              <button
+                onClick={handleSelectImages}
+                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+              >
+                Add Images
+              </button>
+            </div>
           )}
         </div>
         {gallery.description && (
@@ -95,56 +114,91 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {gallery.images.map((galleryImage, index) => (
-          <div
-            key={galleryImage.id}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden cursor-pointer ${
-              gallery.coverImageId === galleryImage.image.id ? 'ring-2 ring-blue-500' : ''
-            }`}
-            onClick={() => setSelectedImageIndex(index)}
-          >
-            <div className="aspect-square relative">
-              <Image
-                src={galleryImage.image.url}
-                alt={galleryImage.image.title}
-                fill
-                className="object-cover hover:opacity-90 transition-opacity"
-              />
-              {gallery.coverImageId === galleryImage.image.id && isOwner && (
-                <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                  Cover
-                </div>
-              )}
+      {gallery.images.length === 0 ? (
+        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-8 text-center">
+          <h3 className="text-xl font-semibold mb-4">This gallery has no images yet</h3>
+          {isOwner ? (
+            <div>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                Add some images to start building your gallery.
+              </p>
+              <button
+                onClick={handleSelectImages}
+                className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                Add Images
+              </button>
             </div>
-            <div className="p-4">
-              <h3 className="font-semibold mb-2">{galleryImage.image.title}</h3>
-              {galleryImage.description && (
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                  {galleryImage.description}
-                </p>
-              )}
-              <div className="flex flex-wrap gap-1">
-                {galleryImage.image.tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
+          ) : (
+            <p className="text-gray-600 dark:text-gray-300">
+              The gallery owner hasn't added any images yet.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {gallery.images.map((galleryImage, index) => (
+            <div
+              key={galleryImage.id}
+              className={`bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden cursor-pointer ${
+                gallery.coverImageId === galleryImage.image.id ? 'ring-2 ring-blue-500' : ''
+              }`}
+              onClick={() => setSelectedImageIndex(index)}
+            >
+              <div className="aspect-square relative">
+                <Image
+                  src={galleryImage.image.url}
+                  alt={galleryImage.image.title}
+                  fill
+                  className="object-cover hover:opacity-90 transition-opacity"
+                />
+                {gallery.coverImageId === galleryImage.image.id && isOwner && (
+                  <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                    Cover
+                  </div>
+                )}
+              </div>
+              <div className="p-4">
+                <h3 className="font-semibold mb-2">{galleryImage.image.title}</h3>
+                {galleryImage.description && (
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                    {galleryImage.description}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-1">
+                  {galleryImage.image.tags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded"
+                    >
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      <ImageCarousel
-        images={gallery.images}
-        initialImageIndex={selectedImageIndex ?? 0}
-        isOpen={selectedImageIndex !== null}
-        onClose={() => setSelectedImageIndex(null)}
-      />
+      {gallery.images.length > 0 && (
+        <ImageCarousel
+          images={gallery.images}
+          initialImageIndex={selectedImageIndex ?? 0}
+          isOpen={selectedImageIndex !== null}
+          onClose={() => setSelectedImageIndex(null)}
+        />
+      )}
+
+      {isOwner && (
+        <SelectImagesDialog
+          isOpen={isSelectImagesOpen}
+          onClose={() => setIsSelectImagesOpen(false)}
+          galleryId={gallery.id}
+          onImagesSelected={handleImagesSelected}
+          existingImageIds={gallery.images.map(img => img.image.id)}
+        />
+      )}
     </div>
   );
 }

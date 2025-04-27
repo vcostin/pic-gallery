@@ -218,7 +218,19 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     async function fetchGallery() {
       try {
         const response = await fetch(`/api/galleries/${galleryId}`);
-        if (!response.ok) throw new Error('Failed to fetch gallery');
+        
+        if (!response.ok) {
+          // Handle specific error status codes
+          if (response.status === 401) {
+            throw new Error('You are not authorized to view this gallery. Please sign in or check your permissions.');
+          } else if (response.status === 404) {
+            throw new Error('Gallery not found. It may have been deleted.');
+          } else {
+            // Try to get the error message from the response
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to fetch gallery');
+          }
+        }
         
         const data = await response.json();
         setGallery(data);
@@ -230,7 +242,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching gallery:', error);
-        setError('Failed to load gallery data');
+        setError(error instanceof Error ? error.message : 'Failed to load gallery data');
         setIsLoading(false);
       }
     }
@@ -278,73 +290,6 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       setHasUnsavedChanges(true);
     }
   }, [imageToRemove, images, coverImageId]);
-
-  // Handler for adding images to gallery
-  const handleAddImages = useCallback((selectedImages: any[]) => {
-    if (selectedImages.length === 0) return;
-    
-    // Mark that we have unsaved changes
-    setHasUnsavedChanges(true);
-    
-    // Store the image IDs to add - we'll send these to the API
-    const imageIdsToAdd = selectedImages.map(img => img.id);
-    
-    setSuccessMessage(`${selectedImages.length} image(s) selected. Save changes to add them to the gallery.`);
-    
-    // Immediately save changes with the selected images
-    const saveWithNewImages = async () => {
-      setIsSubmitting(true);
-      setError(null);
-      
-      try {
-        // Prepare the image order and descriptions data for existing images
-        const imageUpdates = images.map((img, index) => ({
-          id: img.id,
-          description: img.description,
-          order: index
-        }));
-        
-        const response = await fetch(`/api/galleries/${galleryId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            title,
-            description,
-            isPublic,
-            coverImageId: coverImageId || undefined,
-            images: imageUpdates,
-            addImages: imageIdsToAdd
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to update gallery');
-        }
-
-        // Update local state to match server state
-        setGallery(data);
-        setImages(data.images);
-        setHasUnsavedChanges(false);
-        setSuccessMessage('Images added to gallery successfully!');
-        
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setSuccessMessage(null);
-        }, 3000);
-      } catch (error) {
-        console.error('Error updating gallery:', error);
-        setError(error instanceof Error ? error.message : 'Failed to add images to gallery');
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
-    
-    saveWithNewImages();
-  }, [galleryId, title, description, isPublic, coverImageId, images]);
 
   // Drag and drop handlers
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -398,7 +343,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           title,
           description,
           isPublic,
-          coverImageId: coverImageId || undefined,
+          coverImageId, // Send as is - API will handle empty string as null
           images: imageUpdates
         }),
       });
@@ -654,7 +599,12 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       <SelectImagesDialog
         isOpen={showSelectImagesDialog}
         onClose={() => setShowSelectImagesDialog(false)}
-        onSelect={handleAddImages}
+        galleryId={galleryId}
+        onImagesSelected={() => {
+          setShowSelectImagesDialog(false);
+          // Refresh the gallery data after images are added
+          router.refresh();
+        }}
         existingImageIds={images.map(img => img.image.id)}
       />
     </div>

@@ -50,7 +50,6 @@ export async function GET(
             order: 'asc'
           }
         },
-        coverImage: true,
         user: {
           select: {
             id: true,
@@ -69,19 +68,31 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Handle case where coverImage was deleted but coverImageId still exists
-    if (gallery.coverImageId && !gallery.coverImage) {
-      // Update gallery to remove the coverImageId reference
-      await prisma.gallery.update({
-        where: { id: gallery.id },
-        data: { coverImageId: null }
+    // If coverImageId exists, fetch the cover image separately
+    let coverImage = null;
+    if (gallery.coverImageId) {
+      coverImage = await prisma.image.findUnique({
+        where: { id: gallery.coverImageId },
+        include: { tags: true }
       });
       
-      // Remove coverImageId from the response
-      gallery.coverImageId = null;
+      // If cover image doesn't exist anymore, remove the reference
+      if (!coverImage) {
+        await prisma.gallery.update({
+          where: { id: gallery.id },
+          data: { coverImageId: null }
+        });
+        gallery.coverImageId = null;
+      }
     }
 
-    return NextResponse.json(gallery);
+    // Add the cover image to the response if it exists
+    const responseData = {
+      ...gallery,
+      coverImage
+    };
+
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error("Error fetching gallery:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -139,9 +150,10 @@ export async function PATCH(
       updateData.isPublic = body.isPublic;
     }
 
-    // If coverImageId is provided, set it in the Gallery table
-    if (body.coverImageId) {
-      updateData.coverImageId = body.coverImageId;
+    // Handle cover image updates - properly handle null/empty cases
+    if (body.coverImageId !== undefined) {
+      // If coverImageId is an empty string or null, set it to null in the database
+      updateData.coverImageId = body.coverImageId || null;
     }
 
     console.log("Updating gallery with data:", updateData);
@@ -189,47 +201,58 @@ export async function PATCH(
       );
     }
 
-    // If image updates are provided, update them in a transaction
-    if (body.images && body.images.length > 0) {
+    // If image updates are provided (including empty arrays for removing all images)
+    if (body.images !== undefined) {
       // First, get the current image IDs in the gallery
       const currentImageIds = gallery.images.map(img => img.id);
       
-      // Find the image IDs in the request
-      const requestImageIds = body.images.map(img => img.id);
-      
-      // Find images that should be removed (in current but not in request)
-      const imageIdsToRemove = currentImageIds.filter(id => !requestImageIds.includes(id));
-      
-      // Remove images that are no longer in the gallery
-      if (imageIdsToRemove.length > 0) {
+      // If body.images is empty, it means all images should be removed
+      if (body.images.length === 0) {
+        // Remove all images from the gallery
         await prisma.imageInGallery.deleteMany({
           where: {
-            id: {
-              in: imageIdsToRemove
-            }
+            galleryId: id
           }
         });
-        console.log(`Removed ${imageIdsToRemove.length} images from gallery`);
-      }
-      
-      // Update the remaining images with new order and description
-      const imageUpdates = await Promise.all(
-        body.images.map(async (imageUpdate) => {
-          // Update ImageInGallery with description and order
-          return prisma.imageInGallery.update({
-            where: { id: imageUpdate.id },
-            data: {
-              description: imageUpdate.description !== undefined ? imageUpdate.description : undefined,
-              // Use raw SQL to update order if Prisma types don't support it yet
-              ...(imageUpdate.order !== undefined && {
-                order: imageUpdate.order
-              }),
-            },
+        console.log(`Removed all images from gallery ${id}`);
+      } else {
+        // Find the image IDs in the request
+        const requestImageIds = body.images.map(img => img.id);
+        
+        // Find images that should be removed (in current but not in request)
+        const imageIdsToRemove = currentImageIds.filter(id => !requestImageIds.includes(id));
+        
+        // Remove images that are no longer in the gallery
+        if (imageIdsToRemove.length > 0) {
+          await prisma.imageInGallery.deleteMany({
+            where: {
+              id: {
+                in: imageIdsToRemove
+              }
+            }
           });
-        })
-      );
-      
-      console.log(`Updated ${imageUpdates.length} gallery images`);
+          console.log(`Removed ${imageIdsToRemove.length} images from gallery`);
+        }
+        
+        // Update the remaining images with new order and description
+        const imageUpdates = await Promise.all(
+          body.images.map(async (imageUpdate) => {
+            // Update ImageInGallery with description and order
+            return prisma.imageInGallery.update({
+              where: { id: imageUpdate.id },
+              data: {
+                description: imageUpdate.description !== undefined ? imageUpdate.description : undefined,
+                // Use raw SQL to update order if Prisma types don't support it yet
+                ...(imageUpdate.order !== undefined && {
+                  order: imageUpdate.order
+                }),
+              },
+            });
+          })
+        );
+        
+        console.log(`Updated ${imageUpdates.length} gallery images`);
+      }
     }
 
     // Get the updated gallery with all related data
@@ -301,6 +324,122 @@ export async function DELETE(
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error("Error deleting gallery:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function POST(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Await params to solve the Next.js dynamic route parameters issue
+    const { id } = await params;
+    
+    const session = await getServerSession(authOptions);
+    if (!session?.user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const gallery = await prisma.gallery.findUnique({
+      where: { id: id },
+      include: { 
+        images: {
+          include: {
+            image: true
+          }
+        } 
+      },
+    });
+
+    if (!gallery) {
+      return NextResponse.json({ error: "Gallery not found" }, { status: 404 });
+    }
+
+    if (gallery.userId !== session.user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const requestBody = await req.json();
+    const { imageIds } = requestBody;
+
+    if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
+      return NextResponse.json({ error: "No images specified" }, { status: 400 });
+    }
+
+    // Check that the images belong to the user
+    const userImages = await prisma.image.findMany({
+      where: {
+        id: { in: imageIds },
+        userId: session.user.id
+      }
+    });
+    
+    if (userImages.length !== imageIds.length) {
+      return NextResponse.json({ 
+        error: "Some images don't exist or don't belong to you" 
+      }, { status: 400 });
+    }
+
+    // Get the current highest order value
+    const maxOrder = gallery.images.length > 0
+      ? Math.max(...gallery.images.map(img => (img as ImageInGalleryWithImage).order || 0))
+      : -1;
+    
+    // Add images to the gallery with incrementing order values
+    await Promise.all(
+      userImages.map(async (image, index) => {
+        // Check if the image is already in the gallery
+        const existingImage = gallery.images.find(img => img.imageId === image.id);
+        if (!existingImage) {
+          await prisma.imageInGallery.create({
+            data: {
+              galleryId: id,
+              imageId: image.id,
+              order: maxOrder + index + 1,
+            }
+          });
+        }
+      })
+    );
+
+    // If this is the first image and the gallery has no cover image, set it as the cover
+    if (gallery.images.length === 0 && !gallery.coverImageId && userImages.length > 0) {
+      await prisma.gallery.update({
+        where: { id: id },
+        data: { coverImageId: userImages[0].id }
+      });
+    }
+
+    // Get the updated gallery with all related data
+    const updatedGallery = await prisma.gallery.findUnique({
+      where: { id: id },
+      include: {
+        images: {
+          orderBy: {
+            order: 'asc'
+          },
+          include: {
+            image: {
+              include: {
+                tags: true
+              }
+            }
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          }
+        }
+      },
+    });
+
+    return NextResponse.json(updatedGallery);
+  } catch (error) {
+    console.error("Error adding images to gallery:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
