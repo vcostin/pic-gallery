@@ -1,16 +1,32 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors, 
+  DragEndEvent, 
+  DragStartEvent, 
+  DragOverlay
+} from '@dnd-kit/core';
+import { 
+  arrayMove, 
+  SortableContext, 
+  sortableKeyboardCoordinates, 
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { use } from 'react';
 
+// Types for gallery data
 interface Tag {
   id: string;
   name: string;
@@ -24,8 +40,8 @@ interface GalleryImage {
     url: string;
     title: string;
     tags: Tag[];
-    createdAt: string; // Added createdAt field
-    updatedAt: string; // Added updatedAt field for completeness
+    createdAt: string;
+    updatedAt: string;
   };
 }
 
@@ -46,25 +62,52 @@ interface Gallery {
   user: GalleryUser;
 }
 
-// Sortable image component
-function SortableImage({ galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage }: {
+// A simple card component for the drag overlay
+function DragOverlayCard({ image }: { image: GalleryImage }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 w-64">
+      <div className="aspect-square relative mb-3">
+        <Image
+          src={image.image.url}
+          alt={image.image.title}
+          fill
+          className="object-cover rounded-lg"
+        />
+      </div>
+      <h3 className="font-semibold truncate">{image.image.title}</h3>
+    </div>
+  );
+}
+
+// Sortable gallery image component
+function SortableGalleryImage({ 
+  galleryImage, 
+  isCover, 
+  onDescriptionChange, 
+  setCoverImage, 
+  onRemoveImage 
+}: { 
   galleryImage: GalleryImage;
   isCover: boolean;
   onDescriptionChange: (id: string, description: string) => void;
   setCoverImage: (id: string) => void;
   onRemoveImage: (id: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: galleryImage.id });
-  
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: galleryImage.id
+  });
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    zIndex: isDragging ? 999 : 1,
+    opacity: isDragging ? 0.4 : 1,
   };
 
   return (
     <div 
-      ref={setNodeRef} 
-      style={style} 
+      ref={setNodeRef}
+      style={style}
       className={`bg-white dark:bg-gray-800 rounded-lg shadow p-4 ${isCover ? 'ring-2 ring-blue-500' : ''}`}
     >
       <div className="flex justify-between mb-2">
@@ -74,7 +117,8 @@ function SortableImage({ galleryImage, isCover, onDescriptionChange, setCoverIma
             <circle cx="16" cy="6" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="16" cy="18" r="1"/>
           </svg>
         </div>
-        <button 
+        <button
+          type="button" 
           onClick={() => setCoverImage(galleryImage.image.id)}
           className={`text-sm ${isCover ? 'text-blue-500 font-bold' : 'text-gray-500'}`}
         >
@@ -117,7 +161,10 @@ function SortableImage({ galleryImage, isCover, onDescriptionChange, setCoverIma
       
       <button
         type="button"
-        onClick={() => onRemoveImage(galleryImage.id)}
+        onClick={(e) => {
+          e.preventDefault();
+          onRemoveImage(galleryImage.id);
+        }}
         className="text-red-500 text-sm hover:underline"
       >
         Remove from gallery
@@ -126,12 +173,7 @@ function SortableImage({ galleryImage, isCover, onDescriptionChange, setCoverIma
   );
 }
 
-export default function EditGalleryPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> // Updated to specify params as a Promise
-}) {
-  // Using React.use() to unwrap the params Promise as recommended in Next.js 15+ docs
+export default function EditGalleryPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const galleryId = resolvedParams.id;
   
@@ -148,25 +190,33 @@ export default function EditGalleryPage({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showRemoveImageDialog, setShowRemoveImageDialog] = useState(false);
   const [imageToRemove, setImageToRemove] = useState<string | null>(null);
-  const [sortMethod, setSortMethod] = useState<'custom' | 'newest' | 'oldest' | 'name'>('custom');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // State for drag and drop
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const activeImage = activeId ? images.find(img => img.id === activeId) : null;
+  
   const router = useRouter();
   
-  // Set up DnD sensors
+  // Configure the sensors for drag and drop
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Start drag after moving 8px to prevent accidental drags
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
+  
+  // Fetch the gallery data
   useEffect(() => {
     async function fetchGallery() {
       try {
         const response = await fetch(`/api/galleries/${galleryId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch gallery');
-        }
+        if (!response.ok) throw new Error('Failed to fetch gallery');
+        
         const data = await response.json();
         setGallery(data);
         setTitle(data.title);
@@ -199,11 +249,12 @@ export default function EditGalleryPage({
     setHasUnsavedChanges(hasChanges);
   }, [gallery, title, description, isPublic, coverImageId, images]);
 
+  // Event handlers
   const handleImageDescriptionChange = useCallback((id: string, newDescription: string) => {
-    setImages(images.map(img => 
+    setImages(prevImages => prevImages.map(img => 
       img.id === id ? { ...img, description: newDescription } : img
     ));
-  }, [images]);
+  }, []);
 
   const handleRemoveImage = useCallback((id: string) => {
     setImageToRemove(id);
@@ -217,13 +268,23 @@ export default function EditGalleryPage({
         setCoverImageId('');
       }
       
-      setImages(images.filter(img => img.id !== imageToRemove));
+      setImages(prevImages => prevImages.filter(img => img.id !== imageToRemove));
       setImageToRemove(null);
+      
+      // Mark that we have unsaved changes after removing an image
+      setHasUnsavedChanges(true);
     }
   }, [imageToRemove, images, coverImageId]);
 
+  // Drag and drop handlers
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  }, []);
+
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
+    
+    setActiveId(null);
     
     if (over && active.id !== over.id) {
       setImages((items) => {
@@ -232,61 +293,17 @@ export default function EditGalleryPage({
         
         return arrayMove(items, oldIndex, newIndex);
       });
-      // When manually sorting, switch to custom sort mode
-      setSortMethod('custom');
+      
+      // Mark as having unsaved changes after reordering
+      setHasUnsavedChanges(true);
     }
   }, []);
 
-  // Add a ref to track the previous sort method
-  const prevSortRef = useRef(sortMethod);
-  const imagesRef = useRef(images); // Add a ref to track images for comparison
-  
-  // Apply sorting when method changes
-  useEffect(() => {
-    if (images.length === 0) return;
-    
-    // Only sort if the sort method has changed
-    if (prevSortRef.current === sortMethod) return;
-    
-    // Track if images have changed to prevent sorting during image updates
-    if (imagesRef.current !== images) {
-      imagesRef.current = images;
-      return;
-    }
-    
-    // Sort in place without using the dependency-heavy sortImages function
-    const newImages = [...images];
-    
-    switch (sortMethod) {
-      case 'newest':
-        newImages.sort((a, b) => 
-          new Date(b.image.createdAt).getTime() - new Date(a.image.createdAt).getTime()
-        );
-        break;
-      case 'oldest':
-        newImages.sort((a, b) => 
-          new Date(a.image.createdAt).getTime() - new Date(b.image.createdAt).getTime()
-        );
-        break;
-      case 'name':
-        newImages.sort((a, b) => 
-          a.image.title.localeCompare(b.image.title)
-        );
-        break;
-      // For 'custom', we don't need to do anything as the order is already set by drag and drop
-      case 'custom':
-      default:
-        prevSortRef.current = sortMethod;
-        return; // Don't update for custom order
-    }
-    
-    prevSortRef.current = sortMethod;
-    // Prevent the useEffect from firing again due to this setImages call
-    imagesRef.current = newImages;
-    setImages(newImages);
-    
-  }, [sortMethod, images]);
+  const handleDragCancel = useCallback(() => {
+    setActiveId(null);
+  }, []);
 
+  // Form submission handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setShowConfirmDialog(false);
@@ -367,7 +384,7 @@ export default function EditGalleryPage({
           {error}
         </div>
         <button
-          onClick={() => router.push(`/galleries`)}
+          onClick={() => router.push('/galleries')}
           className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
         >
           Back to Galleries
@@ -455,36 +472,27 @@ export default function EditGalleryPage({
         
         {images.length > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="mb-4">
               <h2 className="text-xl font-semibold">Images ({images.length})</h2>
-              <div className="flex items-center space-x-2">
-                <label className="text-sm font-medium">Sort by:</label>
-                <select 
-                  value={sortMethod}
-                  onChange={(e) => setSortMethod(e.target.value as 'custom' | 'newest' | 'oldest' | 'name')}
-                  className="text-sm border rounded p-1 dark:bg-gray-700 dark:border-gray-600"
-                >
-                  <option value="custom">Custom Order</option>
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="name">Name</option>
-                </select>
-              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                Drag and drop to reorder images. You can also set a cover image and edit descriptions.
+              </p>
             </div>
-            
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-              Drag and drop to reorder images. You can also set a cover image and edit descriptions.
-            </p>
             
             <DndContext 
               sensors={sensors}
               collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
+              onDragCancel={handleDragCancel}
             >
-              <SortableContext items={images.map(img => img.id)} strategy={verticalListSortingStrategy}>
+              <SortableContext 
+                items={images.map(img => img.id)}
+                strategy={verticalListSortingStrategy}
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {images.map((galleryImage) => (
-                    <SortableImage
+                    <SortableGalleryImage
                       key={galleryImage.id}
                       galleryImage={galleryImage}
                       isCover={coverImageId === galleryImage.image.id}
@@ -495,6 +503,10 @@ export default function EditGalleryPage({
                   ))}
                 </div>
               </SortableContext>
+              
+              <DragOverlay>
+                {activeImage ? <DragOverlayCard image={activeImage} /> : null}
+              </DragOverlay>
             </DndContext>
           </div>
         )}
