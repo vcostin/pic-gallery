@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ImageCarousel } from "@/components/ImageCarousel";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { SelectImagesDialog } from "@/components/SelectImagesDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface Tag {
   id: string;
@@ -46,6 +47,9 @@ interface GalleryViewProps {
 export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [isSelectImagesOpen, setIsSelectImagesOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSelectImages = () => {
@@ -55,6 +59,34 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
   const handleImagesSelected = () => {
     setIsSelectImagesOpen(false);
     router.refresh();
+  };
+
+  const handleDeleteGallery = async () => {
+    if (isDeleting) return;
+    
+    setIsDeleting(true);
+    setDeleteError(null);
+    
+    try {
+      const response = await fetch(`/api/galleries/${gallery.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to delete gallery');
+      }
+      
+      // Redirect to galleries list
+      router.push('/galleries');
+      router.refresh();
+    } catch (error) {
+      console.error('Error deleting gallery:', error);
+      setDeleteError(error instanceof Error ? error.message : 'Failed to delete gallery');
+      setIsDeleteDialogOpen(false); // Close the dialog if there's an error
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -83,9 +115,20 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
               >
                 Add Images
               </button>
+              <button
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+              >
+                Delete Gallery
+              </button>
             </div>
           )}
         </div>
+        {deleteError && (
+          <div className="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+            {deleteError}
+          </div>
+        )}
         {gallery.description && (
           <p className="text-gray-600 dark:text-gray-300">{gallery.description}</p>
         )}
@@ -191,13 +234,41 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
       )}
 
       {isOwner && (
-        <SelectImagesDialog
-          isOpen={isSelectImagesOpen}
-          onClose={() => setIsSelectImagesOpen(false)}
-          galleryId={gallery.id}
-          onImagesSelected={handleImagesSelected}
-          existingImageIds={gallery.images.map(img => img.image.id)}
-        />
+        <>
+          <SelectImagesDialog
+            isOpen={isSelectImagesOpen}
+            onClose={() => setIsSelectImagesOpen(false)}
+            galleryId={gallery.id}
+            onImagesSelected={handleImagesSelected}
+            existingImageIds={gallery.images.map(img => img.image.id)}
+          />
+          
+          <ConfirmDialog
+            isOpen={isDeleteDialogOpen}
+            onClose={() => setIsDeleteDialogOpen(false)}
+            onConfirm={handleDeleteGallery}
+            title="Delete Gallery"
+            message={
+              <div>
+                <p className="mb-2">Are you sure you want to delete this gallery?</p>
+                <p className="text-red-500 font-semibold">This action cannot be undone.</p>
+                {gallery.images.length > 0 && (
+                  <p className="mt-2 text-gray-600">
+                    Note: Your images will not be deleted, only removed from this gallery.
+                  </p>
+                )}
+                {isDeleting && (
+                  <div className="mt-2 flex items-center text-blue-500">
+                    <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full"></div>
+                    <span>Deleting...</span>
+                  </div>
+                )}
+              </div>
+            }
+            confirmButtonText={isDeleting ? "Deleting..." : "Delete Gallery"}
+            confirmButtonColor="red"
+          />
+        </>
       )}
     </div>
   );
