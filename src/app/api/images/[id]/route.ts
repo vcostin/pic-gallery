@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
+import fs from 'fs';
+import path from 'path';
 
 const updateImageSchema = z.object({
   title: z.string().min(1).optional(),
@@ -61,6 +63,101 @@ export async function PATCH(
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 });
     }
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = await params;
+    const { searchParams } = new URL(req.url);
+    const forceDelete = searchParams.get('force') === 'true';
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check if the image exists and belongs to the current user
+    const image = await prisma.image.findUnique({
+      where: { id },
+      include: {
+        inGalleries: {
+          include: {
+            gallery: true
+          }
+        }
+      }
+    });
+
+    if (!image) {
+      return NextResponse.json({ error: "Image not found" }, { status: 404 });
+    }
+
+    if (image.userId !== session.user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check if the image is used as a cover image for any galleries
+    const galleriesUsingAsCover = await prisma.gallery.findMany({
+      where: {
+        coverImageId: id
+      }
+    });
+
+    // Return warning if the image is used in galleries and we're not force deleting
+    if (!forceDelete && (image.inGalleries.length > 0 || galleriesUsingAsCover.length > 0)) {
+      const galleries = [
+        ...image.inGalleries.map(ig => ig.gallery),
+        ...galleriesUsingAsCover.filter(g => 
+          !image.inGalleries.some(ig => ig.galleryId === g.id)
+        )
+      ];
+      
+      return NextResponse.json({
+        warning: "Image is used in galleries",
+        galleries: galleries.map(g => ({
+          id: g.id,
+          title: g.title,
+          isCover: galleriesUsingAsCover.some(cover => cover.id === g.id)
+        }))
+      }, { status: 409 });
+    }
+
+    // If force delete, update galleries using this as cover image to have no cover image
+    if (galleriesUsingAsCover.length > 0) {
+      await prisma.gallery.updateMany({
+        where: { coverImageId: id },
+        data: { coverImageId: null }
+      });
+    }
+
+    // Extract filename from URL
+    const urlParts = image.url.split('/');
+    const filename = urlParts[urlParts.length - 1];
+    const uploadPath = path.join(process.cwd(), 'public', 'uploads', filename);
+
+    // Delete the image from the database
+    await prisma.image.delete({
+      where: { id }
+    });
+
+    // Try to delete the file from the uploads folder
+    try {
+      if (fs.existsSync(uploadPath)) {
+        fs.unlinkSync(uploadPath);
+      }
+    } catch (fileError) {
+      console.error("Error deleting file:", fileError);
+      // Continue even if file deletion fails
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting image:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
