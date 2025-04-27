@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import logger from '@/lib/logger';
 
 interface Tag {
   id: string;
@@ -54,7 +55,7 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
       setSelectedImages([]);
       router.refresh();
     } catch (error) {
-      console.error('Error creating gallery:', error);
+      logger.error('Error creating gallery:', error);
     }
   };
 

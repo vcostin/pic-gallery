@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import logger from '@/lib/logger';
 
 interface Tag {
   id: string;
@@ -62,7 +63,7 @@ export function EditGalleryDialog({ gallery, isOpen, onClose }: EditGalleryDialo
     setError(null);
     
     try {
-      console.log("Sending update request:", {
+      logger.log("Sending update request:", {
         title,
         description,
         isPublic,
@@ -83,7 +84,7 @@ export function EditGalleryDialog({ gallery, isOpen, onClose }: EditGalleryDialo
       });
 
       const data = await response.json();
-      console.log("Response data:", data);
+      logger.log("Response data:", data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to update gallery');
@@ -92,7 +93,7 @@ export function EditGalleryDialog({ gallery, isOpen, onClose }: EditGalleryDialo
       router.refresh();
       onClose();
     } catch (error) {
-      console.error('Error updating gallery:', error);
+      logger.error('Error updating gallery:', error);
       setError(error instanceof Error ? error.message : 'Failed to update gallery');
     } finally {
       setIsSubmitting(false);
@@ -153,7 +154,7 @@ export function EditGalleryDialog({ gallery, isOpen, onClose }: EditGalleryDialo
                     key={galleryImage.id} 
                     className="relative"
                     onClick={() => {
-                      console.log("Selected image:", galleryImage.image.id);
+                      logger.log("Selected image:", galleryImage.image.id);
                       setCoverImageId(galleryImage.image.id);
                     }}
                   >

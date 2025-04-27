@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import { Gallery } from "@prisma/client";
+import logger from "@/lib/logger";
 
 interface GalleryWithCoverImage extends Gallery {
   id: string;
@@ -72,7 +73,7 @@ export async function GET(
       galleries: [] 
     });
   } catch (error) {
-    console.error("Error checking image usage:", error);
+    logger.error("Error checking image usage:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
+import logger from "@/lib/logger";
+
 import { ImageInGallery, Image } from "@prisma/client";
 
 type ImageInGalleryWithImage = ImageInGallery & {
@@ -94,7 +96,7 @@ export async function GET(
 
     return NextResponse.json(responseData);
   } catch (error) {
-    console.error("Error fetching gallery:", error);
+    logger.error("Error fetching gallery:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
@@ -132,7 +134,7 @@ export async function PATCH(
     }
 
     const json = await req.json();
-    console.log("Received update request:", JSON.stringify(json));
+    logger.log("Received update request:", JSON.stringify(json));
     const body = updateGallerySchema.parse(json);
 
     // Update gallery metadata
@@ -156,7 +158,7 @@ export async function PATCH(
       updateData.coverImageId = body.coverImageId || null;
     }
 
-    console.log("Updating gallery with data:", updateData);
+    logger.log("Updating gallery with data:", updateData);
 
     // First update the gallery metadata
     await prisma.gallery.update({
@@ -166,7 +168,7 @@ export async function PATCH(
 
     // Handle adding new images to the gallery if addImages is provided
     if (body.addImages && body.addImages.length > 0) {
-      console.log(`Adding ${body.addImages.length} new images to gallery`);
+      logger.log(`Adding ${body.addImages.length} new images to gallery`);
       
       // Get the current highest order value
       const maxOrder = gallery.images.length > 0
@@ -214,7 +216,7 @@ export async function PATCH(
             galleryId: id
           }
         });
-        console.log(`Removed all images from gallery ${id}`);
+        logger.log(`Removed all images from gallery ${id}`);
       } else {
         // Find the image IDs in the request
         const requestImageIds = body.images.map(img => img.id);
@@ -231,7 +233,7 @@ export async function PATCH(
               }
             }
           });
-          console.log(`Removed ${imageIdsToRemove.length} images from gallery`);
+          logger.log(`Removed ${imageIdsToRemove.length} images from gallery`);
         }
         
         // Update the remaining images with new order and description
@@ -251,7 +253,7 @@ export async function PATCH(
           })
         );
         
-        console.log(`Updated ${imageUpdates.length} gallery images`);
+        logger.log(`Updated ${imageUpdates.length} gallery images`);
       }
     }
 
@@ -281,10 +283,10 @@ export async function PATCH(
       },
     });
 
-    console.log("Gallery updated successfully");
+    logger.log("Gallery updated successfully");
     return NextResponse.json(fullUpdatedGallery);
   } catch (err) {
-    console.error("Error updating gallery:", err);
+    logger.error("Error updating gallery:", err);
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.errors }, { status: 400 });
     }
@@ -323,7 +325,7 @@ export async function DELETE(
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error("Error deleting gallery:", error);
+    logger.error("Error deleting gallery:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
@@ -439,7 +441,7 @@ export async function POST(
 
     return NextResponse.json(updatedGallery);
   } catch (error) {
-    console.error("Error adding images to gallery:", error);
+    logger.error("Error adding images to gallery:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

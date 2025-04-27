@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { DeleteImageConfirmDialog } from './DeleteImageConfirmDialog';
+import logger from '@/lib/logger';
 
 interface EditImageDialogProps {
   image: {
@@ -51,7 +52,7 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
       router.refresh();
       onClose();
     } catch (error) {
-      console.error('Error updating image:', error);
+      logger.error('Error updating image:', error);
     } finally {
       setIsSubmitting(false);
     }

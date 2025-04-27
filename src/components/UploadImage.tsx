@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import logger from '@/lib/logger';
 
 export function UploadImage() {
   const [title, setTitle] = useState('');
@@ -69,7 +70,7 @@ export function UploadImage() {
       setPreview(null);
       router.refresh();
     } catch (error) {
-      console.error('Error uploading image:', error);
+      logger.error('Error uploading image:', error);
     } finally {
       setUploading(false);
     }

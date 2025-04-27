@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import fs from 'fs';
 import path from 'path';
 import { Gallery } from "@prisma/client";
+import logger from "@/lib/logger";
 
 interface GalleryWithCoverImage extends Gallery {
   id: string;
@@ -160,13 +161,13 @@ export async function DELETE(
         fs.unlinkSync(uploadPath);
       }
     } catch (fileError) {
-      console.error("Error deleting file:", fileError);
+      logger.error("Error deleting file:", fileError);
       // Continue even if file deletion fails
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting image:", error);
+    logger.error("Error deleting image:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

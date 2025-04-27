@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useMemo, useState, useEffect } from 'react';
+import logger from '@/lib/logger';
 
 interface Tag {
   id: string;
@@ -55,7 +56,7 @@ export function SelectImagesDialog({
         
         setImages(filteredImages);
       } catch (error) {
-        console.error('Error fetching images:', error);
+        logger.error('Error fetching images:', error);
         setError('Failed to load your images');
       } finally {
         setLoading(false);
@@ -103,7 +104,7 @@ export function SelectImagesDialog({
       setError(null);
       const selectedImageIds = Array.from(selectedImages);
       
-      console.log(`Adding ${selectedImageIds.length} images to gallery ${galleryId}`);
+      logger.log(`Adding ${selectedImageIds.length} images to gallery ${galleryId}`);
       
       const response = await fetch(`/api/galleries/${galleryId}`, {
         method: 'POST',
@@ -123,7 +124,7 @@ export function SelectImagesDialog({
       // Successfully added images
       onImagesSelected();
     } catch (error) {
-      console.error('Error adding images to gallery:', error);
+      logger.error('Error adding images to gallery:', error);
       setError(error instanceof Error ? error.message : 'Failed to add images to gallery');
       setAddingImages(false);
       // Don't close the dialog on error so user can see the error message

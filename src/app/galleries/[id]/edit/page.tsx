@@ -26,6 +26,7 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import { use } from 'react';
+import logger from '@/lib/logger';
 
 // Types for gallery data
 interface Tag {
@@ -241,7 +242,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         setImages(data.images);
         setIsLoading(false);
       } catch (error) {
-        console.error('Error fetching gallery:', error);
+        logger.error('Error fetching gallery:', error);
         setError(error instanceof Error ? error.message : 'Failed to load gallery data');
         setIsLoading(false);
       }
@@ -366,7 +367,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         router.refresh();
       }, 2000);
     } catch (error) {
-      console.error('Error updating gallery:', error);
+      logger.error('Error updating gallery:', error);
       setError(error instanceof Error ? error.message : 'Failed to update gallery');
     } finally {
       setIsSubmitting(false);

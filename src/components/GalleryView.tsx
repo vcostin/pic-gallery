@@ -7,6 +7,7 @@ import { ImageCarousel } from "@/components/ImageCarousel";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { SelectImagesDialog } from "@/components/SelectImagesDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import logger from "@/lib/logger";
 
 interface Tag {
   id: string;
@@ -81,7 +82,7 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
       router.push('/galleries');
       router.refresh();
     } catch (error) {
-      console.error('Error deleting gallery:', error);
+      logger.error('Error deleting gallery:', error);
       setDeleteError(error instanceof Error ? error.message : 'Failed to delete gallery');
       setIsDeleteDialogOpen(false); // Close the dialog if there's an error
     } finally {

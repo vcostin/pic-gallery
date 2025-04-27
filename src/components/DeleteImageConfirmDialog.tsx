@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ConfirmDialog } from './ConfirmDialog';
+import logger from '@/lib/logger';
 
 interface Gallery {
   id: string;
@@ -49,7 +50,7 @@ export function DeleteImageConfirmDialog({
         setGalleries([]);
       }
     } catch (error) {
-      console.error('Error checking image usage:', error);
+      logger.error('Error checking image usage:', error);
       setError('Failed to check if this image is used in galleries');
     } finally {
       setIsLoading(false);
@@ -81,7 +82,7 @@ export function DeleteImageConfirmDialog({
       router.refresh();
       onDeleted();
     } catch (error) {
-      console.error('Error deleting image:', error);
+      logger.error('Error deleting image:', error);
       setError('Failed to delete image. Please try again.');
     } finally {
       setIsDeleting(false);

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
+import logger from "@/lib/logger";
 
 const createGallerySchema = z.object({
   title: z.string().min(1),
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 });
     }
-    console.error('Gallery creation error:', error);
+    logger.error('Gallery creation error:', error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
