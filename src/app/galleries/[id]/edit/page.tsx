@@ -24,6 +24,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import { use } from 'react';
 
 // Types for gallery data
@@ -191,6 +192,8 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const [showRemoveImageDialog, setShowRemoveImageDialog] = useState(false);
   const [imageToRemove, setImageToRemove] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  // New state for image selection dialog
+  const [showSelectImagesDialog, setShowSelectImagesDialog] = useState(false);
   
   // State for drag and drop
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -275,6 +278,73 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       setHasUnsavedChanges(true);
     }
   }, [imageToRemove, images, coverImageId]);
+
+  // Handler for adding images to gallery
+  const handleAddImages = useCallback((selectedImages: any[]) => {
+    if (selectedImages.length === 0) return;
+    
+    // Mark that we have unsaved changes
+    setHasUnsavedChanges(true);
+    
+    // Store the image IDs to add - we'll send these to the API
+    const imageIdsToAdd = selectedImages.map(img => img.id);
+    
+    setSuccessMessage(`${selectedImages.length} image(s) selected. Save changes to add them to the gallery.`);
+    
+    // Immediately save changes with the selected images
+    const saveWithNewImages = async () => {
+      setIsSubmitting(true);
+      setError(null);
+      
+      try {
+        // Prepare the image order and descriptions data for existing images
+        const imageUpdates = images.map((img, index) => ({
+          id: img.id,
+          description: img.description,
+          order: index
+        }));
+        
+        const response = await fetch(`/api/galleries/${galleryId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title,
+            description,
+            isPublic,
+            coverImageId: coverImageId || undefined,
+            images: imageUpdates,
+            addImages: imageIdsToAdd
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to update gallery');
+        }
+
+        // Update local state to match server state
+        setGallery(data);
+        setImages(data.images);
+        setHasUnsavedChanges(false);
+        setSuccessMessage('Images added to gallery successfully!');
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 3000);
+      } catch (error) {
+        console.error('Error updating gallery:', error);
+        setError(error instanceof Error ? error.message : 'Failed to add images to gallery');
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+    
+    saveWithNewImages();
+  }, [galleryId, title, description, isPublic, coverImageId, images]);
 
   // Drag and drop handlers
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -470,15 +540,30 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
         
-        {images.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold">Images ({images.length})</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                Drag and drop to reorder images. You can also set a cover image and edit descriptions.
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Images ({images.length})</h2>
+            <button
+              type="button"
+              onClick={() => setShowSelectImagesDialog(true)}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              disabled={isSubmitting}
+            >
+              Add Images
+            </button>
+          </div>
+          
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+            Drag and drop to reorder images. You can also set a cover image and edit descriptions.
+          </p>
+          
+          {images.length === 0 ? (
+            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-8 text-center">
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
+                This gallery has no images. Click the "Add Images" button to add some.
               </p>
             </div>
-            
+          ) : (
             <DndContext 
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -508,8 +593,8 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
                 {activeImage ? <DragOverlayCard image={activeImage} /> : null}
               </DragOverlay>
             </DndContext>
-          </div>
-        )}
+          )}
+        </div>
         
         <div className="flex justify-between mt-8">
           <button
@@ -563,6 +648,14 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         confirmButtonText="Remove"
         cancelButtonText="Cancel"
         confirmButtonColor="red"
+      />
+      
+      {/* Image selection dialog */}
+      <SelectImagesDialog
+        isOpen={showSelectImagesDialog}
+        onClose={() => setShowSelectImagesDialog(false)}
+        onSelect={handleAddImages}
+        existingImageIds={images.map(img => img.image.id)}
       />
     </div>
   );

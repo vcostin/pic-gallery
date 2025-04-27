@@ -14,6 +14,8 @@ const updateGallerySchema = z.object({
     description: z.string().nullable().optional(),
     order: z.number().optional()
   })).optional(),
+  // New field for adding images
+  addImages: z.array(z.string()).optional(),
 });
 
 export async function GET(
@@ -127,6 +129,43 @@ export async function PATCH(
       where: { id: id },
       data: updateData,
     });
+
+    // Handle adding new images to the gallery if addImages is provided
+    if (body.addImages && body.addImages.length > 0) {
+      console.log(`Adding ${body.addImages.length} new images to gallery`);
+      
+      // Get the current highest order value
+      const maxOrder = gallery.images.length > 0
+        ? Math.max(...gallery.images.map(img => (img as any).order || 0))
+        : -1;
+      
+      // Check that the images belong to the user
+      const userImages = await prisma.image.findMany({
+        where: {
+          id: { in: body.addImages },
+          userId: session.user.id
+        }
+      });
+      
+      if (userImages.length !== body.addImages.length) {
+        return NextResponse.json({ 
+          error: "Some images don't exist or don't belong to you" 
+        }, { status: 400 });
+      }
+      
+      // Add images to the gallery with incrementing order values
+      await Promise.all(
+        userImages.map(async (image, index) => {
+          await prisma.imageInGallery.create({
+            data: {
+              galleryId: id,
+              imageId: image.id,
+              order: maxOrder + index + 1,
+            }
+          });
+        })
+      );
+    }
 
     // If image updates are provided, update them in a transaction
     if (body.images && body.images.length > 0) {
