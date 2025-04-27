@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
+import { ImageInGallery, Image } from "@prisma/client";
+
+type ImageInGalleryWithImage = ImageInGallery & {
+  image: Image;
+  order: number;
+};
 
 const updateGallerySchema = z.object({
   title: z.string().min(1).optional(),
@@ -39,8 +45,12 @@ export async function GET(
                 tags: true,
               }
             }
+          },
+          orderBy: {
+            order: 'asc'
           }
         },
+        coverImage: true,
         user: {
           select: {
             id: true,
@@ -57,6 +67,18 @@ export async function GET(
 
     if (!gallery.isPublic && gallery.userId !== session?.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Handle case where coverImage was deleted but coverImageId still exists
+    if (gallery.coverImageId && !gallery.coverImage) {
+      // Update gallery to remove the coverImageId reference
+      await prisma.gallery.update({
+        where: { id: gallery.id },
+        data: { coverImageId: null }
+      });
+      
+      // Remove coverImageId from the response
+      gallery.coverImageId = null;
     }
 
     return NextResponse.json(gallery);
@@ -136,7 +158,7 @@ export async function PATCH(
       
       // Get the current highest order value
       const maxOrder = gallery.images.length > 0
-        ? Math.max(...gallery.images.map(img => (img as any).order || 0))
+        ? Math.max(...gallery.images.map(img => (img as ImageInGalleryWithImage).order || 0))
         : -1;
       
       // Check that the images belong to the user
@@ -215,13 +237,9 @@ export async function PATCH(
       where: { id: id },
       include: {
         images: {
-          // Use an equivalent ordering that Prisma supports
-          orderBy: [
-            {
-              // @ts-expect-error - The order field exists in the database but may not be in the types
-              order: 'asc'
-            }
-          ],
+          orderBy: {
+            order: 'asc'
+          },
           include: {
             image: {
               include: {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -30,14 +30,8 @@ export function DeleteImageConfirmDialog({
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  // Fetch gallery usage information when the dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      checkGalleryUsage();
-    }
-  }, [isOpen, imageId]);
-
-  const checkGalleryUsage = async () => {
+  // Define checkGalleryUsage as useCallback to avoid recreation on each render
+  const checkGalleryUsage = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -60,7 +54,14 @@ export function DeleteImageConfirmDialog({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [imageId]);
+
+  // Fetch gallery usage information when the dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      checkGalleryUsage();
+    }
+  }, [isOpen, checkGalleryUsage]);
 
   const handleDelete = async () => {
     if (isDeleting) return;

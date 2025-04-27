@@ -2,6 +2,13 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
+import { Gallery } from "@prisma/client";
+
+interface GalleryWithCoverImage extends Gallery {
+  id: string;
+  title: string;
+  coverImageId: string | null;
+}
 
 export async function GET(
   req: Request,
@@ -35,24 +42,24 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if the image is used as a cover image for any galleries
-    const galleriesUsingAsCover = await prisma.gallery.findMany({
-      where: {
-        coverImageId: id
-      }
-    });
+    // Use raw query to find galleries using this image as cover
+    const galleriesUsingAsCover = await prisma.$queryRaw<GalleryWithCoverImage[]>`
+      SELECT * FROM "Gallery" 
+      WHERE "coverImageId" = ${id} AND "userId" = ${session.user.id}
+    `;
 
     // Return gallery usage information
     if (image.inGalleries.length > 0 || galleriesUsingAsCover.length > 0) {
-      const galleries = [
-        ...image.inGalleries.map(ig => ig.gallery),
+      const galleriesFromRelations = image.inGalleries.map(ig => ig.gallery);
+      const allGalleries = [
+        ...galleriesFromRelations,
         ...galleriesUsingAsCover.filter(g => 
-          !image.inGalleries.some(ig => ig.galleryId === g.id)
+          !galleriesFromRelations.some(rg => rg.id === g.id)
         )
       ];
       
       return NextResponse.json({
-        galleries: galleries.map(g => ({
+        galleries: allGalleries.map(g => ({
           id: g.id,
           title: g.title,
           isCover: galleriesUsingAsCover.some(cover => cover.id === g.id)

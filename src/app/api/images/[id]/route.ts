@@ -5,6 +5,13 @@ import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import fs from 'fs';
 import path from 'path';
+import { Gallery } from "@prisma/client";
+
+interface GalleryWithCoverImage extends Gallery {
+  id: string;
+  title: string;
+  coverImageId: string | null;
+}
 
 const updateImageSchema = z.object({
   title: z.string().min(1).optional(),
@@ -101,25 +108,25 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if the image is used as a cover image for any galleries
-    const galleriesUsingAsCover = await prisma.gallery.findMany({
-      where: {
-        coverImageId: id
-      }
-    });
+    // Use raw query to find galleries using this image as cover
+    const galleriesUsingAsCover = await prisma.$queryRaw<GalleryWithCoverImage[]>`
+      SELECT * FROM "Gallery" 
+      WHERE "coverImageId" = ${id} AND "userId" = ${session.user.id}
+    `;
 
     // Return warning if the image is used in galleries and we're not force deleting
     if (!forceDelete && (image.inGalleries.length > 0 || galleriesUsingAsCover.length > 0)) {
-      const galleries = [
-        ...image.inGalleries.map(ig => ig.gallery),
+      const galleriesFromRelations = image.inGalleries.map(ig => ig.gallery);
+      const allGalleries = [
+        ...galleriesFromRelations,
         ...galleriesUsingAsCover.filter(g => 
-          !image.inGalleries.some(ig => ig.galleryId === g.id)
+          !galleriesFromRelations.some(rg => rg.id === g.id)
         )
       ];
       
       return NextResponse.json({
         warning: "Image is used in galleries",
-        galleries: galleries.map(g => ({
+        galleries: allGalleries.map(g => ({
           id: g.id,
           title: g.title,
           isCover: galleriesUsingAsCover.some(cover => cover.id === g.id)
@@ -129,10 +136,12 @@ export async function DELETE(
 
     // If force delete, update galleries using this as cover image to have no cover image
     if (galleriesUsingAsCover.length > 0) {
-      await prisma.gallery.updateMany({
-        where: { coverImageId: id },
-        data: { coverImageId: null }
-      });
+      // Use raw query to update galleries
+      await prisma.$executeRaw`
+        UPDATE "Gallery" 
+        SET "coverImageId" = NULL 
+        WHERE "coverImageId" = ${id}
+      `;
     }
 
     // Extract filename from URL
