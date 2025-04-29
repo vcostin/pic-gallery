@@ -23,24 +23,22 @@ interface ImageType {
 interface SelectImagesDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  galleryId?: string;
-  onImagesSelected: () => void;
+  onImagesSelected: (addedImageIds: string[]) => void; // Changed from optional to required
   existingImageIds?: string[];
+  galleryId?: string; // Added galleryId as optional prop
 }
 
 export function SelectImagesDialog({ 
   isOpen, 
   onClose, 
-  galleryId,
   onImagesSelected,
   existingImageIds = [] 
 }: SelectImagesDialogProps) {
   const [images, setImages] = useState<ImageType[]>([]);
   const [selectedTag, setSelectedTag] = useState('');
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
-  const [addingImages, setAddingImages] = useState(false);
   
-  const { fetchApi, isLoading, error, setError } = useFetch();
+  const { fetchApi, isLoading, error } = useFetch();
   
   // Fetch user's images when component mounts
   useEffect(() => {
@@ -93,33 +91,19 @@ export function SelectImagesDialog({
     });
   }, []);
 
-  const handleAddImages = useCallback(async () => {
-    if (!galleryId || selectedImages.size === 0) return;
-    
-    setAddingImages(true);
-    setError(null);
-    
-    try {
-      const selectedImageIds = Array.from(selectedImages);
-      logger.log(`Adding ${selectedImageIds.length} images to gallery ${galleryId}`);
-      
-      await fetchApi(`/api/galleries/${galleryId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ imageIds: selectedImageIds }),
-      });
-      
-      // Successfully added images
-      onImagesSelected();
-    } catch (error) {
-      // Error handled by useFetch hook
-      logger.error('Error adding images to gallery:', error);
-    } finally {
-      setAddingImages(false);
+  const handleAddImages = useCallback(() => {
+    if (selectedImages.size === 0) {
+      // Return empty array instead of undefined
+      onImagesSelected([]);
+      return;
     }
-  }, [galleryId, selectedImages, fetchApi, onImagesSelected, setError]);
+    
+    const selectedImageIds = Array.from(selectedImages);
+    logger.log(`Selected ${selectedImageIds.length} images to add to gallery`);
+    
+    // Pass the selected image IDs back to the parent component
+    onImagesSelected(selectedImageIds);
+  }, [selectedImages, onImagesSelected]);
 
   if (!isOpen) return null;
 
@@ -243,17 +227,10 @@ export function SelectImagesDialog({
               <button
                 type="button"
                 onClick={handleAddImages}
-                disabled={selectedImages.size === 0 || addingImages}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400 flex items-center"
+                disabled={selectedImages.size === 0}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400"
               >
-                {addingImages ? (
-                  <>
-                    <span className="animate-spin h-4 w-4 mr-2 border-t-2 border-b-2 border-white rounded-full"></span>
-                    Adding...
-                  </>
-                ) : (
-                  `Add Selected (${selectedImages.size})`
-                )}
+                Add Selected ({selectedImages.size})
               </button>
             </div>
           </>

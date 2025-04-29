@@ -16,9 +16,10 @@ const updateGallerySchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
   isPublic: z.boolean().optional(),
-  coverImageId: z.string().optional(),
+  coverImageId: z.string().nullable().optional(),
   images: z.array(z.object({
     id: z.string(),
+    imageId: z.string().optional(), // Add imageId for temp images
     description: z.string().nullable().optional(),
     order: z.number().optional()
   })).optional(),
@@ -236,24 +237,71 @@ export async function PATCH(
           logger.log(`Removed ${imageIdsToRemove.length} images from gallery`);
         }
         
-        // Update the remaining images with new order and description
-        const imageUpdates = await Promise.all(
-          body.images.map(async (imageUpdate) => {
-            // Update ImageInGallery with description and order
-            return prisma.imageInGallery.update({
-              where: { id: imageUpdate.id },
-              data: {
-                description: imageUpdate.description !== undefined ? imageUpdate.description : undefined,
-                // Use raw SQL to update order if Prisma types don't support it yet
-                ...(imageUpdate.order !== undefined && {
-                  order: imageUpdate.order
-                }),
-              },
-            });
-          })
-        );
+        // Separate permanent images from temporary ones
+        const permanentImages = body.images.filter(img => !img.id.startsWith('temp-'));
+        const tempImages = body.images.filter(img => img.id.startsWith('temp-'));
         
-        logger.log(`Updated ${imageUpdates.length} gallery images`);
+        // Update the existing permanent images
+        if (permanentImages.length > 0) {
+          const imageUpdates = await Promise.all(
+            permanentImages.map(async (imageUpdate) => {
+              try {
+                // Update ImageInGallery with description and order
+                return prisma.imageInGallery.update({
+                  where: { id: imageUpdate.id },
+                  data: {
+                    description: imageUpdate.description !== undefined ? imageUpdate.description : undefined,
+                    // Use raw SQL to update order if Prisma types don't support it yet
+                    ...(imageUpdate.order !== undefined && {
+                      order: imageUpdate.order
+                    }),
+                  },
+                });
+              } catch (error) {
+                logger.error(`Error updating image ${imageUpdate.id}:`, error);
+                return null;
+              }
+            })
+          );
+          
+          logger.log(`Updated ${imageUpdates.filter(Boolean).length} gallery images`);
+        }
+        
+        // Handle temporary images - these need to be created
+        if (tempImages.length > 0) {
+          logger.log(`Creating ${tempImages.length} new gallery images`);
+          
+          // For temp images, create new ImageInGallery records
+          await Promise.all(
+            tempImages.map(async (tempImg) => {
+              // Log the entire tempImg object for debugging
+              logger.log(`Processing temp image: ${JSON.stringify(tempImg)}`);
+              
+              // Only process if imageId is provided
+              if (!tempImg.imageId) {
+                logger.error(`Missing imageId for temp image ${tempImg.id}`);
+                return null;
+              }
+              
+              try {
+                // Create a new ImageInGallery record
+                return prisma.imageInGallery.create({
+                  data: {
+                    galleryId: id,
+                    imageId: tempImg.imageId,
+                    order: tempImg.order || 0,
+                    description: tempImg.description,
+                  }
+                });
+              } catch (error) {
+                logger.error(`Error creating image from temp ${tempImg.id}:`, error);
+                return null;
+              }
+            })
+          );
+          
+          logger.log(`Created ${tempImages.length} new gallery images`);
+        }
       }
     }
 

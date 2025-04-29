@@ -47,6 +47,7 @@ interface GalleryImage {
     title: string;
     tags: Tag[];
   };
+  imageId?: string; // Add imageId property for temporary images
 }
 
 interface GalleryUser {
@@ -193,6 +194,9 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const [showRemoveImageDialog, setShowRemoveImageDialog] = useState(false);
   const [imageToRemove, setImageToRemove] = useState<string | null>(null);
   const [showSelectImagesDialog, setShowSelectImagesDialog] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [showDeleteGalleryDialog, setShowDeleteGalleryDialog] = useState(false);
   
   // State for drag and drop
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -209,11 +213,24 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     reset: resetSubmitState
   } = useSubmit(async () => {
     // Prepare the image order and descriptions data
-    const imageUpdates = images.map((img, index) => ({
-      id: img.id,
-      description: img.description,
-      order: index
-    }));
+    const imageUpdates = images.map((img, index) => {
+      // For temp images, include the real imageId property
+      if (img.id.startsWith('temp-')) {
+        return {
+          id: img.id,
+          imageId: img.imageId, // Include the real image ID for temp images
+          description: img.description,
+          order: index
+        };
+      }
+      
+      // For existing images, just include the regular properties
+      return {
+        id: img.id,
+        description: img.description,
+        order: index
+      };
+    });
     
     await fetchApi(`/api/galleries/${galleryId}`, {
       method: 'PATCH',
@@ -231,6 +248,17 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     
     setHasUnsavedChanges(false);
     return "Gallery updated successfully!";
+  });
+  
+  // Delete gallery handler
+  const { 
+    handleSubmit: handleDeleteGallery, 
+    isSubmitting: isDeleting, 
+    error: deleteError 
+  } = useSubmit(async () => {
+    await fetchApi(`/api/galleries/${galleryId}`, { method: 'DELETE' });
+    router.push('/galleries');
+    router.refresh();
   });
   
   // Success state
@@ -263,6 +291,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         setDescription(data.description || '');
         setIsPublic(data.isPublic);
         setCoverImageId(data.coverImageId || '');
+        // Ensure images state is updated with the latest data
         setImages(data.images);
         return data;
       } catch (error) {
@@ -340,8 +369,8 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     setShowConfirmDialog(false);
     
     try {
-      const message = await submitGalleryUpdate();
-      setSuccessMessage(message);
+      const message = await submitGalleryUpdate(e);
+      setSuccessMessage(message as string);
       
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -359,6 +388,94 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       router.push(`/galleries/${galleryId}`);
     }
   };
+
+  // Add image information to local gallery state
+  const addImagesToGallery = useCallback(async (imageIds: string[]) => {
+    // Only proceed if we have image IDs to add
+    if (!imageIds?.length) return;
+    
+    // Load all images to make sure we have access to the ones being added
+    try {
+      // Define a proper interface for the image type
+      interface ImageInfo {
+        id: string;
+        url: string;
+        title: string;
+        tags: Tag[];
+      }
+      
+      const allImages = await fetchApi<ImageInfo[]>('/api/images');
+      
+      // Create a map of all available images
+      const availableImagesMap = new Map<string, ImageInfo>();
+      allImages.forEach(img => {
+        availableImagesMap.set(img.id, {
+          id: img.id,
+          url: img.url,
+          title: img.title,
+          tags: img.tags || []
+        });
+      });
+      
+      // Get all images that aren't already in the gallery
+      const newImageIds = imageIds.filter(id => 
+        !images.some(img => img.image.id === id)
+      );
+      
+      if (!newImageIds.length) {
+        setToastMessage("These images are already in the gallery");
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 3000);
+        return;
+      }
+      
+      // Find the highest order value
+      const maxOrder = images.length > 0
+        ? Math.max(...images.map(img => img.order))
+        : -1;
+      
+      // Create new temp images for the UI
+      const newImages = newImageIds.map((id, index) => {
+        const imageInfo = availableImagesMap.get(id);
+        
+        // If we don't have the image information, log a warning
+        if (!imageInfo) {
+          logger.warn(`Image with ID ${id} not found in available images`);
+          return null;
+        }
+        
+        // Create a temporary ID for the gallery image that includes the real image ID
+        return {
+          id: `temp-${Date.now()}-${index}`,
+          description: null,
+          order: maxOrder + index + 1,
+          image: imageInfo,
+          // Store the real image ID for when we save
+          imageId: id
+        };
+      }).filter(Boolean) as GalleryImage[];
+      
+      // Add the new images to the state
+      setImages(prev => [...prev, ...newImages]);
+      
+      // Mark that we have unsaved changes
+      setHasUnsavedChanges(true);
+      
+      // Show success toast
+      setToastMessage(`Added ${newImages.length} image${newImages.length > 1 ? 's' : ''} to gallery`);
+      setShowSuccessToast(true);
+      
+      // Hide toast after 3 seconds
+      setTimeout(() => {
+        setShowSuccessToast(false);
+      }, 3000);
+    } catch (err) {
+      logger.error("Error adding images to gallery:", err);
+      setToastMessage("Error adding images to gallery");
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+    }
+  }, [images, fetchApi]);
 
   // Render loading state
   if (isFetching && !gallery) {
@@ -524,6 +641,26 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
               </DndContext>
             )}
           </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Danger Zone</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              Once you delete a gallery, there is no going back. Please be certain.
+            </p>
+            
+            {deleteError && (
+              <ErrorMessage error={deleteError} className="mb-4" />
+            )}
+            
+            <button
+              type="button"
+              onClick={() => setShowDeleteGalleryDialog(true)}
+              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete Gallery"}
+            </button>
+          </div>
           
           <div className="flex justify-between mt-8">
             <button
@@ -584,13 +721,49 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           isOpen={showSelectImagesDialog}
           onClose={() => setShowSelectImagesDialog(false)}
           galleryId={galleryId}
-          onImagesSelected={() => {
+          onImagesSelected={(addedImageIds) => {
             setShowSelectImagesDialog(false);
-            // Refresh the gallery data after images are added
-            fetchGallery(fetchApi<Gallery>(`/api/galleries/${galleryId}`));
+            addImagesToGallery(addedImageIds);
           }}
           existingImageIds={images.map(img => img.image.id)}
         />
+
+        {/* Delete gallery confirmation dialog */}
+        <ConfirmDialog
+          isOpen={showDeleteGalleryDialog}
+          onClose={() => setShowDeleteGalleryDialog(false)}
+          onConfirm={() => handleDeleteGallery(undefined)}
+          title="Delete Gallery"
+          message={
+            <div>
+              <p className="mb-2">Are you sure you want to delete this gallery?</p>
+              <p className="text-red-500 font-semibold">This action cannot be undone.</p>
+              {images.length > 0 && (
+                <p className="mt-2 text-gray-600">
+                  Note: Your images will not be deleted, only removed from this gallery.
+                </p>
+              )}
+              {isDeleting && (
+                <div className="mt-2 flex items-center text-blue-500">
+                  <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full"></div>
+                  <span>Deleting...</span>
+                </div>
+              )}
+            </div>
+          }
+          confirmButtonText={isDeleting ? "Deleting..." : "Delete Gallery"}
+          confirmButtonColor="red"
+        />
+
+        {/* Toast notification for successful image addition */}
+        {showSuccessToast && (
+          <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg flex items-center animate-fade-in-up z-50">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            {toastMessage}
+          </div>
+        )}
       </div>
     </ErrorBoundary>
   );
