@@ -4,15 +4,17 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { DeleteImageConfirmDialog } from './DeleteImageConfirmDialog';
+import { ErrorMessage, LoadingSpinner, SuccessMessage } from './StatusMessages';
+import { useFetch, useSubmit } from '@/lib/hooks';
 import logger from '@/lib/logger';
 
 interface EditImageDialogProps {
   image: {
     id: string;
     title: string;
-    description?: string | null;
-    tags?: { name: string }[];
-    url: string;  // Add url property to the interface
+    description: string | null;
+    url: string;
+    tags: { id: string; name: string }[];
   };
   isOpen: boolean;
   onClose: () => void;
@@ -22,47 +24,68 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
   const [title, setTitle] = useState(image.title);
   const [description, setDescription] = useState(image.description || '');
   const [tags, setTags] = useState(image.tags?.map(t => t.name).join(', ') || '');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
   const router = useRouter();
+  const { fetchApi } = useFetch();
+  
+  const { 
+    handleSubmit: submitUpdate, 
+    isSubmitting, 
+    error: updateError,
+    reset: resetUpdateState
+  } = useSubmit(async () => {
+    await fetchApi(`/api/images/${image.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title,
+        description,
+        tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      }),
+    });
+
+    router.refresh();
+    
+    // Show success message
+    setSuccessMessage('Image updated successfully!');
+    
+    // Clear success message after 2 seconds and close
+    setTimeout(() => {
+      setSuccessMessage(null);
+      onClose();
+    }, 2000);
+    
+    return 'Image updated successfully!';
+  });
 
   if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    try {
-      const response = await fetch(`/api/images/${image.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update image');
-      }
-
-      router.refresh();
-      onClose();
-    } catch (error) {
-      logger.error('Error updating image:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
           <h2 className="text-xl font-semibold mb-4">Edit Image</h2>
+          
+          {/* Show success message */}
+          {successMessage && (
+            <SuccessMessage 
+              message={successMessage} 
+              className="mb-4"
+            />
+          )}
+          
+          {/* Show error message */}
+          {updateError && (
+            <ErrorMessage 
+              error={updateError} 
+              retry={() => resetUpdateState()}
+              className="mb-4"
+            />
+          )}
           
           {/* Image thumbnail */}
           <div className="mb-4 flex justify-center">
@@ -77,7 +100,7 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
             </div>
           </div>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); submitUpdate(); }} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Title</label>
               <input
@@ -131,9 +154,16 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400 flex items-center"
                 >
-                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                  {isSubmitting ? (
+                    <>
+                      <LoadingSpinner size="small" text="" />
+                      <span className="ml-2">Saving...</span>
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
                 </button>
               </div>
             </div>

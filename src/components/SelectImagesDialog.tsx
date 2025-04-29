@@ -1,7 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
+import { LoadingSpinner, ErrorMessage, EmptyState } from '@/components/StatusMessages';
+import { useFetch } from '@/lib/hooks';
 import logger from '@/lib/logger';
 
 interface Tag {
@@ -14,15 +16,16 @@ interface ImageType {
   title: string;
   description: string | null;
   url: string;
+  userId: string;
   tags: Tag[];
 }
 
 interface SelectImagesDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  galleryId: string;
+  galleryId?: string;
   onImagesSelected: () => void;
-  existingImageIds?: string[]; // To filter out images already in the gallery
+  existingImageIds?: string[];
 }
 
 export function SelectImagesDialog({ 
@@ -33,33 +36,27 @@ export function SelectImagesDialog({
   existingImageIds = [] 
 }: SelectImagesDialogProps) {
   const [images, setImages] = useState<ImageType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [addingImages, setAddingImages] = useState(false);
+  
+  const { fetchApi, isLoading, error, setError } = useFetch();
   
   // Fetch user's images when component mounts
   useEffect(() => {
     async function fetchImages() {
       try {
-        setLoading(true);
-        const response = await fetch('/api/images');
-        if (!response.ok) throw new Error('Failed to fetch images');
-        
-        const data = await response.json();
+        const data = await fetchApi<ImageType[]>('/api/images');
         
         // Filter out images that are already in the gallery
         const filteredImages = data.filter(
-          (img: ImageType) => !existingImageIds.includes(img.id)
+          (img) => !existingImageIds.includes(img.id)
         );
         
         setImages(filteredImages);
       } catch (error) {
+        // Error handled by useFetch hook
         logger.error('Error fetching images:', error);
-        setError('Failed to load your images');
-      } finally {
-        setLoading(false);
       }
     }
 
@@ -67,14 +64,14 @@ export function SelectImagesDialog({
       fetchImages();
       setSelectedImages(new Set()); // Reset selection when dialog opens
     }
-  }, [isOpen, existingImageIds]);
+  }, [isOpen, existingImageIds, fetchApi]);
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
     images.forEach(image => {
       image.tags.forEach(tag => tagSet.add(tag.name));
     });
-    return Array.from(tagSet);
+    return Array.from(tagSet).sort();
   }, [images]);
 
   const filteredImages = useMemo(() => {
@@ -84,7 +81,7 @@ export function SelectImagesDialog({
     );
   }, [images, selectedTag]);
 
-  const toggleImageSelection = (imageId: string) => {
+  const toggleImageSelection = useCallback((imageId: string) => {
     setSelectedImages(prev => {
       const newSelection = new Set(prev);
       if (newSelection.has(imageId)) {
@@ -94,58 +91,47 @@ export function SelectImagesDialog({
       }
       return newSelection;
     });
-  };
+  }, []);
 
-  const handleAddImages = async () => {
-    if (selectedImages.size === 0) return;
+  const handleAddImages = useCallback(async () => {
+    if (!galleryId || selectedImages.size === 0) return;
+    
+    setAddingImages(true);
+    setError(null);
     
     try {
-      setAddingImages(true);
-      setError(null);
       const selectedImageIds = Array.from(selectedImages);
-      
       logger.log(`Adding ${selectedImageIds.length} images to gallery ${galleryId}`);
       
-      const response = await fetch(`/api/galleries/${galleryId}`, {
+      await fetchApi(`/api/galleries/${galleryId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ imageIds: selectedImageIds }),
-        credentials: 'include' // Ensure cookies are sent for authentication
       });
-      
-      if (!response.ok) {
-        // Try to extract error message from the response
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Failed to add images (${response.status})`);
-      }
       
       // Successfully added images
       onImagesSelected();
     } catch (error) {
+      // Error handled by useFetch hook
       logger.error('Error adding images to gallery:', error);
-      setError(error instanceof Error ? error.message : 'Failed to add images to gallery');
-      setAddingImages(false);
-      // Don't close the dialog on error so user can see the error message
     } finally {
-      if (!error) {
-        setAddingImages(false);
-        onClose();
-      }
+      setAddingImages(false);
     }
-  };
+  }, [galleryId, selectedImages, fetchApi, onImagesSelected, setError]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Select Images</h2>
-          <button 
+          <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+            aria-label="Close dialog"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -155,16 +141,14 @@ export function SelectImagesDialog({
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
-          </div>
+          <ErrorMessage 
+            error={error} 
+            className="mb-4" 
+          />
         )}
 
-        {loading ? (
-          <div className="flex items-center justify-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-            <span className="ml-3">Loading images...</span>
-          </div>
+        {isLoading ? (
+          <LoadingSpinner size="medium" text="Loading images..." />
         ) : (
           <>
             <div className="mb-6 flex flex-wrap gap-2">
@@ -194,11 +178,10 @@ export function SelectImagesDialog({
             </div>
 
             {filteredImages.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">
-                  No images available to add. All your images might already be in this gallery.
-                </p>
-              </div>
+              <EmptyState
+                title="No images available"
+                description="No images available to add. All your images might already be in this gallery."
+              />
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {filteredImages.map(image => (

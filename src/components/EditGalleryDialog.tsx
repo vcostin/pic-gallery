@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { ErrorMessage, LoadingSpinner, SuccessMessage } from '@/components/StatusMessages';
+import { useFetch, useSubmit } from '@/lib/hooks';
 import logger from '@/lib/logger';
 
 interface Tag {
@@ -27,7 +29,6 @@ interface EditGalleryDialogProps {
     title: string;
     description: string | null;
     isPublic: boolean;
-    userId: string;
     coverImageId?: string | null;
     images: GalleryImage[];
   };
@@ -40,9 +41,43 @@ export function EditGalleryDialog({ gallery, isOpen, onClose }: EditGalleryDialo
   const [description, setDescription] = useState(gallery.description || '');
   const [isPublic, setIsPublic] = useState(gallery.isPublic);
   const [coverImageId, setCoverImageId] = useState(gallery.coverImageId || '');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const router = useRouter();
+  
+  const { fetchApi } = useFetch();
+  
+  const { 
+    handleSubmit: submitUpdate, 
+    isSubmitting, 
+    error: updateError,
+    reset: resetUpdateState
+  } = useSubmit(async () => {
+    await fetchApi(`/api/galleries/${gallery.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title,
+        description,
+        isPublic,
+        coverImageId: coverImageId || null,
+      }),
+    });
+    
+    router.refresh();
+    
+    // Show success message
+    setSuccessMessage('Gallery updated successfully');
+    
+    // Clear success message after 2 seconds and close
+    setTimeout(() => {
+      setSuccessMessage(null);
+      onClose();
+    }, 2000);
+    
+    return "Gallery updated successfully";
+  });
 
   // Reset form state when the gallery or isOpen changes
   useEffect(() => {
@@ -51,67 +86,33 @@ export function EditGalleryDialog({ gallery, isOpen, onClose }: EditGalleryDialo
       setDescription(gallery.description || '');
       setIsPublic(gallery.isPublic);
       setCoverImageId(gallery.coverImageId || '');
-      setError(null);
+      resetUpdateState();
     }
-  }, [gallery, isOpen]);
+  }, [gallery, isOpen, resetUpdateState]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-    
-    try {
-      logger.log("Sending update request:", {
-        title,
-        description,
-        isPublic,
-        coverImageId: coverImageId || undefined,
-      });
-      
-      const response = await fetch(`/api/galleries/${gallery.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          isPublic,
-          coverImageId: coverImageId || undefined,
-        }),
-      });
-
-      const data = await response.json();
-      logger.log("Response data:", data);
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update gallery');
-      }
-
-      router.refresh();
-      onClose();
-    } catch (error) {
-      logger.error('Error updating gallery:', error);
-      setError(error instanceof Error ? error.message : 'Failed to update gallery');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-semibold mb-4">Edit Gallery</h2>
         
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
-          </div>
+        {successMessage && (
+          <SuccessMessage 
+            message={successMessage} 
+            className="mb-4"
+          />
         )}
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {updateError && (
+          <ErrorMessage 
+            error={updateError} 
+            retry={() => resetUpdateState()}
+            className="mb-4"
+          />
+        )}
+        
+        <form onSubmit={(e) => { e.preventDefault(); submitUpdate(); }} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Title</label>
             <input
@@ -141,13 +142,13 @@ export function EditGalleryDialog({ gallery, isOpen, onClose }: EditGalleryDialo
                 onChange={(e) => setIsPublic(e.target.checked)}
                 className="rounded"
               />
-              <span className="text-sm font-medium">Make gallery public</span>
+              <span>Make gallery public</span>
             </label>
           </div>
-
+          
           {gallery.images.length > 0 && (
             <div>
-              <label className="block text-sm font-medium mb-2">Select Cover Image</label>
+              <label className="block text-sm font-medium mb-2">Cover Image</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {gallery.images.map((galleryImage) => (
                   <div 
@@ -191,9 +192,16 @@ export function EditGalleryDialog({ gallery, isOpen, onClose }: EditGalleryDialo
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400 flex items-center"
             >
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
+              {isSubmitting ? (
+                <>
+                  <LoadingSpinner size="small" text="" />
+                  <span className="ml-2">Saving...</span>
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </button>
           </div>
         </form>

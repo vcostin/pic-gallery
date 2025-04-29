@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ConfirmDialog } from './ConfirmDialog';
+import { LoadingSpinner, ErrorMessage } from './StatusMessages';
+import { useFetch, useSubmit } from '@/lib/hooks';
 import logger from '@/lib/logger';
 
 interface Gallery {
@@ -25,37 +27,45 @@ export function DeleteImageConfirmDialog({
   onClose,
   onDeleted
 }: DeleteImageConfirmDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [galleries, setGalleries] = useState<Gallery[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  
+  const { fetchApi, isLoading: isCheckingUsage, error: checkError, setError } = useFetch();
+  
+  const { 
+    handleSubmit: handleDelete, 
+    isSubmitting: isDeleting, 
+    error: deleteError 
+  } = useSubmit(async () => {
+    // Always use force=true since we've already shown the gallery usage info
+    const forceParam = galleries.length > 0 ? '?force=true' : '';
+    
+    await fetchApi(`/api/images/${imageId}${forceParam}`, {
+      method: 'DELETE',
+    });
+
+    router.refresh();
+    onDeleted();
+  });
 
   // Define checkGalleryUsage as useCallback to avoid recreation on each render
   const checkGalleryUsage = useCallback(async () => {
-    setIsLoading(true);
     setError(null);
+    
     try {
       // Use a GET request to check if the image is used in galleries without actually deleting it
-      const response = await fetch(`/api/images/${imageId}/usage`);
+      const data = await fetchApi<{ galleries: Gallery[] }>(`/api/images/${imageId}/usage`);
       
-      if (!response.ok) {
-        throw new Error('Failed to check image usage');
-      }
-      
-      const data = await response.json();
       if (data.galleries && data.galleries.length > 0) {
         setGalleries(data.galleries);
       } else {
         setGalleries([]);
       }
     } catch (error) {
+      // Error handled by useFetch hook
       logger.error('Error checking image usage:', error);
-      setError('Failed to check if this image is used in galleries');
-    } finally {
-      setIsLoading(false);
     }
-  }, [imageId]);
+  }, [imageId, fetchApi, setError]);
 
   // Fetch gallery usage information when the dialog opens
   useEffect(() => {
@@ -63,31 +73,6 @@ export function DeleteImageConfirmDialog({
       checkGalleryUsage();
     }
   }, [isOpen, checkGalleryUsage]);
-
-  const handleDelete = async () => {
-    if (isDeleting) return;
-    
-    setIsDeleting(true);
-    try {
-      // Always use force=true since we've already shown the gallery usage info
-      const forceParam = galleries.length > 0 ? '?force=true' : '';
-      const response = await fetch(`/api/images/${imageId}${forceParam}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete image');
-      }
-
-      router.refresh();
-      onDeleted();
-    } catch (error) {
-      logger.error('Error deleting image:', error);
-      setError('Failed to delete image. Please try again.');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -99,10 +84,16 @@ export function DeleteImageConfirmDialog({
       title="Delete Image"
       message={
         <div>
-          {isLoading ? (
-            <p>Checking if this image is used in galleries...</p>
-          ) : error ? (
-            <p className="text-red-500">{error}</p>
+          {isCheckingUsage ? (
+            <div className="flex items-center justify-center py-4">
+              <LoadingSpinner size="small" text="Checking if this image is used in galleries..." />
+            </div>
+          ) : checkError ? (
+            <ErrorMessage 
+              error={checkError} 
+              retry={checkGalleryUsage}
+              className="mb-4"
+            />
           ) : galleries.length > 0 ? (
             <>
               <p className="mb-4 text-amber-500 font-semibold">Warning: This image is used in galleries</p>
@@ -134,6 +125,18 @@ export function DeleteImageConfirmDialog({
             </>
           ) : (
             <p>Are you sure you want to delete this image? This action cannot be undone.</p>
+          )}
+          
+          {deleteError && (
+            <div className="mt-4">
+              <ErrorMessage error={deleteError} />
+            </div>
+          )}
+          
+          {isDeleting && (
+            <div className="mt-4 flex items-center justify-center">
+              <LoadingSpinner size="small" text="Deleting image..." />
+            </div>
           )}
         </div>
       }
