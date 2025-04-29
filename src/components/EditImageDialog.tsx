@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { DeleteImageConfirmDialog } from './DeleteImageConfirmDialog';
 import { ErrorMessage, LoadingSpinner, SuccessMessage } from './StatusMessages';
 import { useFetch, useSubmit } from '@/lib/hooks';
-import logger from '@/lib/logger';
 
 interface EditImageDialogProps {
   image: {

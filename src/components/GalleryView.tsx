@@ -1,16 +1,15 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ImageCarousel } from "@/components/ImageCarousel";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { SelectImagesDialog } from "@/components/SelectImagesDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { ErrorMessage, LoadingSpinner, EmptyState } from "@/components/StatusMessages";
+import { ErrorMessage, EmptyState } from "@/components/StatusMessages";
 import { useFetch, useSubmit } from "@/lib/hooks";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import logger from "@/lib/logger";
 
 interface Tag {
   id: string;

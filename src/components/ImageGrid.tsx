@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useMemo, useState, useEffect } from 'react';
 import { EditImageDialog } from './EditImageDialog';
-import { ErrorMessage, LoadingSpinner, EmptyState, SkeletonLoader } from './StatusMessages';
+import { EmptyState, SkeletonLoader } from './StatusMessages';
 import { useAsync } from '@/lib/hooks';
 import { ErrorBoundary } from './ErrorBoundary';
 

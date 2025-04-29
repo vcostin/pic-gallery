@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:all": "eslint --ext .js,.jsx,.ts,.tsx ./src",
+    "lint:fix": "eslint --ext .js,.jsx,.ts,.tsx ./src --fix",
     "updatedb": "prisma generate && prisma db push"
   },
   "dependencies": {

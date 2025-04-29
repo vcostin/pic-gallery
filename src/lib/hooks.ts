@@ -55,9 +55,9 @@ export function useAsync<T>(initialData: T | null = null): UseAsyncState<T> {
  * @returns Object containing submit function, loading state, and error state
  */
 export function useSubmit<T>(
-  onSubmit: (data: T) => Promise<any>
+  onSubmit: (data: T) => Promise<unknown>
 ): {
-  handleSubmit: (data: T) => Promise<any>;
+  handleSubmit: (data: T) => Promise<unknown>;
   isSubmitting: boolean;
   error: Error | null;
   reset: () => void;

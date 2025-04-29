@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { LoadingSpinner, ErrorMessage, SuccessMessage } from '@/components/StatusMessages';
 import { useFetch, useSubmit } from '@/lib/hooks';
-import logger from '@/lib/logger';
 
 export function UploadImage() {
   const [title, setTitle] = useState('');

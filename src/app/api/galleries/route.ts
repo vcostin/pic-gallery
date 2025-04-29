@@ -108,7 +108,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json(galleries);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

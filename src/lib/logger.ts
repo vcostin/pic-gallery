@@ -8,7 +8,7 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 /**
  * Log informational messages (only in development)
  */
-export function log(...args: any[]): void {
+export function log(...args: unknown[]): void {
   if (isDevelopment) {
     console.log(...args);
   }
@@ -17,7 +17,7 @@ export function log(...args: any[]): void {
 /**
  * Log warning messages (only in development) 
  */
-export function warn(...args: any[]): void {
+export function warn(...args: unknown[]): void {
   if (isDevelopment) {
     console.warn(...args);
   }
@@ -27,7 +27,7 @@ export function warn(...args: any[]): void {
  * Log error messages (always logged for debugging purposes)
  * In production, this could be connected to an error tracking service
  */
-export function error(...args: any[]): void {
+export function error(...args: unknown[]): void {
   console.error(...args);
 }
 

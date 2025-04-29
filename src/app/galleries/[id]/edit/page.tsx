@@ -272,7 +272,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     };
     
     fetchGallery(loadGallery());
-  }, [galleryId, fetchApi]);
+  }, [galleryId, fetchApi, fetchGallery]);
 
   // Track unsaved changes
   useEffect(() => {
@@ -347,7 +347,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       setTimeout(() => {
         setSuccessMessage(null);
       }, 3000);
-    } catch (error) {
+    } catch {
       // Error is already handled by the useSubmit hook
     }
   };
