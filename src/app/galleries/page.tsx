@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { CreateGallery } from "@/components/CreateGallery";
+import Link from "next/link";
 import { GalleryGrid } from "@/components/GalleryGrid";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -32,20 +32,16 @@ export default async function GalleriesPage() {
     },
   });
 
-  const images = await prisma.image.findMany({
-    where: {
-      userId: session.user.id,
-    },
-    include: {
-      tags: true,
-    },
-  });
-
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">My Galleries</h1>
-      <div className="mb-8">
-        <CreateGallery availableImages={images} />
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">My Galleries</h1>
+        <Link
+          href="/galleries/create"
+          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+        >
+          Create New Gallery
+        </Link>
       </div>
       <GalleryGrid galleries={galleries} isOwner={true} />
     </div>

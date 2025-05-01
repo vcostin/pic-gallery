@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { ErrorMessage, SuccessMessage } from '@/components/StatusMessages';
 import logger from '@/lib/logger';
 
 interface Tag {
@@ -27,10 +28,16 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   const [selectedImages, setSelectedImages] = useState<{ id: string; description?: string }[]>([]);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+    
     try {
       const response = await fetch('/api/galleries', {
         method: 'POST',
@@ -46,16 +53,32 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create gallery');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to create gallery');
       }
 
+      const data = await response.json();
+      
+      // Show success message
+      setSuccessMessage(`Gallery "${title}" created successfully!`);
+      
+      // Reset form
       setTitle('');
       setDescription('');
       setIsPublic(false);
       setSelectedImages([]);
+      
+      // Automatically redirect to the gallery page after a short delay
+      setTimeout(() => {
+        router.push(`/galleries/${data.id}`);
+      }, 1500);
+      
       router.refresh();
     } catch (error) {
       logger.error('Error creating gallery:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create gallery');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -80,6 +103,23 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <h2 className="text-xl font-semibold mb-4">Create New Gallery</h2>
+      
+      {successMessage && (
+        <SuccessMessage 
+          message={successMessage} 
+          className="mb-4" 
+          onDismiss={() => setSuccessMessage(null)}
+        />
+      )}
+      
+      {error && (
+        <ErrorMessage 
+          error={error} 
+          className="mb-4" 
+          retry={() => setError(null)}
+        />
+      )}
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Title</label>
@@ -90,6 +130,7 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
             className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
             placeholder="Enter gallery title"
             required
+            disabled={isSubmitting}
           />
         </div>
         <div>
@@ -100,6 +141,7 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
             className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
             placeholder="Enter gallery description"
             rows={3}
+            disabled={isSubmitting}
           />
         </div>
         <div>
@@ -109,6 +151,7 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
               checked={isPublic}
               onChange={(e) => setIsPublic(e.target.checked)}
               className="rounded"
+              disabled={isSubmitting}
             />
             <span className="text-sm font-medium">Make gallery public</span>
           </label>
@@ -143,6 +186,7 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
                     className="mt-2 w-full text-sm px-2 py-1 border rounded"
                     onChange={(e) => updateImageDescription(image.id, e.target.value)}
                     value={selectedImages.find(img => img.id === image.id)?.description || ''}
+                    disabled={isSubmitting}
                   />
                 )}
               </div>
@@ -152,10 +196,18 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
 
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
-          disabled={!title || selectedImages.length === 0}
+          className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors disabled:bg-blue-400"
+          disabled={!title || selectedImages.length === 0 || isSubmitting}
         >
-          Create Gallery
+          {isSubmitting ? (
+            <span className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Creating...
+            </span>
+          ) : 'Create Gallery'}
         </button>
       </form>
     </div>
