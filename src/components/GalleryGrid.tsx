@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { EditGalleryDialog } from './EditGalleryDialog';
 import { SkeletonLoader, EmptyState } from './StatusMessages';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useAsync } from '@/lib/hooks';
@@ -33,7 +32,6 @@ interface GalleryGridProps {
 }
 
 export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
-  const [editingGallery, setEditingGallery] = useState<Gallery | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const router = useRouter();
   
@@ -48,12 +46,6 @@ export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
     return () => clearTimeout(timer);
   }, [galleries, setGalleriesData]);
 
-  // Handle gallery update
-  const handleGalleryUpdated = () => {
-    setEditingGallery(null);
-    router.refresh();
-  };
-
   if (isInitializing) {
     return <SkeletonLoader count={4} type="card" />;
   }
@@ -65,7 +57,7 @@ export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
         description="Create your first gallery to organize your images."
         action={
           <Link
-            href="#create-gallery"
+            href="/galleries/create"
             className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
             Create a Gallery
@@ -129,9 +121,11 @@ export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    setEditingGallery(gallery);
+                    router.push(`/galleries/${gallery.id}/edit`);
                   }}
                   className="absolute top-2 right-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 p-1.5 rounded-full shadow hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Edit gallery"
+                  type="button"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -152,14 +146,6 @@ export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
           </Link>
         ))}
       </div>
-      
-      {editingGallery && (
-        <EditGalleryDialog 
-          gallery={editingGallery} 
-          isOpen={true} 
-          onClose={handleGalleryUpdated}
-        />
-      )}
     </ErrorBoundary>
   );
 }
