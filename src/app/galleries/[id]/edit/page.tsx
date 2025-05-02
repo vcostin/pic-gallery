@@ -10,7 +10,6 @@ import {
   useSensors,
   DragOverlay,
   DragStartEvent,
-  DragOverEvent,
   DragEndEvent,
   CollisionDetection,
   rectIntersection,
@@ -28,6 +27,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import { ErrorMessage, LoadingSpinner, SuccessMessage, EmptyState } from '@/components/StatusMessages';
 import { useAsync, useFetch, useSubmit, useGalleryImages } from '@/lib/hooks';
+import { deepEqual } from '@/lib/deepEqual';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { use } from 'react';
 import logger from '@/lib/logger';
@@ -87,6 +87,15 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const [showDeleteGalleryDialog, setShowDeleteGalleryDialog] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Compact);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
+  // Store original gallery data for deep comparison
+  const [originalGalleryData, setOriginalGalleryData] = useState<{
+    title: string;
+    description: string;
+    isPublic: boolean;
+    coverImageId: string;
+    images: GalleryImage[];
+  } | null>(null);
   
   // Use our custom hook for gallery images
   const {
@@ -152,8 +161,8 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     handleDragStart(event);
   }, [handleDragStart]);
 
-  // Remove the unused parameter by using _event to indicate it's intentionally unused
-  const enhancedDragOver = useCallback((_event: DragOverEvent) => {
+  // Fix: Remove unused parameter warning by removing the parameter completely
+  const enhancedDragOver = useCallback(() => {
     // Safe to update state here as this is an event handler, not during render
     // No need to track the over ID if we're not using it
   }, []);
@@ -242,6 +251,13 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         setIsPublic(data.isPublic);
         setCoverImageId(data.coverImageId || '');
         setImages(data.images);
+        setOriginalGalleryData({
+          title: data.title,
+          description: data.description || '',
+          isPublic: data.isPublic,
+          coverImageId: data.coverImageId || '',
+          images: data.images
+        });
         return data;
       } catch (error) {
         logger.error('Error fetching gallery:', error);
@@ -254,17 +270,18 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
 
   // Track unsaved changes
   useEffect(() => {
-    if (!gallery) return;
+    if (!originalGalleryData) return;
     
-    const hasChanges = 
-      title !== gallery.title ||
-      description !== gallery.description ||
-      isPublic !== gallery.isPublic ||
-      coverImageId !== (gallery.coverImageId || '') ||
-      JSON.stringify(images) !== JSON.stringify(gallery.images);
+    const currentData = {
+      title,
+      description,
+      isPublic,
+      coverImageId: coverImageId || '',
+      images
+    };
     
-    setHasUnsavedChanges(hasChanges);
-  }, [gallery, title, description, isPublic, coverImageId, images]);
+    setHasUnsavedChanges(!deepEqual(currentData, originalGalleryData));
+  }, [originalGalleryData, title, description, isPublic, coverImageId, images]);
 
   // Form submission handler
   const handleSubmit = async (e: React.FormEvent) => {
@@ -290,6 +307,29 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       setShowConfirmDialog(true);
     } else {
       router.push(`/galleries/${galleryId}`);
+    }
+  };
+
+  // New function to handle discarding changes
+  const handleDiscardChanges = () => {
+    // Only reset if we have original data
+    if (originalGalleryData) {
+      // Reset all form fields to original values
+      setTitle(originalGalleryData.title);
+      setDescription(originalGalleryData.description);
+      setIsPublic(originalGalleryData.isPublic);
+      setCoverImageId(originalGalleryData.coverImageId);
+      setImages(originalGalleryData.images);
+      
+      // Close the dialog
+      setShowConfirmDialog(false);
+      
+      // Reset unsaved changes flag (should happen automatically via the effect, but set it explicitly for clarity)
+      setHasUnsavedChanges(false);
+      
+      // Show feedback to the user
+      setSuccessMessage("Changes discarded");
+      setTimeout(() => setSuccessMessage(null), 3000);
     }
   };
 
@@ -531,6 +571,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           isOpen={showConfirmDialog}
           onClose={() => setShowConfirmDialog(false)}
           onConfirm={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
+          onCancel={handleDiscardChanges}
           title="Save Changes?"
           message="You have unsaved changes. Do you want to save them before leaving?"
           confirmButtonText="Save Changes"

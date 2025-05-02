@@ -235,12 +235,26 @@ export function useGalleryImages(initialImages: GalleryImage[] = []) {
           navigator.vibrate([40, 30, 40]);
         }
         
-        // Update order values to match new positions
+        // Reorder the items
         const reorderedItems = arrayMove(items, oldIndex, newIndex);
-        return reorderedItems.map((item, index) => ({
-          ...item,
-          order: index + 1
-        }));
+        
+        // Check if the reordering has changed the actual positions compared to original data
+        // Only update order numbers if needed
+        const needsOrderUpdate = reorderedItems.some((item, index) => {
+          // If the original order of items doesn't match their position, we need to update
+          return item.order !== index;
+        });
+        
+        if (needsOrderUpdate) {
+          // Update order values to match new positions
+          return reorderedItems.map((item, index) => ({
+            ...item,
+            order: index
+          }));
+        }
+        
+        // If the items are back in their original order, preserve original order numbers
+        return reorderedItems;
       });
       
       return true; // Return true to indicate changes were made
