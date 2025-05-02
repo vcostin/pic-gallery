@@ -246,15 +246,14 @@ export async function PATCH(
           const imageUpdates = await Promise.all(
             permanentImages.map(async (imageUpdate) => {
               try {
+                logger.log(`Updating image ${imageUpdate.id} with order ${imageUpdate.order}`);
                 // Update ImageInGallery with description and order
                 return prisma.imageInGallery.update({
                   where: { id: imageUpdate.id },
                   data: {
                     description: imageUpdate.description !== undefined ? imageUpdate.description : undefined,
-                    // Use raw SQL to update order if Prisma types don't support it yet
-                    ...(imageUpdate.order !== undefined && {
-                      order: imageUpdate.order
-                    }),
+                    // Ensure order is always updated with the new value
+                    order: imageUpdate.order
                   },
                 });
               } catch (error) {

@@ -42,6 +42,8 @@ type RenderProps = {
     'aria-describedby'?: string;
   };
   listeners: SyntheticListenerMap | undefined;
+  isDragging: boolean;
+  isOver: boolean;
 };
 
 // Base component for sortable gallery images
@@ -62,20 +64,38 @@ function BaseSortableCard({
     setNodeRef,
     transform,
     transition,
-  } = useSortable({id: galleryImage.id});
+    isDragging,
+    isOver,
+    isSorting,
+  } = useSortable({
+    id: galleryImage.id,
+    animateLayoutChanges: () => true, // Enable layout animations
+  });
   
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    zIndex: isDragging ? 1000 : 1,
+    opacity: isDragging ? 0.8 : 1,
   };
+
+  // Apply different styling based on dragging state
+  const cardClasses = `
+    bg-white dark:bg-gray-800 rounded-lg shadow 
+    ${isCover ? 'ring-2 ring-blue-500' : ''} 
+    ${isOver ? 'ring-2 ring-green-400 dark:ring-green-600 scale-[1.02] transform-gpu' : ''}
+    ${isDragging ? 'shadow-xl rotate-1' : ''}
+    ${isSorting && !isDragging ? 'transition-transform duration-200' : ''}
+    ${className}
+  `;
   
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white dark:bg-gray-800 rounded-lg shadow ${isCover ? 'ring-2 ring-blue-500' : ''} ${className}`}
+      className={cardClasses.trim()}
     >
-      {children({attributes, listeners})}
+      {children({attributes, listeners, isDragging, isOver})}
     </div>
   );
 }
@@ -85,16 +105,22 @@ export function CompactGalleryCard(props: GalleryCardProps) {
   const { galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage } = props;
   
   return (
-    <BaseSortableCard galleryImage={galleryImage} isCover={isCover} className="p-3">
-      {({attributes, listeners}) => (
+    <BaseSortableCard galleryImage={galleryImage} isCover={isCover} className="p-3 transition-all duration-200">
+      {({attributes, listeners, isDragging, isOver}) => (
         <>
           <div className="flex justify-between items-center mb-2">
-            <div className="cursor-move flex items-center" {...attributes} {...listeners}>
+            <div 
+              className={`cursor-move flex items-center ${isDragging ? 'text-blue-600 dark:text-blue-400' : ''}`} 
+              {...attributes} 
+              {...listeners}
+            >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="8" cy="6" r="1"/><circle cx="8" cy="12" r="1"/><circle cx="8" cy="18" r="1"/>
                 <circle cx="16" cy="6" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="16" cy="18" r="1"/>
               </svg>
-              <span className="ml-2 text-xs text-gray-500">#{galleryImage.order}</span>
+              <span className={`ml-2 text-xs ${isDragging ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
+                #{galleryImage.order}
+              </span>
             </div>
             <div className="flex space-x-1">
               <button
@@ -119,14 +145,17 @@ export function CompactGalleryCard(props: GalleryCardProps) {
             </div>
           </div>
 
-          <div className="flex space-x-3">
+          <div className={`flex space-x-3 ${isDragging ? 'opacity-75' : ''}`}>
             <div className="w-16 h-16 relative flex-shrink-0">
               <Image
                 src={galleryImage.image.url}
                 alt={galleryImage.image.title}
                 fill
-                className="object-cover rounded-md"
+                className={`object-cover rounded-md ${isOver ? 'ring-2 ring-green-400' : ''}`}
               />
+              {isDragging && (
+                <div className="absolute inset-0 bg-blue-500/20 rounded-md" />
+              )}
             </div>
             
             <div className="flex-grow min-w-0">
@@ -159,6 +188,10 @@ export function CompactGalleryCard(props: GalleryCardProps) {
               />
             </div>
           </div>
+          
+          {isOver && (
+            <div className="absolute inset-0 border-2 border-green-500 rounded-lg pointer-events-none" />
+          )}
         </>
       )}
     </BaseSortableCard>
@@ -170,18 +203,26 @@ export function StandardGalleryCard(props: GalleryCardProps) {
   const { galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage } = props;
   
   return (
-    <BaseSortableCard galleryImage={galleryImage} isCover={isCover}>
-      {({attributes, listeners}) => (
+    <BaseSortableCard galleryImage={galleryImage} isCover={isCover} className="transition-all duration-200 relative">
+      {({attributes, listeners, isDragging, isOver}) => (
         <>
-          <div className="cursor-move flex items-center justify-between p-3 border-b dark:border-gray-700" {...attributes} {...listeners}>
+          <div 
+            className={`cursor-move flex items-center justify-between p-3 border-b dark:border-gray-700 ${isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`} 
+            {...attributes} 
+            {...listeners}
+          >
             <div className="flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="8" cy="6" r="1"/><circle cx="8" cy="12" r="1"/><circle cx="8" cy="18" r="1"/>
                 <circle cx="16" cy="6" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="16" cy="18" r="1"/>
               </svg>
-              <span className="ml-2 font-medium">{galleryImage.image.title}</span>
+              <span className={`ml-2 font-medium ${isDragging ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                {galleryImage.image.title}
+              </span>
             </div>
-            <div className="text-sm text-gray-500">#{galleryImage.order}</div>
+            <div className={`text-sm ${isDragging ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
+              #{galleryImage.order}
+            </div>
           </div>
 
           <div className="aspect-square relative">
@@ -189,8 +230,11 @@ export function StandardGalleryCard(props: GalleryCardProps) {
               src={galleryImage.image.url}
               alt={galleryImage.image.title}
               fill
-              className="object-cover"
+              className={`object-cover ${isOver ? 'brightness-110' : ''}`}
             />
+            {isDragging && (
+              <div className="absolute inset-0 bg-blue-500/20" />
+            )}
           </div>
           
           <div className="p-4">
@@ -240,6 +284,10 @@ export function StandardGalleryCard(props: GalleryCardProps) {
               </button>
             </div>
           </div>
+          
+          {isOver && (
+            <div className="absolute inset-0 border-2 border-green-500 rounded-lg pointer-events-none z-10" />
+          )}
         </>
       )}
     </BaseSortableCard>
@@ -251,15 +299,15 @@ export function GridGalleryCard(props: GalleryCardProps) {
   const { galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage } = props;
   
   return (
-    <BaseSortableCard galleryImage={galleryImage} isCover={isCover}>
-      {({attributes, listeners}) => (
+    <BaseSortableCard galleryImage={galleryImage} isCover={isCover} className="transition-all duration-200 relative">
+      {({attributes, listeners, isDragging, isOver}) => (
         <>
           <div className="relative aspect-square group">
             <Image
               src={galleryImage.image.url}
               alt={galleryImage.image.title}
               fill
-              className="object-cover rounded-t-lg"
+              className={`object-cover rounded-t-lg ${isDragging ? 'brightness-110' : ''}`}
             />
             
             <div className="absolute top-2 right-2 flex space-x-1">
@@ -268,12 +316,12 @@ export function GridGalleryCard(props: GalleryCardProps) {
                   Cover
                 </div>
               )}
-              <div className="bg-black/50 text-white text-xs px-2 py-1 rounded">
+              <div className={`${isDragging ? 'bg-blue-500' : 'bg-black/50'} text-white text-xs px-2 py-1 rounded`}>
                 #{galleryImage.order}
               </div>
             </div>
             
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+            <div className={`absolute inset-0 ${isDragging ? 'bg-blue-50/30 dark:bg-blue-900/30' : 'bg-black/0 group-hover:bg-black/60'} transition-all duration-200 flex items-center justify-center ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
               <div className="p-2 flex space-x-2">
                 <button 
                   type="button"
@@ -288,7 +336,7 @@ export function GridGalleryCard(props: GalleryCardProps) {
                 <button 
                   type="button"
                   {...attributes} {...listeners}
-                  className="p-2 rounded-full bg-white/80 hover:bg-yellow-500 hover:text-white"
+                  className={`p-2 rounded-full ${isDragging ? 'bg-blue-500 text-white' : 'bg-white/80 hover:bg-yellow-500 hover:text-white'}`}
                   title="Drag to reorder"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -312,7 +360,7 @@ export function GridGalleryCard(props: GalleryCardProps) {
             </div>
           </div>
           
-          <div className="p-3">
+          <div className={`p-3 ${isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
             <h3 className="font-medium text-sm truncate mb-1" title={galleryImage.image.title}>
               {galleryImage.image.title}
             </h3>
@@ -324,6 +372,10 @@ export function GridGalleryCard(props: GalleryCardProps) {
               rows={2}
             />
           </div>
+          
+          {isOver && (
+            <div className="absolute inset-0 border-2 border-green-500 rounded-lg pointer-events-none z-10" />
+          )}
         </>
       )}
     </BaseSortableCard>
@@ -333,20 +385,27 @@ export function GridGalleryCard(props: GalleryCardProps) {
 // Drag overlay card component
 export function DragOverlayCard({ image }: { image: GalleryImage }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 w-72">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 w-72 rotate-1 transform-gpu ring-4 ring-blue-500/50 animate-pulse">
       <div className="flex space-x-3">
         <div className="w-16 h-16 relative flex-shrink-0">
           <Image
             src={image.image.url}
             alt={image.image.title}
             fill
-            className="object-cover rounded-md"
+            className="object-cover rounded-md brightness-110"
           />
+          <div className="absolute inset-0 bg-blue-500/10 rounded-md" />
         </div>
         
         <div className="flex-grow">
-          <h3 className="font-medium text-sm mb-1 truncate">{image.image.title}</h3>
-          <div className="text-xs text-gray-500">#{image.order}</div>
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium text-sm mb-1 truncate">{image.image.title}</h3>
+            <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded">
+              #{image.order}
+            </div>
+          </div>
+          
+          <div className="text-xs text-gray-500 mt-1">Dragging...</div>
         </div>
       </div>
     </div>

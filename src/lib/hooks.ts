@@ -198,27 +198,55 @@ export function useGalleryImages(initialImages: GalleryImage[] = []) {
     setImageToRemove(null);
   }, []);
   
-  // Handle drag start
+  // Handle drag start with improved feedback
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    const { active } = event;
+    setActiveId(active.id as string);
+    
+    // Add haptic feedback if available
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
   }, []);
   
-  // Handle drag end
+  // Handle drag end with improved animations
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
-    setActiveId(null);
     
     if (over && active.id !== over.id) {
       setImages((items) => {
+        // Find the actual items by ID
         const oldIndex = items.findIndex(item => item.id === active.id);
         const newIndex = items.findIndex(item => item.id === over.id);
         
-        return arrayMove(items, oldIndex, newIndex);
+        // Safety check: if either index is not found, don't proceed
+        if (oldIndex === -1 || newIndex === -1) {
+          console.error("Unable to find one or both images during drag operation", { 
+            activeId: active.id, 
+            overId: over.id,
+            oldIndex,
+            newIndex
+          });
+          return items;
+        }
+        
+        // Add haptic feedback on successful drop
+        if (navigator.vibrate) {
+          navigator.vibrate([40, 30, 40]);
+        }
+        
+        // Update order values to match new positions
+        const reorderedItems = arrayMove(items, oldIndex, newIndex);
+        return reorderedItems.map((item, index) => ({
+          ...item,
+          order: index + 1
+        }));
       });
       
       return true; // Return true to indicate changes were made
     }
     
+    setActiveId(null);
     return false; // Return false to indicate no changes were made
   }, []);
   
@@ -256,9 +284,10 @@ export function useGalleryImages(initialImages: GalleryImage[] = []) {
       // Find the highest order value
       const maxOrder = images.length > 0
         ? Math.max(...images.map(img => img.order))
-        : -1;
+        : 0;
       
-      // Create new temp images for the UI
+      // Create new temp images for the UI with unique and consistent IDs
+      const timestamp = Date.now();
       const newImages = newImageIds.map((id, index) => {
         const imageInfo = availableImagesMap.get(id);
         
@@ -268,12 +297,18 @@ export function useGalleryImages(initialImages: GalleryImage[] = []) {
           return null;
         }
         
-        // Create a temporary ID for the gallery image that includes the real image ID
+        // Create a temporary ID for the gallery image with a more consistent format
+        // Using a string ID that's guaranteed to be unique but still stable
+        const tempId = `temp-${timestamp}-${index}`;
+        
         return {
-          id: `temp-${Date.now()}-${index}`,
+          id: tempId,
           description: null,
           order: maxOrder + index + 1,
-          image: imageInfo,
+          image: {
+            ...imageInfo,
+            id: imageInfo.id || id // Ensure image.id is always set
+          },
           // Store the real image ID for when we save
           imageId: id
         };

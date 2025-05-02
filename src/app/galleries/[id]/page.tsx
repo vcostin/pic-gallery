@@ -19,6 +19,9 @@ export default async function GalleryPage({
     },
     include: {
       images: {
+        orderBy: {
+          order: 'asc' // Ensure images are sorted by order field
+        },
         include: {
           image: {
             include: {
