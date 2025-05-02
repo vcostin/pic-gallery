@@ -6,6 +6,15 @@ import Image from 'next/image';
 import { LoadingSpinner, ErrorMessage, SuccessMessage } from '@/components/StatusMessages';
 import { useFetch, useSubmit } from '@/lib/hooks';
 
+// Define type for the API response
+interface ImageResponse {
+  id: string;
+  title: string;
+  description: string | null;
+  url: string;
+  tags: Array<{ id: string; name: string }>;
+}
+
 export function UploadImage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -23,7 +32,8 @@ export function UploadImage() {
     isSubmitting: uploading, 
     error: uploadError,
     reset: resetUploadState
-  } = useSubmit(async () => {
+  } = useSubmit(async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!file || !title) throw new Error('Please select a file and enter a title');
     
     // Upload the file
@@ -36,7 +46,7 @@ export function UploadImage() {
     });
     
     // Create the image record and get the returned data
-    const createdImage = await fetchApi('/api/images', {
+    const createdImage = await fetchApi<ImageResponse>('/api/images', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -84,8 +94,7 @@ export function UploadImage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await submitUpload();
+    await submitUpload(e);
   };
 
   return (
