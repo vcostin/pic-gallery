@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { DeleteImageConfirmDialog } from './DeleteImageConfirmDialog';
 import { ErrorMessage, LoadingSpinner, SuccessMessage } from './StatusMessages';
 import { useFetch, useSubmit } from '@/lib/hooks';
+import { deepEqual } from '@/lib/deepEqual';
 
 interface EditImageDialogProps {
   image: {
@@ -25,6 +26,25 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
   const [tags, setTags] = useState(image.tags?.map(t => t.name).join(', ') || '');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  
+  // Store original values for comparison
+  const originalData = {
+    title: image.title,
+    description: image.description || '',
+    tags: image.tags?.map(t => t.name).join(', ') || ''
+  };
+  
+  // Track if form has changes
+  useEffect(() => {
+    const currentData = {
+      title,
+      description,
+      tags
+    };
+    
+    setHasChanges(!deepEqual(currentData, originalData));
+  }, [title, description, tags, originalData]);
   
   const router = useRouter();
   const { fetchApi } = useFetch();
@@ -35,7 +55,8 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
     error: updateError,
     reset: resetUpdateState
   } = useSubmit(async () => {
-    await fetchApi(`/api/images/${image.id}`, {
+    // Send the update request and capture the returned updated image
+    const updatedImage = await fetchApi(`/api/images/${image.id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -47,6 +68,12 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
       }),
     });
 
+    // Update the local state with the returned data
+    setTitle(updatedImage.title);
+    setDescription(updatedImage.description || '');
+    setTags(updatedImage.tags?.map(t => t.name).join(', ') || '');
+    
+    // This will force Next.js to refresh the page data
     router.refresh();
     
     // Show success message
@@ -152,7 +179,7 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !hasChanges}
                   className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400 flex items-center"
                 >
                   {isSubmitting ? (

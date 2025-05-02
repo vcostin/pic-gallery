@@ -57,10 +57,11 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
         throw new Error(errorData.error || 'Failed to create gallery');
       }
 
-      const data = await response.json();
+      const createdGallery = await response.json();
       
-      // Show success message
-      setSuccessMessage(`Gallery "${title}" created successfully!`);
+      // Show success message with the title from the response
+      // (safer in case of server-side title sanitization)
+      setSuccessMessage(`Gallery "${createdGallery.title}" created successfully!`);
       
       // Reset form
       setTitle('');
@@ -68,12 +69,13 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
       setIsPublic(false);
       setSelectedImages([]);
       
+      // Refresh the router to update the UI with the new gallery data
+      router.refresh();
+      
       // Automatically redirect to the gallery page after a short delay
       setTimeout(() => {
-        router.push(`/galleries/${data.id}`);
+        router.push(`/galleries/${createdGallery.id}`);
       }, 1500);
-      
-      router.refresh();
     } catch (error) {
       logger.error('Error creating gallery:', error);
       setError(error instanceof Error ? error.message : 'Failed to create gallery');

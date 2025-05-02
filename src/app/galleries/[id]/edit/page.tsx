@@ -169,11 +169,9 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
 
   const enhancedDragEnd = useCallback((event: DragEndEvent) => {
     setIsDragging(false);
-    const didChange = handleDragEnd(event);
-    if (didChange) {
-      setHasUnsavedChanges(true);
-    }
-  }, [handleDragEnd, setHasUnsavedChanges]);
+    handleDragEnd(event);
+    // The useEffect with deepEqual will handle tracking changes
+  }, [handleDragEnd]);
 
   const enhancedDragCancel = useCallback(() => {
     setIsDragging(false);
@@ -207,7 +205,8 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       };
     });
     
-    await fetchApi(`/api/galleries/${galleryId}`, {
+    // Update the gallery on the server
+    const updatedGallery = await fetchApi<Gallery>(`/api/galleries/${galleryId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -219,7 +218,22 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       }),
     });
     
-    setHasUnsavedChanges(false);
+    // Update state with the data returned directly from the PATCH response
+    setTitle(updatedGallery.title);
+    setDescription(updatedGallery.description || '');
+    setIsPublic(updatedGallery.isPublic);
+    setCoverImageId(updatedGallery.coverImageId || '');
+    setImages(updatedGallery.images);
+    
+    // Update original gallery data with the data received from the server
+    setOriginalGalleryData({
+      title: updatedGallery.title,
+      description: updatedGallery.description || '',
+      isPublic: updatedGallery.isPublic,
+      coverImageId: updatedGallery.coverImageId || '',
+      images: updatedGallery.images
+    });
+    
     return "Gallery updated successfully!";
   });
   
@@ -324,9 +338,6 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       // Close the dialog
       setShowConfirmDialog(false);
       
-      // Reset unsaved changes flag (should happen automatically via the effect, but set it explicitly for clarity)
-      setHasUnsavedChanges(false);
-      
       // Show feedback to the user
       setSuccessMessage("Changes discarded");
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -342,12 +353,8 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       return await fetchApi<Array<{id: string; [key: string]: unknown}>>('/api/images');
     };
     
-    addImagesToGallery(imageIds, fetchImagesForGallery)
-      .then(changed => {
-        if (changed) {
-          setHasUnsavedChanges(true);
-        }
-      });
+    // addImagesToGallery will update the images state, and the useEffect with deepEqual will detect the changes
+    addImagesToGallery(imageIds, fetchImagesForGallery);
   }, [fetchApi, addImagesToGallery]);
 
   // Render loading state

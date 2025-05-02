@@ -35,8 +35,8 @@ export function UploadImage() {
       body: formData,
     });
     
-    // Create the image record
-    await fetchApi('/api/images', {
+    // Create the image record and get the returned data
+    const createdImage = await fetchApi('/api/images', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -60,10 +60,11 @@ export function UploadImage() {
       formRef.current.reset();
     }
     
+    // Refresh the router to update the UI
     router.refresh();
     
-    // Show success message
-    setSuccessMessage('Image uploaded successfully!');
+    // Show success message with the title from the API response
+    setSuccessMessage(`"${createdImage.title}" uploaded successfully!`);
     
     // Clear success message after 3 seconds
     setTimeout(() => {
