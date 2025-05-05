@@ -1,7 +1,7 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, UserRole } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -12,7 +12,23 @@ declare module 'next-auth' {
       email?: string | null;
       name?: string | null;
       image?: string | null;
+      role?: UserRole;
     }
+  }
+  
+  interface User {
+    id: string;
+    email?: string | null;
+    name?: string | null;
+    image?: string | null;
+    role?: UserRole;
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    sub: string;
+    role?: UserRole;
   }
 }
 
@@ -43,6 +59,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             email: user.email,
             name: user.name,
+            role: user.role,
           };
         }
         return null;
@@ -50,15 +67,31 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    jwt: ({ token, user }) => {
+    async jwt({ token, user }) {
       if (user) {
         token.sub = user.id;
+        token.role = user.role;
       }
+
+      // Refresh the role from database on each token refresh
+      // This ensures the role is up-to-date if it was changed
+      if (token.sub) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: { role: true }
+        });
+        
+        if (dbUser) {
+          token.role = dbUser.role;
+        }
+      }
+      
       return token;
     },
-    session: ({ session, token }) => {
+    async session({ session, token }) {
       if (session.user && token) {
         session.user.id = token.sub!;
+        session.user.role = token.role as UserRole;
       }
       return session;
     },

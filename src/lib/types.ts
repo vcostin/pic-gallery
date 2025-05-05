@@ -89,3 +89,9 @@ export type ViewMode = 'compact' | 'standard' | 'grid';
 // Common utility types
 export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;
+
+// Define the UserRole enum to match the Prisma schema
+export enum UserRole {
+  USER = 'USER',
+  ADMIN = 'ADMIN'
+}

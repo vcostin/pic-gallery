@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/lib/hooks/useAuth';
 
 export function Navigation() {
-  const { user, isAuthenticated, isLoading, signIn, signOut } = useAuth();
+  const { isAuthenticated, isLoading, signIn, signOut } = useAuth();
   const pathname = usePathname();
 
   const getLinkClassName = (path: string) => {
@@ -50,9 +50,12 @@ export function Navigation() {
               <div>Loading...</div>
             ) : isAuthenticated ? (
               <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  {user?.email}
-                </span>
+                <Link
+                  href="/profile"
+                  className={getLinkClassName('/profile')}
+                >
+                  My Profile
+                </Link>
                 <Button 
                   variant="ghost" 
                   size="sm" 
