@@ -33,7 +33,7 @@ export function DeleteImageConfirmDialog({
   const { fetchApi, isLoading: isCheckingUsage, error: checkError, setError } = useFetch();
   
   const { 
-    handleSubmit: handleDelete, 
+    handleSubmit: deleteHandler, 
     isSubmitting: isDeleting, 
     error: deleteError 
   } = useSubmit(async () => {
@@ -47,6 +47,9 @@ export function DeleteImageConfirmDialog({
     router.refresh();
     onDeleted();
   });
+
+  // Create a version of handleDelete that doesn't require parameters
+  const handleDelete = () => deleteHandler({});
 
   // Define checkGalleryUsage as useCallback to avoid recreation on each render
   const checkGalleryUsage = useCallback(async () => {

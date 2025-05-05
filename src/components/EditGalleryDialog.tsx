@@ -112,7 +112,7 @@ export function EditGalleryDialog({ gallery, isOpen, onClose }: EditGalleryDialo
           />
         )}
         
-        <form onSubmit={(e) => { e.preventDefault(); submitUpdate(); }} className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); submitUpdate({}); }} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Title</label>
             <input
