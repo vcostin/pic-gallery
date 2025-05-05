@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Button } from './ui/Button';
 
 export enum ViewMode {
   Compact = 'compact',
@@ -16,42 +17,39 @@ interface GalleryViewSelectorProps {
 export function GalleryViewSelector({ viewMode, setViewMode }: GalleryViewSelectorProps) {
   return (
     <div className="flex rounded-md shadow-sm p-0.5 bg-gray-100 dark:bg-gray-700">
-      <button
-        type="button"
+      <Button
+        size="sm"
+        variant={viewMode === ViewMode.Compact ? "primary" : "ghost"}
         onClick={() => setViewMode(ViewMode.Compact)}
-        className={`px-3 py-1 text-sm rounded-md ${
-          viewMode === ViewMode.Compact
-            ? 'bg-white dark:bg-gray-600 shadow'
-            : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-600/50'
+        className={`rounded-none rounded-l-md ${
+          viewMode !== ViewMode.Compact ? 'text-gray-600 dark:text-gray-300' : ''
         }`}
         title="Compact view"
       >
         Compact
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        size="sm"
+        variant={viewMode === ViewMode.Standard ? "primary" : "ghost"}
         onClick={() => setViewMode(ViewMode.Standard)}
-        className={`px-3 py-1 text-sm rounded-md ${
-          viewMode === ViewMode.Standard
-            ? 'bg-white dark:bg-gray-600 shadow'
-            : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-600/50'
+        className={`rounded-none border-l-0 border-r-0 ${
+          viewMode !== ViewMode.Standard ? 'text-gray-600 dark:text-gray-300' : ''
         }`}
         title="Standard view"
       >
         Standard
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        size="sm"
+        variant={viewMode === ViewMode.Grid ? "primary" : "ghost"}
         onClick={() => setViewMode(ViewMode.Grid)}
-        className={`px-3 py-1 text-sm rounded-md ${
-          viewMode === ViewMode.Grid
-            ? 'bg-white dark:bg-gray-600 shadow'
-            : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-600/50'
+        className={`rounded-none rounded-r-md ${
+          viewMode !== ViewMode.Grid ? 'text-gray-600 dark:text-gray-300' : ''
         }`}
         title="Grid view"
       >
         Grid
-      </button>
+      </Button>
     </div>
   );
 }

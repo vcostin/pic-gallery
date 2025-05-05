@@ -3,8 +3,10 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { LoadingSpinner, ErrorMessage, SuccessMessage } from '@/components/StatusMessages';
+import { ErrorMessage, SuccessMessage } from '@/components/StatusMessages';
 import { useFetch, useSubmit } from '@/lib/hooks';
+import { Card, CardHeader, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 // Define type for the API response
 interface ImageResponse {
@@ -98,92 +100,92 @@ export function UploadImage() {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold mb-4">Upload New Image</h2>
+    <Card className="max-w-md mx-auto">
+      <CardHeader>
+        <h2 className="text-xl font-semibold">Upload New Image</h2>
+      </CardHeader>
       
-      {uploadError && (
-        <ErrorMessage 
-          error={uploadError}
-          retry={() => resetUploadState()}
-          className="mb-4"
-        />
-      )}
-      
-      {successMessage && (
-        <SuccessMessage
-          message={successMessage}
-          className="mb-4"
-          onDismiss={() => setSuccessMessage(null)}
-        />
-      )}
-      
-      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Title</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-            placeholder="Enter image title"
-            required
+      <CardContent>
+        {uploadError && (
+          <ErrorMessage 
+            error={uploadError}
+            retry={() => resetUploadState()}
+            className="mb-4"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Description</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-            placeholder="Enter image description"
-            rows={3}
+        )}
+        
+        {successMessage && (
+          <SuccessMessage
+            message={successMessage}
+            className="mb-4"
+            onDismiss={() => setSuccessMessage(null)}
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Tags</label>
-          <input
-            type="text"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-            placeholder="Enter tags separated by commas"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Image</label>
-          <input
-            type="file"
-            onChange={handleFileChange}
-            accept="image/*"
-            className="w-full"
-            required
-          />
-          {preview && (
-            <div className="mt-2 relative aspect-square w-full max-w-[200px]">
-              <Image
-                src={preview}
-                alt="Preview"
-                fill
-                className="object-cover rounded-lg"
-              />
-            </div>
-          )}
-        </div>
-        <button
-          type="submit"
-          disabled={uploading || !file || !title}
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors disabled:bg-gray-400 flex items-center justify-center"
-        >
-          {uploading ? (
-            <>
-              <LoadingSpinner size="small" text="" />
-              <span className="ml-2">Uploading...</span>
-            </>
-          ) : (
-            'Upload Image'
-          )}
-        </button>
-      </form>
-    </div>
+        )}
+        
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+              placeholder="Enter image title"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+              placeholder="Enter image description"
+              rows={3}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Tags</label>
+            <input
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+              placeholder="Enter tags separated by commas"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Image</label>
+            <input
+              type="file"
+              onChange={handleFileChange}
+              accept="image/*"
+              className="w-full"
+              required
+            />
+            {preview && (
+              <div className="mt-2 relative aspect-square w-full max-w-[200px]">
+                <Image
+                  src={preview}
+                  alt="Preview"
+                  fill
+                  className="object-cover rounded-lg"
+                />
+              </div>
+            )}
+          </div>
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            fullWidth
+            disabled={uploading || !file || !title}
+            isLoading={uploading}
+          >
+            Upload Image
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

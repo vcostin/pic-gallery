@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useSession, signIn, signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 export function Navigation() {
-  const { data: session, status } = useSession();
+  const { user, isAuthenticated, isLoading, signIn, signOut } = useAuth();
   const pathname = usePathname();
 
   const getLinkClassName = (path: string) => {
@@ -27,7 +28,7 @@ export function Navigation() {
             <Link href="/" className="text-xl font-bold">
               Art Gallery
             </Link>
-            {session && (
+            {isAuthenticated && (
               <div className="ml-10 flex items-baseline space-x-4">
                 <Link
                   href="/images"
@@ -45,27 +46,29 @@ export function Navigation() {
             )}
           </div>
           <div>
-            {status === 'loading' ? (
+            {isLoading ? (
               <div>Loading...</div>
-            ) : session ? (
+            ) : isAuthenticated ? (
               <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-600 dark:text-gray-300">
-                  {session.user?.email}
+                  {user?.email}
                 </span>
-                <button
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
                   onClick={() => signOut()}
-                  className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
                 >
                   Sign Out
-                </button>
+                </Button>
               </div>
             ) : (
-              <button
+              <Button 
+                variant="ghost" 
+                size="sm" 
                 onClick={() => signIn()}
-                className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
               >
                 Sign In
-              </button>
+              </Button>
             )}
           </div>
         </div>
