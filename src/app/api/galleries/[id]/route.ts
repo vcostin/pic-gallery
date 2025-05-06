@@ -1,9 +1,9 @@
 import { getServerSession } from "next-auth";
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import logger from "@/lib/logger";
+import { apiSuccess, apiError, apiValidationError, apiUnauthorized, apiNotFound } from "@/lib/apiResponse";
 
 import { ImageInGallery, Image, Prisma } from "@prisma/client";
 
@@ -49,7 +49,7 @@ export async function GET(
     });
 
     if (!queryValidation.success) {
-      return NextResponse.json({ error: "Invalid query parameters for image search", details: queryValidation.error.format() }, { status: 400 });
+      return apiValidationError(queryValidation.error);
     }
     const imageFilters = queryValidation.data;
 
@@ -106,11 +106,11 @@ export async function GET(
     });
 
     if (!gallery) {
-      return NextResponse.json({ error: "Gallery not found" }, { status: 404 });
+      return apiNotFound("Gallery not found");
     }
 
     if (!gallery.isPublic && gallery.userId !== session?.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
 
     // If coverImageId exists, fetch the cover image separately
@@ -137,10 +137,10 @@ export async function GET(
       coverImage
     };
 
-    return NextResponse.json(responseData);
+    return apiSuccess(responseData);
   } catch (error) {
     logger.error("Error fetching gallery:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error");
   }
 }
 
@@ -154,7 +154,7 @@ export async function PATCH(
     
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
 
     const gallery = await prisma.gallery.findUnique({
@@ -169,16 +169,24 @@ export async function PATCH(
     });
 
     if (!gallery) {
-      return NextResponse.json({ error: "Gallery not found" }, { status: 404 });
+      return apiNotFound("Gallery not found");
     }
 
     if (gallery.userId !== session.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
 
     const json = await req.json();
     logger.log("Received update request:", JSON.stringify(json));
-    const body = updateGallerySchema.parse(json);
+    let body;
+    try {
+      body = updateGallerySchema.parse(json);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return apiValidationError(err);
+      }
+      throw err;
+    }
 
     // Update gallery metadata
     const updateData: Record<string, unknown> = {};
@@ -227,9 +235,7 @@ export async function PATCH(
       });
       
       if (userImages.length !== body.addImages.length) {
-        return NextResponse.json({ 
-          error: "Some images don't exist or don't belong to you" 
-        }, { status: 400 });
+        return apiError("Some images don't exist or don't belong to you", 400);
       }
       
       // Add images to the gallery with incrementing order values
@@ -373,13 +379,13 @@ export async function PATCH(
     });
 
     logger.log("Gallery updated successfully");
-    return NextResponse.json(fullUpdatedGallery);
+    return apiSuccess(fullUpdatedGallery);
   } catch (err) {
     logger.error("Error updating gallery:", err);
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.errors }, { status: 400 });
+      return apiValidationError(err);
     }
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error");
   }
 }
 
@@ -393,7 +399,7 @@ export async function DELETE(
     
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
 
     const gallery = await prisma.gallery.findUnique({
@@ -401,21 +407,21 @@ export async function DELETE(
     });
 
     if (!gallery) {
-      return NextResponse.json({ error: "Gallery not found" }, { status: 404 });
+      return apiNotFound("Gallery not found");
     }
 
     if (gallery.userId !== session.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
 
     await prisma.gallery.delete({
       where: { id: id },
     });
 
-    return new NextResponse(null, { status: 204 });
+    return new Response(null, { status: 204 });
   } catch (error) {
     logger.error("Error deleting gallery:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error");
   }
 }
 
@@ -429,7 +435,7 @@ export async function POST(
     
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
 
     const gallery = await prisma.gallery.findUnique({
@@ -444,18 +450,18 @@ export async function POST(
     });
 
     if (!gallery) {
-      return NextResponse.json({ error: "Gallery not found" }, { status: 404 });
+      return apiNotFound("Gallery not found");
     }
 
     if (gallery.userId !== session.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
 
     const requestBody = await req.json();
     const { imageIds } = requestBody;
 
     if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
-      return NextResponse.json({ error: "No images specified" }, { status: 400 });
+      return apiError("No images specified", 400);
     }
 
     // Check that the images belong to the user
@@ -467,9 +473,7 @@ export async function POST(
     });
     
     if (userImages.length !== imageIds.length) {
-      return NextResponse.json({ 
-        error: "Some images don't exist or don't belong to you" 
-      }, { status: 400 });
+      return apiError("Some images don't exist or don't belong to you", 400);
     }
 
     // Get the current highest order value
@@ -528,9 +532,9 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(updatedGallery);
+    return apiSuccess(updatedGallery);
   } catch (error) {
     logger.error("Error adding images to gallery:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error");
   }
 }

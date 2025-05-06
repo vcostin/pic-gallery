@@ -35,9 +35,10 @@ export default function ImagesPage() {
       query.set('page', page.toString());
       // Add limit if you have it, e.g., query.set('limit', '20');
 
-      const response = await fetchApi<PaginatedResponse<ImageType>>(`/api/images?${query.toString()}`);
-      setImages(response.data);
-      setPagination(response.meta);
+      // Updated to handle wrapped API response
+      const response = await fetchApi<{ data: PaginatedResponse<ImageType> }>(`/api/images?${query.toString()}`);
+      setImages(response.data.data);
+      setPagination(response.data.meta);
       
       const newParams = new URLSearchParams(window.location.search);
       if (currentSearch) newParams.set('searchQuery', currentSearch); else newParams.delete('searchQuery');

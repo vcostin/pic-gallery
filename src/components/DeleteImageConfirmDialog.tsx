@@ -37,10 +37,7 @@ export function DeleteImageConfirmDialog({
     isSubmitting: isDeleting, 
     error: deleteError 
   } = useSubmit(async () => {
-    // Always use force=true since we've already shown the gallery usage info
-    const forceParam = galleries.length > 0 ? '?force=true' : '';
-    
-    await fetchApi(`/api/images/${imageId}${forceParam}`, {
+    await fetchApi(`/api/images/${imageId}`, {
       method: 'DELETE',
     });
 
@@ -54,13 +51,14 @@ export function DeleteImageConfirmDialog({
   // Define checkGalleryUsage as useCallback to avoid recreation on each render
   const checkGalleryUsage = useCallback(async () => {
     setError(null);
+    setGalleries([]); // Reset galleries when checking usage
     
     try {
       // Use a GET request to check if the image is used in galleries without actually deleting it
-      const data = await fetchApi<{ galleries: Gallery[] }>(`/api/images/${imageId}/usage`);
+      const response = await fetchApi<{data: {galleries: Gallery[]} }>(`/api/images/${imageId}/usage`);
       
-      if (data.galleries && data.galleries.length > 0) {
-        setGalleries(data.galleries);
+      if (response?.data?.galleries?.length > 0) {
+        setGalleries(response.data.galleries);
       } else {
         setGalleries([]);
       }
@@ -76,6 +74,13 @@ export function DeleteImageConfirmDialog({
       checkGalleryUsage();
     }
   }, [isOpen, checkGalleryUsage]);
+
+  // Function to open gallery in a new tab without causing dialog to close
+  const openGallery = (galleryId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.open(`/galleries/${galleryId}`, '_blank');
+  };
 
   if (!isOpen) return null;
 
@@ -104,23 +109,18 @@ export function DeleteImageConfirmDialog({
               <ul className="list-disc pl-5 mb-4">
                 {galleries.map(gallery => (
                   <li key={gallery.id} className="mb-1">
-                    <Link 
-                      href={`/galleries/${gallery.id}`}
-                      className="text-blue-500 hover:text-blue-700 hover:underline"
-                      onClick={(e) => {
-                        // Prevent the confirm dialog from closing when clicking gallery links
-                        e.stopPropagation();
-                      }}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button 
+                      onClick={(e) => openGallery(gallery.id, e)}
+                      className="text-blue-600 hover:text-blue-800 hover:underline font-medium focus:outline-none"
+                      type="button"
                     >
                       {gallery.title}
-                    </Link>
+                    </button>
                     {gallery.isCover && <span className="text-amber-500 ml-2">(Used as cover image)</span>}
                   </li>
                 ))}
               </ul>
-              <p className="text-red-500 font-semibold">
+              <p className="text-amber-500 font-medium">
                 Deleting this image will remove it from all these galleries.
                 {galleries.some(g => g.isCover) && 
                   " Galleries using this as a cover image will need a new cover image."}
@@ -143,7 +143,7 @@ export function DeleteImageConfirmDialog({
           )}
         </div>
       }
-      confirmButtonText={isDeleting ? "Deleting..." : galleries.length > 0 ? "Delete Anyway" : "Delete"}
+      confirmButtonText={isDeleting ? "Deleting..." : "Delete"}
       confirmButtonColor="red"
       cancelButtonText="Cancel"
     />

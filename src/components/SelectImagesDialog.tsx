@@ -7,8 +7,7 @@ import { useFetch } from '@/lib/hooks';
 import logger from '@/lib/logger';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
-import { PaginatedResponse } from '@/lib/types'; // Added import for PaginatedResponse
-import { ImageTags } from './ui/ImageTags';
+import { ImageTags } from '@/components/ui/ImageTags';
 
 interface Tag {
   id: string;
@@ -50,26 +49,16 @@ export function SelectImagesDialog({
   
   const loadImages = useCallback(async () => {
     if (!isOpen) return;
-    // No need to call resetApiState here, useFetch should handle its state or be reset if dialog closes/reopens
-
     try {
       const queryParams = new URLSearchParams();
-      if (currentSearchQuery) {
-        queryParams.set('searchQuery', currentSearchQuery);
-      }
-      if (currentTagFilter) {
-        queryParams.set('tag', currentTagFilter);
-      }
-      const data = await fetchApi<ImageType[] | PaginatedResponse<ImageType>>(`/api/images?${queryParams.toString()}`);
-      let fetchedImages: ImageType[];
-      if ('data' in data) {
-        fetchedImages = data.data;
-      } else {
-        fetchedImages = data;
-      }
-      const filteredImages = fetchedImages.filter(
-        (img) => !existingImageIds.includes(img.id)
-      );
+      if (currentSearchQuery) queryParams.set('searchQuery', currentSearchQuery);
+      if (currentTagFilter) queryParams.set('tag', currentTagFilter);
+      // Always expect the API to return { data: ImageType[] }
+      const response = await fetchApi<{ data: { data: ImageType[]; meta?: unknown } }>(`/api/images?${queryParams.toString()}`);
+      const fetchedImages = response.data.data;
+      const filteredImages = Array.isArray(fetchedImages)
+        ? fetchedImages.filter(img => !existingImageIds.includes(img.id))
+        : [];
       setImages(filteredImages);
     } catch (fetchError) {
       logger.error('Error fetching images for dialog:', fetchError);

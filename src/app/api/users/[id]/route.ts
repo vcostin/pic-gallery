@@ -1,10 +1,10 @@
 import { getServerSession } from "next-auth";
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import logger from "@/lib/logger";
 import { UserRole } from "@prisma/client";
+import { apiSuccess, apiError, apiValidationError, apiUnauthorized, apiNotFound } from "@/lib/apiResponse";
 
 const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
@@ -21,28 +21,19 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-    
-    // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
-    
-    // Check if the current user is an admin
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true },
     });
-    
-    // Users can only view their own profile or admins can view any
     const isOwnProfile = session.user.id === id;
     const isAdmin = currentUser?.role === UserRole.ADMIN;
-    
     if (!isOwnProfile && !isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return apiError("Forbidden", 403);
     }
-    
-    // Get user profile with stats
     const user = await prisma.user.findUnique({
       where: { id },
       select: {
@@ -60,15 +51,13 @@ export async function GET(
         }
       }
     });
-    
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return apiNotFound("User not found");
     }
-    
-    return NextResponse.json(user);
+    return apiSuccess(user);
   } catch (err) {
     logger.error("Error fetching user:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error");
   }
 }
 
@@ -81,32 +70,29 @@ export async function PATCH(
 ) {
   try {
     const { id } = params;
-    
-    // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
-    
-    // Check if the current user is an admin
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true },
     });
-    
-    // Users can only update their own profile or admins can update any
     const isOwnProfile = session.user.id === id;
     const isAdmin = currentUser?.role === UserRole.ADMIN;
-    
     if (!isOwnProfile && !isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return apiError("Forbidden", 403);
     }
-    
-    // Validate request body
     const json = await req.json();
-    const body = updateUserSchema.parse(json);
-    
-    // Update user
+    let body;
+    try {
+      body = updateUserSchema.parse(json);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return apiValidationError(err);
+      }
+      throw err;
+    }
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
@@ -123,15 +109,14 @@ export async function PATCH(
         role: true,
       }
     });
-    
     logger.log(`User updated: ${updatedUser.id}`);
-    return NextResponse.json(updatedUser);
+    return apiSuccess(updatedUser);
   } catch (err) {
     logger.error("Error updating user:", err);
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.errors }, { status: 400 });
+      return apiValidationError(err);
     }
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error");
   }
 }
 
@@ -144,45 +129,32 @@ export async function DELETE(
 ) {
   try {
     const { id } = params;
-    
-    // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
-    
-    // Check if the current user is an admin
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true },
     });
-    
-    // Only allow users to delete their own account or admins to delete any account
     const isOwnAccount = session.user.id === id;
     const isAdmin = currentUser?.role === UserRole.ADMIN;
-    
     if (!isOwnAccount && !isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return apiError("Forbidden", 403);
     }
-    
-    // Check if user exists
     const user = await prisma.user.findUnique({
       where: { id },
     });
-    
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return apiNotFound("User not found");
     }
-    
-    // Delete user (cascading deletion will handle related data)
     await prisma.user.delete({
       where: { id },
     });
-    
     logger.log(`User deleted: ${id}${isOwnAccount ? " (self-deletion)" : ""}`);
-    return NextResponse.json({ message: "User successfully deleted" });
+    return apiSuccess({ message: "User successfully deleted" });
   } catch (err) {
     logger.error("Error deleting user:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error");
   }
 }

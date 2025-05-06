@@ -1,0 +1,24 @@
+// API response types
+export interface ApiSuccess<T> {
+  success: true;
+  data: T;
+}
+
+export interface ApiError {
+  success: false;
+  error: string;
+  details?: unknown;
+  issues?: { path: string; message: string }[];
+}
+
+export type ApiResponse<T> = ApiSuccess<T> | ApiError;
+
+// Paginated response type
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    currentPage: number;
+    lastPage: number;
+    total: number;
+  };
+}

@@ -106,7 +106,8 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
         throw new Error(errorMessage);
       }
 
-      const createdGallery = await response.json();
+      const created = await response.json();
+      const createdGallery = created.data;
       setSuccessMessage(`Gallery "${createdGallery.title}" created successfully!`);
       setTitle('');
       setDescription('');

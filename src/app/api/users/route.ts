@@ -1,10 +1,10 @@
 import { getServerSession } from "next-auth";
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import logger from "@/lib/logger";
 import { UserRole, Prisma } from "@prisma/client";
+import { apiSuccess, apiError, apiValidationError, apiUnauthorized } from "@/lib/apiResponse";
 
 const getUsersQuerySchema = z.object({
   page: z.number().optional().default(1),
@@ -17,48 +17,38 @@ const getUsersQuerySchema = z.object({
  */
 export async function GET(req: Request) {
   try {
-    // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return apiUnauthorized();
     }
-
-    // Check if user is an admin
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true },
     });
-
     if (currentUser?.role !== UserRole.ADMIN) {
-      return NextResponse.json(
-        { error: "Forbidden: Admin access required" },
-        { status: 403 }
-      );
+      return apiError("Forbidden: Admin access required", 403);
     }
-
-    // Parse query parameters
     const { searchParams } = new URL(req.url);
-    const queryParams = getUsersQuerySchema.parse({
-      page: searchParams.get("page") ? Number(searchParams.get("page")) : undefined,
-      limit: searchParams.get("limit") ? Number(searchParams.get("limit")) : undefined,
-      search: searchParams.get("search") || undefined,
-    });
-
-    // Calculate pagination
+    let queryParams;
+    try {
+      queryParams = getUsersQuerySchema.parse({
+        page: searchParams.get("page") ? Number(searchParams.get("page")) : undefined,
+        limit: searchParams.get("limit") ? Number(searchParams.get("limit")) : undefined,
+        search: searchParams.get("search") || undefined,
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return apiValidationError(err);
+      }
+      throw err;
+    }
     const skip = (queryParams.page - 1) * queryParams.limit;
-
-    // Create the where clause for search
     const where = queryParams.search ? {
       OR: [
         { name: { contains: queryParams.search, mode: Prisma.QueryMode.insensitive } },
         { email: { contains: queryParams.search, mode: Prisma.QueryMode.insensitive } },
       ],
     } : {};
-
-    // Get users with pagination
     const [users, totalUsers] = await Promise.all([
       prisma.user.findMany({
         where,
@@ -68,7 +58,7 @@ export async function GET(req: Request) {
           email: true,
           image: true,
           emailVerified: true,
-          role: true,  // Added role field here
+          role: true,
           _count: {
             select: {
               images: true,
@@ -84,13 +74,11 @@ export async function GET(req: Request) {
       }),
       prisma.user.count({ where }),
     ]);
-
-    // Calculate total pages
     const totalPages = Math.ceil(totalUsers / queryParams.limit);
-
-    return NextResponse.json({
-      users,
-      pagination: {
+    // Return in the new consistent format
+    return apiSuccess({
+      data: users,
+      meta: {
         page: queryParams.page,
         limit: queryParams.limit,
         totalUsers,
@@ -100,8 +88,8 @@ export async function GET(req: Request) {
   } catch (err) {
     logger.error("Error fetching users:", err);
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.errors }, { status: 400 });
+      return apiValidationError(err);
     }
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error");
   }
 }

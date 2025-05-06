@@ -41,24 +41,27 @@ export function UploadImage() {
     // Upload the file
     const formData = new FormData();
     formData.append('file', file);
-    
-    const { url } = await fetchApi<{ url: string }>('/api/upload', {
+    const uploadResult = await fetchApi<{ success: boolean; data: { url: string } }>('/api/upload', {
       method: 'POST',
       body: formData,
     });
-    
+    console.log('Upload result:', uploadResult);
+    const url = uploadResult?.data?.url;
+    if (!url) throw new Error('File upload failed: no URL returned');
+    // Debug log the body sent to /api/images
+    const imagePayload = {
+      title,
+      description,
+      url,
+      tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
+    };
     // Create the image record and get the returned data
     const createdImage = await fetchApi<ImageResponse>('/api/images', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        title,
-        description,
-        url,
-        tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
-      }),
+      body: JSON.stringify(imagePayload),
     });
     
     // Reset form

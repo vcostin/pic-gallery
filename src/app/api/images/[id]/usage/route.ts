@@ -1,9 +1,9 @@
 import { getServerSession } from "next-auth";
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import { Gallery } from "@prisma/client";
 import logger from "@/lib/logger";
+import { apiSuccess, apiError, apiUnauthorized, apiNotFound } from "@/lib/apiResponse";
 
 interface GalleryWithCoverImage extends Gallery {
   id: string;
@@ -20,7 +20,7 @@ export async function GET(
 
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
 
     // Check if the image exists and belongs to the current user
@@ -36,11 +36,11 @@ export async function GET(
     });
 
     if (!image) {
-      return NextResponse.json({ error: "Image not found" }, { status: 404 });
+      return apiNotFound("Image not found");
     }
 
     if (image.userId !== session.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
 
     // Use raw query to find galleries using this image as cover
@@ -59,7 +59,7 @@ export async function GET(
         )
       ];
       
-      return NextResponse.json({
+      return apiSuccess({
         galleries: allGalleries.map(g => ({
           id: g.id,
           title: g.title,
@@ -69,11 +69,11 @@ export async function GET(
     }
 
     // If not used in any galleries
-    return NextResponse.json({ 
+    return apiSuccess({ 
       galleries: [] 
     });
   } catch (error) {
     logger.error("Error checking image usage:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error");
   }
 }

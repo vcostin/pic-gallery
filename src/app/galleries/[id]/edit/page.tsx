@@ -130,7 +130,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     });
     
     // Update the gallery on the server
-    const updatedGallery = await fetchApi<Gallery>(`/api/galleries/${galleryId}`, {
+    const response = await fetchApi<{ data: Gallery }>(`/api/galleries/${galleryId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -141,7 +141,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         images: imageUpdates
       }),
     });
-    
+    const updatedGallery = response.data;
     // Update state with the data returned directly from the PATCH response
     setTitle(updatedGallery.title);
     setDescription(updatedGallery.description || '');
@@ -193,7 +193,8 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         const queryString = queryParams.toString();
         const apiUrl = `/api/galleries/${galleryId}${queryString ? `?${queryString}` : ''}`;
 
-        const data = await fetchApi<Gallery>(apiUrl);
+        const response = await fetchApi<{ data: Gallery }>(apiUrl);
+        const data = response.data;
         setTitle(data.title);
         setDescription(data.description || '');
         setIsPublic(data.isPublic);

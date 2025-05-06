@@ -37,9 +37,10 @@ export async function middleware(request: NextRequest) {
       }
       
       const userData = await res.json();
-      
       // If the user is not an admin, redirect to the home page with an error
-      if (userData.role !== UserRole.ADMIN) {
+      // Support both { role } and { data: { role } } API responses
+      const userRole = userData.data?.role ?? userData.role;
+      if (userRole !== UserRole.ADMIN) {
         return NextResponse.redirect(
           new URL('/?error=admin_access_required', request.url)
         );

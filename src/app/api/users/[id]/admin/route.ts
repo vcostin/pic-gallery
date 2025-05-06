@@ -1,10 +1,10 @@
 import { getServerSession } from "next-auth";
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import logger from "@/lib/logger";
 import { UserRole } from "@prisma/client";
+import { apiSuccess, apiError, apiValidationError, apiUnauthorized } from "@/lib/apiResponse";
 
 const updateUserRoleSchema = z.object({
   role: z.enum([UserRole.USER, UserRole.ADMIN]),
@@ -24,7 +24,7 @@ export async function PUT(
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiUnauthorized();
     }
     
     // Get the current user to check if they're an admin
@@ -35,12 +35,20 @@ export async function PUT(
     
     // Only admins can change user roles
     if (currentUser?.role !== UserRole.ADMIN) {
-      return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+      return apiError("Forbidden: Admin access required", 403);
     }
     
     // Parse request body
     const json = await req.json();
-    const body = updateUserRoleSchema.parse(json);
+    let body;
+    try {
+      body = updateUserRoleSchema.parse(json);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return apiValidationError(err);
+      }
+      throw err;
+    }
     
     // Update the target user's role
     const updatedUser = await prisma.user.update({
@@ -60,15 +68,15 @@ export async function PUT(
     
     logger.log(`${message} by admin ${session.user.id}`);
     
-    return NextResponse.json({
+    return apiSuccess({
       message,
       user: updatedUser,
     });
   } catch (err) {
     logger.error("Error updating user role:", err);
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.errors }, { status: 400 });
+      return apiValidationError(err);
     }
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error");
   }
 }

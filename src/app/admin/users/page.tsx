@@ -74,8 +74,9 @@ export default function AdminUsersPage() {
         }
         
         const data = await response.json();
-        setUsers(data.users);
-        setPagination(data.pagination);
+        // Expect only { data: { data: [...] } } API response
+        setUsers(Array.isArray(data.data?.data) ? data.data.data : []);
+        setPagination(data.data?.meta || {});
       } catch (error) {
         setError(error instanceof Error ? error.message : 'An error occurred');
       } finally {
