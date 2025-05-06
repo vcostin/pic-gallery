@@ -68,6 +68,11 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const [showDeleteGalleryDialog, setShowDeleteGalleryDialog] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('compact');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // State for filtering images within the gallery editor
+  const [galleryImageSearchQuery, setGalleryImageSearchQuery] = useState('');
+  const [galleryImageTag, setGalleryImageTag] = useState('');
+  const [galleryFilterDebounceTimeout, setGalleryFilterDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Store original gallery data for deep comparison
   const [originalGalleryData, setOriginalGalleryData] = useState<{
@@ -173,23 +178,37 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     run: fetchGallery
   } = useAsync<Gallery>();
   
-  // Load gallery data on component mount
+  // Load gallery data on component mount and when filters change
   useEffect(() => {
     const loadGallery = async () => {
       try {
-        const data = await fetchApi<Gallery>(`/api/galleries/${galleryId}`);
+        const queryParams = new URLSearchParams();
+        if (galleryImageSearchQuery) {
+          queryParams.set('imageSearchQuery', galleryImageSearchQuery);
+        }
+        if (galleryImageTag) {
+          queryParams.set('imageTag', galleryImageTag);
+        }
+        const queryString = queryParams.toString();
+        const apiUrl = `/api/galleries/${galleryId}${queryString ? `?${queryString}` : ''}`;
+
+        const data = await fetchApi<Gallery>(apiUrl);
         setTitle(data.title);
         setDescription(data.description || '');
         setIsPublic(data.isPublic);
         setCoverImageId(data.coverImageId || '');
-        setImages(data.images);
-        setOriginalGalleryData({
-          title: data.title,
-          description: data.description || '',
-          isPublic: data.isPublic,
-          coverImageId: data.coverImageId || '',
-          images: data.images
-        });
+        setImages(data.images); // These images are now filtered by the backend
+        
+        // Only set originalGalleryData on the initial load (no filters)
+        if (!galleryImageSearchQuery && !galleryImageTag && !originalGalleryData) {
+          setOriginalGalleryData({
+            title: data.title,
+            description: data.description || '',
+            isPublic: data.isPublic,
+            coverImageId: data.coverImageId || '',
+            images: data.images // Store the initial, unfiltered images here
+          });
+        }
         return data;
       } catch (error) {
         logger.error('Error fetching gallery:', error);
@@ -197,8 +216,24 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       }
     };
     
-    fetchGallery(loadGallery());
-  }, [galleryId, fetchApi, fetchGallery, setImages]);
+    if (galleryFilterDebounceTimeout) {
+      clearTimeout(galleryFilterDebounceTimeout);
+    }
+
+    const timeoutId = setTimeout(() => {
+        fetchGallery(loadGallery());
+    }, 500); // 500ms debounce
+
+    setGalleryFilterDebounceTimeout(timeoutId);
+
+    return () => {
+        if (galleryFilterDebounceTimeout) {
+            clearTimeout(galleryFilterDebounceTimeout);
+        }
+    };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [galleryId, fetchApi, fetchGallery, setImages, galleryImageSearchQuery, galleryImageTag]); // Add filter states to dependencies
 
   // Track unsaved changes
   useEffect(() => {
@@ -380,6 +415,38 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
               
               {/* View Mode Selector Component */}
               <GalleryViewSelector viewMode={viewMode} setViewMode={setViewMode} />
+            </div>
+
+            {/* Filter inputs for images within the gallery */}
+            <div className="mb-4 p-3 border rounded-md bg-gray-50 dark:bg-gray-700/30">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="galleryImageSearchQuery" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Search Images in Gallery
+                  </label>
+                  <input
+                    type="text"
+                    id="galleryImageSearchQuery"
+                    value={galleryImageSearchQuery}
+                    onChange={(e) => setGalleryImageSearchQuery(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Filter by title/description..."
+                  />
+                </div>
+                <div>
+                  <label htmlFor="galleryImageTag" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Filter by Tag in Gallery
+                  </label>
+                  <input
+                    type="text"
+                    id="galleryImageTag"
+                    value={galleryImageTag}
+                    onChange={(e) => setGalleryImageTag(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Filter by tag..."
+                  />
+                </div>
+              </div>
             </div>
             
             {/* New GallerySortable Component */}

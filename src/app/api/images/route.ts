@@ -24,6 +24,7 @@ const getImagesQuerySchema = z.object({
   page: z.coerce.number().min(1).optional().default(1),
   limit: z.coerce.number().min(1).max(100).optional().default(20),
   tag: z.string().optional(),
+  searchQuery: z.string().optional(), // Added for general search
   sortBy: z.enum(['createdAt', 'title', 'updatedAt']).optional().default('createdAt'),
   sortDir: z.enum(['asc', 'desc']).optional().default('desc'),
 });
@@ -105,21 +106,40 @@ export async function GET(req: Request) {
       page: searchParams.get("page") ? Number(searchParams.get("page")) : undefined,
       limit: searchParams.get("limit") ? Number(searchParams.get("limit")) : undefined,
       tag: searchParams.get("tag") || undefined,
+      searchQuery: searchParams.get("searchQuery") || undefined, // Parse searchQuery
       sortBy: searchParams.get("sortBy") || undefined,
       sortDir: searchParams.get("sortDir") || undefined,
     });
 
     // Create the where clause
-    const where = {
+    const where: any = { // Use 'any' for Prisma where clause flexibility
       userId: session.user.id,
-      ...(queryParams.tag ? {
-        tags: {
-          some: {
-            name: queryParams.tag,
+    };
+
+    if (queryParams.tag) {
+      where.tags = {
+        some: {
+          name: queryParams.tag,
+        },
+      };
+    }
+
+    if (queryParams.searchQuery) {
+      where.OR = [
+        {
+          title: {
+            contains: queryParams.searchQuery,
+            mode: 'insensitive', // Case-insensitive search
           },
         },
-      } : {}),
-    };
+        {
+          description: {
+            contains: queryParams.searchQuery,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
 
     // Get total count for pagination
     const total = await prisma.image.count({ where });

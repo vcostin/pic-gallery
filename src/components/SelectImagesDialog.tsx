@@ -30,6 +30,8 @@ interface SelectImagesDialogProps {
   galleryId?: string; // Added galleryId as optional prop
 }
 
+const DEBOUNCE_DELAY = 500; // 500ms delay for debouncing
+
 export function SelectImagesDialog({ 
   isOpen, 
   onClose, 
@@ -37,49 +39,87 @@ export function SelectImagesDialog({
   existingImageIds = [] 
 }: SelectImagesDialogProps) {
   const [images, setImages] = useState<ImageType[]>([]);
-  const [selectedTag, setSelectedTag] = useState('');
+  const [currentSearchQuery, setCurrentSearchQuery] = useState('');
+  const [currentTagFilter, setCurrentTagFilter] = useState('');
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
+  const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
   
-  const { fetchApi, isLoading, error } = useFetch();
+  const { fetchApi, isLoading, error, reset: resetApiState } = useFetch();
   
-  // Fetch user's images when component mounts
-  useEffect(() => {
-    async function fetchImages() {
-      try {
-        const data = await fetchApi<ImageType[]>('/api/images');
-        
-        // Filter out images that are already in the gallery
-        const filteredImages = data.filter(
-          (img) => !existingImageIds.includes(img.id)
-        );
-        
-        setImages(filteredImages);
-      } catch (error) {
-        // Error handled by useFetch hook
-        logger.error('Error fetching images:', error);
+  const loadImages = useCallback(async () => {
+    if (!isOpen) return;
+    // No need to call resetApiState here, useFetch should handle its state or be reset if dialog closes/reopens
+
+    try {
+      const queryParams = new URLSearchParams();
+      if (currentSearchQuery) {
+        queryParams.set('searchQuery', currentSearchQuery);
       }
+      if (currentTagFilter) {
+        queryParams.set('tag', currentTagFilter);
+      }
+      const data = await fetchApi<ImageType[] | PaginatedResponse<ImageType>>(`/api/images?${queryParams.toString()}`);
+      let fetchedImages: ImageType[];
+      if ('data' in data) {
+        fetchedImages = data.data;
+      } else {
+        fetchedImages = data;
+      }
+      const filteredImages = fetchedImages.filter(
+        (img) => !existingImageIds.includes(img.id)
+      );
+      setImages(filteredImages);
+    } catch (fetchError) {
+      logger.error('Error fetching images for dialog:', fetchError);
+      setImages([]);
+    }
+  }, [isOpen, currentSearchQuery, currentTagFilter, fetchApi, existingImageIds]);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+      const timeoutId = setTimeout(() => {
+        loadImages();
+      }, DEBOUNCE_DELAY);
+      setDebounceTimeout(timeoutId);
+
+      setSelectedImages(new Set()); 
     }
 
+    return () => {
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, currentSearchQuery, currentTagFilter, loadImages]); // loadImages is stable due to its own useCallback deps
+  
+  // Effect to load images once when dialog opens, without debounce for initial load
+  useEffect(() => {
     if (isOpen) {
-      fetchImages();
-      setSelectedImages(new Set()); // Reset selection when dialog opens
+      loadImages();
+      setSelectedImages(new Set());
     }
-  }, [isOpen, existingImageIds, fetchApi]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]); // Only run when isOpen changes for the initial load
+
 
   const allTags = useMemo(() => {
+    // This should ideally fetch all unique tags from the backend for the user
+    // For now, deriving from currently loaded (and potentially filtered) images might be incomplete
+    // Consider a dedicated endpoint for tags if this list needs to be comprehensive
     const tagSet = new Set<string>();
-    images.forEach(image => {
+    images.forEach(image => { // This will be based on images already filtered by backend
       image.tags.forEach(tag => tagSet.add(tag.name));
     });
     return Array.from(tagSet).sort();
   }, [images]);
 
-  const filteredImages = useMemo(() => {
-    if (!selectedTag) return images;
-    return images.filter(image => 
-      image.tags.some(tag => tag.name === selectedTag)
-    );
-  }, [images, selectedTag]);
+  // Client-side filtering is largely replaced by backend, but this can be a secondary filter if needed.
+  // For now, `filteredImages` will just be `images` as the backend does the heavy lifting.
+  const displayImages = images;
 
   const toggleImageSelection = useCallback((imageId: string) => {
     setSelectedImages(prev => {
@@ -111,7 +151,7 @@ export function SelectImagesDialog({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-4xl max-h-[90vh] flex flex-col"> {/* Added flex flex-col */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold">Select Images</h2>
           <Button
@@ -128,11 +168,47 @@ export function SelectImagesDialog({
           </Button>
         </div>
 
-        <CardContent className="p-6">
+        <CardContent className="p-6 flex-grow overflow-y-auto"> {/* Added flex-grow and overflow-y-auto */}
+          {/* Filter Inputs */}
+          <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800/50">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"> {/* Changed to md:grid-cols-2 since Apply button is removed */}
+              <div>
+                <label htmlFor="dialogImageSearch" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Search Title/Desc.
+                </label>
+                <input
+                  type="text"
+                  id="dialogImageSearch"
+                  value={currentSearchQuery}
+                  onChange={(e) => setCurrentSearchQuery(e.target.value)}
+                  // Removed onKeyDown
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="e.g., Beach, Portrait"
+                />
+              </div>
+              <div>
+                <label htmlFor="dialogTagFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Filter by Tag
+                </label>
+                <input
+                  type="text"
+                  id="dialogTagFilter"
+                  value={currentTagFilter}
+                  onChange={(e) => setCurrentTagFilter(e.target.value)}
+                  // Removed onKeyDown
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="e.g., travel, food"
+                />
+              </div>
+              {/* Apply Filters Button Removed */}
+            </div>
+          </div>
+          
           {error && (
             <ErrorMessage 
               error={error} 
-              className="mb-4" 
+              className="mb-4"
+              retry={loadImages} // Allow retry on error
             />
           )}
 
@@ -140,11 +216,12 @@ export function SelectImagesDialog({
             <LoadingSpinner size="medium" text="Loading images..." />
           ) : (
             <>
-              <div className="mb-6 flex flex-wrap gap-2">
+              {/* Tag selector UI - can be removed if tag input is preferred, or enhance to use fetched tags */}
+              {/* <div className="mb-6 flex flex-wrap gap-2">
                 <Button
                   size="sm"
-                  variant={!selectedTag ? "primary" : "secondary"}
-                  onClick={() => setSelectedTag('')}
+                  variant={!currentTagFilter ? "primary" : "secondary"}
+                  onClick={() => { setCurrentTagFilter(''); loadImages(); }} // Also trigger loadImages
                 >
                   All
                 </Button>
@@ -152,22 +229,22 @@ export function SelectImagesDialog({
                   <Button
                     key={tag}
                     size="sm"
-                    variant={selectedTag === tag ? "primary" : "secondary"}
-                    onClick={() => setSelectedTag(tag)}
+                    variant={currentTagFilter === tag ? "primary" : "secondary"}
+                    onClick={() => { setCurrentTagFilter(tag); loadImages(); }} // Also trigger loadImages
                   >
                     {tag}
                   </Button>
                 ))}
-              </div>
+              </div> */}
 
-              {filteredImages.length === 0 ? (
+              {displayImages.length === 0 ? (
                 <EmptyState
-                  title="No images available"
-                  description="No images available to add. All your images might already be in this gallery."
+                  title="No images match your criteria"
+                  description="Try adjusting your search or tag filters, or upload new images."
                 />
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {filteredImages.map(image => (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"> {/* Added lg:grid-cols-5 */}
+                  {displayImages.map(image => (
                     <div 
                       key={image.id} 
                       className={`relative bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden cursor-pointer
@@ -215,24 +292,30 @@ export function SelectImagesDialog({
                 </div>
               )}
 
-              <div className="flex justify-end mt-6 space-x-3">
+              {/* Duplicate Buttons Removed From Here */}
+            </>
+          )}
+        </CardContent>
+
+        {/* Footer with action buttons - ensure it's sticky or visible */} 
+        <div className="p-6 border-t border-gray-200 dark:border-gray-700 mt-auto"> 
+            <div className="flex justify-end space-x-3">
                 <Button 
                   variant="secondary"
                   onClick={onClose}
+                  disabled={isLoading} // Disable if loading to prevent closing during fetch
                 >
                   Cancel
                 </Button>
                 <Button
                   variant="primary"
                   onClick={handleAddImages}
-                  disabled={selectedImages.size === 0}
+                  disabled={selectedImages.size === 0 || isLoading}
                 >
                   Add Selected ({selectedImages.size})
                 </Button>
-              </div>
-            </>
-          )}
-        </CardContent>
+            </div>
+        </div>
       </Card>
     </div>
   );

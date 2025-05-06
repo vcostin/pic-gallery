@@ -12,6 +12,13 @@ type ImageInGalleryWithImage = ImageInGallery & {
   order: number;
 };
 
+// Schema for query parameters for fetching gallery images
+const getGalleryImagesQuerySchema = z.object({
+  imageSearchQuery: z.string().optional(),
+  imageTag: z.string().optional(),
+  // Potentially add sortBy, sortDir for images within gallery later
+});
+
 const updateGallerySchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
@@ -34,24 +41,56 @@ export async function GET(
   try {
     // Await params to solve the Next.js dynamic route parameters issue
     const { id } = await params;
-    
+    const { searchParams } = new URL(req.url);
+
+    const queryValidation = getGalleryImagesQuerySchema.safeParse({
+      imageSearchQuery: searchParams.get("imageSearchQuery") || undefined,
+      imageTag: searchParams.get("imageTag") || undefined,
+    });
+
+    if (!queryValidation.success) {
+      return NextResponse.json({ error: "Invalid query parameters for image search", details: queryValidation.error.format() }, { status: 400 });
+    }
+    const imageFilters = queryValidation.data;
+
     const session = await getServerSession(authOptions);
+
+    // Build the where clause for images within the gallery
+    const imagesWhere: any = {};
+    if (imageFilters.imageSearchQuery) {
+      imagesWhere.image = {
+        OR: [
+          { title: { contains: imageFilters.imageSearchQuery, mode: 'insensitive' } },
+          { description: { contains: imageFilters.imageSearchQuery, mode: 'insensitive' } },
+        ],
+      };
+    }
+    if (imageFilters.imageTag) {
+      imagesWhere.image = {
+        ...imagesWhere.image, // Spread existing conditions if any
+        tags: {
+          some: { name: imageFilters.imageTag },
+        },
+      };
+    }
+
     const gallery = await prisma.gallery.findUnique({
       where: {
         id: id,
       },
       include: {
         images: {
+          where: Object.keys(imagesWhere).length > 0 ? imagesWhere : undefined, // Apply filters only if they exist
           include: {
             image: {
               include: {
                 tags: true,
-              }
-            }
+              },
+            },
           },
           orderBy: {
-            order: 'asc'
-          }
+            order: 'asc',
+          },
         },
         user: {
           select: {
