@@ -10,6 +10,7 @@ import {
 } from "@/lib/dataFetching";
 import { Image, PaginatedResponse, ApiErrorResponse } from "@/lib/types";
 import logger from "@/lib/logger";
+import { Prisma } from "@prisma/client"; // Import Prisma
 
 // Schema validation for image creation
 const createImageSchema = z.object({
@@ -112,7 +113,7 @@ export async function GET(req: Request) {
     });
 
     // Create the where clause
-    const where: any = { // Use 'any' for Prisma where clause flexibility
+    const where: Prisma.ImageWhereInput = { // Replaced any with Prisma.ImageWhereInput
       userId: session.user.id,
     };
 

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import logger from "@/lib/logger";
 
-import { ImageInGallery, Image } from "@prisma/client";
+import { ImageInGallery, Image, Prisma } from "@prisma/client";
 
 type ImageInGalleryWithImage = ImageInGallery & {
   image: Image;
@@ -56,22 +56,25 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     // Build the where clause for images within the gallery
-    const imagesWhere: any = {};
+    const imagesWhere: Prisma.ImageInGalleryWhereInput = {}; 
+    
+    const imageSubQuery: Prisma.ImageWhereInput = {}; 
+
     if (imageFilters.imageSearchQuery) {
-      imagesWhere.image = {
-        OR: [
-          { title: { contains: imageFilters.imageSearchQuery, mode: 'insensitive' } },
-          { description: { contains: imageFilters.imageSearchQuery, mode: 'insensitive' } },
-        ],
+      imageSubQuery.OR = [
+        { title: { contains: imageFilters.imageSearchQuery, mode: 'insensitive' } },
+        { description: { contains: imageFilters.imageSearchQuery, mode: 'insensitive' } },
+      ];
+    }
+
+    if (imageFilters.imageTag) {
+      imageSubQuery.tags = {
+        some: { name: imageFilters.imageTag },
       };
     }
-    if (imageFilters.imageTag) {
-      imagesWhere.image = {
-        ...imagesWhere.image, // Spread existing conditions if any
-        tags: {
-          some: { name: imageFilters.imageTag },
-        },
-      };
+
+    if (Object.keys(imageSubQuery).length > 0) {
+      imagesWhere.image = imageSubQuery;
     }
 
     const gallery = await prisma.gallery.findUnique({

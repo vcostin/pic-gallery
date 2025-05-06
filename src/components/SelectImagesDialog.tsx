@@ -1,12 +1,13 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Removed useMemo
 import { LoadingSpinner, ErrorMessage, EmptyState } from '@/components/StatusMessages';
 import { useFetch } from '@/lib/hooks';
 import logger from '@/lib/logger';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
+import { PaginatedResponse } from '@/lib/types'; // Added import for PaginatedResponse
 
 interface Tag {
   id: string;
@@ -44,7 +45,7 @@ export function SelectImagesDialog({
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
   
-  const { fetchApi, isLoading, error, reset: resetApiState } = useFetch();
+  const { fetchApi, isLoading, error } = useFetch(); // Removed resetApiState
   
   const loadImages = useCallback(async () => {
     if (!isOpen) return;
@@ -105,17 +106,6 @@ export function SelectImagesDialog({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]); // Only run when isOpen changes for the initial load
 
-
-  const allTags = useMemo(() => {
-    // This should ideally fetch all unique tags from the backend for the user
-    // For now, deriving from currently loaded (and potentially filtered) images might be incomplete
-    // Consider a dedicated endpoint for tags if this list needs to be comprehensive
-    const tagSet = new Set<string>();
-    images.forEach(image => { // This will be based on images already filtered by backend
-      image.tags.forEach(tag => tagSet.add(tag.name));
-    });
-    return Array.from(tagSet).sort();
-  }, [images]);
 
   // Client-side filtering is largely replaced by backend, but this can be a secondary filter if needed.
   // For now, `filteredImages` will just be `images` as the backend does the heavy lifting.

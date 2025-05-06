@@ -48,8 +48,8 @@ export default function ImagesPage() {
         router.replace(`/images?${newParams.toString()}`, { scroll: false });
       }
 
-    } catch (e: any) {
-      setError(e.message || "Failed to fetch images.");
+    } catch (e: unknown) { // Changed e: any to e: unknown
+      setError(e instanceof Error ? e.message : "Failed to fetch images."); // Type check for e
       setImages([]);
       setPagination(null);
     } finally {

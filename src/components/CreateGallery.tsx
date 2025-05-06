@@ -93,7 +93,10 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
         let errorMessage = 'Failed to create gallery';
         if (errorData.error) {
           if (Array.isArray(errorData.error)) {
-            errorMessage = errorData.error.map((err: any) => err.message || JSON.stringify(err)).join(', ');
+            // Assuming ZodError format: { message: string, ...otherProps }[]
+            errorMessage = errorData.error.map((err: { message?: unknown }) => 
+              typeof err.message === 'string' ? err.message : JSON.stringify(err)
+            ).join(', ');
           } else if (typeof errorData.error === 'string') {
             errorMessage = errorData.error;
           } else {

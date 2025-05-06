@@ -302,14 +302,15 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const handleAddImages = useCallback((imageIds: string[]) => {
     setShowSelectImagesDialog(false);
     
-    const fetchImagesForGallery = async (): Promise<ApiImageType[]> => {
+    const fetchImagesForGallery = async (): Promise<Array<{id: string; [key: string]: unknown}>> => {
       // Adjust limit to be within the API's accepted range (max 100)
       // This will fetch up to 100 images. If more images exist, pagination would be needed in SelectImagesDialog.
       const response = await fetchApi<PaginatedResponse<ApiImageType>>('/api/images?limit=100&page=1');
       
       // Add a guard to ensure the response is correctly structured
       if (response && typeof response === 'object' && Array.isArray(response.data)) {
-        return response.data;
+        // Cast ApiImageType[] to Array<{id: string; [key: string]: unknown}> to satisfy the hook
+        return response.data.map(image => ({ ...image, id: image.id } as {id: string; [key: string]: unknown}));
       }
       
       // Log an error and throw if the response format is unexpected
