@@ -2,12 +2,7 @@
 
 import React from 'react';
 import { Button } from './ui/Button';
-
-export enum ViewMode {
-  Compact = 'compact',
-  Standard = 'standard',
-  Grid = 'grid'
-}
+import { ViewMode } from './GallerySortable';
 
 interface GalleryViewSelectorProps {
   viewMode: ViewMode;
@@ -19,10 +14,10 @@ export function GalleryViewSelector({ viewMode, setViewMode }: GalleryViewSelect
     <div className="flex rounded-md shadow-sm p-0.5 bg-gray-100 dark:bg-gray-700">
       <Button
         size="sm"
-        variant={viewMode === ViewMode.Compact ? "primary" : "ghost"}
-        onClick={() => setViewMode(ViewMode.Compact)}
+        variant={viewMode === 'compact' ? "primary" : "ghost"}
+        onClick={() => setViewMode('compact')}
         className={`rounded-none rounded-l-md ${
-          viewMode !== ViewMode.Compact ? 'text-gray-600 dark:text-gray-300' : ''
+          viewMode !== 'compact' ? 'text-gray-600 dark:text-gray-300' : ''
         }`}
         title="Compact view"
       >
@@ -30,21 +25,10 @@ export function GalleryViewSelector({ viewMode, setViewMode }: GalleryViewSelect
       </Button>
       <Button
         size="sm"
-        variant={viewMode === ViewMode.Standard ? "primary" : "ghost"}
-        onClick={() => setViewMode(ViewMode.Standard)}
-        className={`rounded-none border-l-0 border-r-0 ${
-          viewMode !== ViewMode.Standard ? 'text-gray-600 dark:text-gray-300' : ''
-        }`}
-        title="Standard view"
-      >
-        Standard
-      </Button>
-      <Button
-        size="sm"
-        variant={viewMode === ViewMode.Grid ? "primary" : "ghost"}
-        onClick={() => setViewMode(ViewMode.Grid)}
+        variant={viewMode === 'grid' ? "primary" : "ghost"}
+        onClick={() => setViewMode('grid')}
         className={`rounded-none rounded-r-md ${
-          viewMode !== ViewMode.Grid ? 'text-gray-600 dark:text-gray-300' : ''
+          viewMode !== 'grid' ? 'text-gray-600 dark:text-gray-300' : ''
         }`}
         title="Grid view"
       >

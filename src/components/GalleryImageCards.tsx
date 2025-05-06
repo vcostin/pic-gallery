@@ -4,8 +4,8 @@ import React from 'react';
 import Image from 'next/image';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
+// Define types
 interface Tag {
   id: string;
   name: string;
@@ -32,31 +32,17 @@ export interface GalleryCardProps {
   onRemoveImage: (id: string) => void;
 }
 
-// Define the type for the render props function
-type RenderProps = {
-  attributes: {
-    role: string;
-    tabIndex: number;
-    'aria-pressed'?: boolean;
-    'aria-roledescription'?: string;
-    'aria-describedby'?: string;
-  };
-  listeners: SyntheticListenerMap | undefined;
-  isDragging: boolean;
-  isOver: boolean;
-};
-
-// Base component for sortable gallery images
-function BaseSortableCard({ 
-  galleryImage, 
-  isCover,
-  children,
-  className = ''
-}: { 
-  galleryImage: GalleryImage;
+// Base sortable card
+function BaseSortableCard(props: { 
+  galleryImage: GalleryImage; 
   isCover: boolean;
-  children: (props: RenderProps) => React.ReactNode;
   className?: string;
+  children: (data: {
+    attributes: ReturnType<typeof useSortable>['attributes'];
+    listeners: ReturnType<typeof useSortable>['listeners'];
+    isDragging: boolean;
+    isOver: boolean;
+  }) => React.ReactNode;
 }) {
   const {
     attributes,
@@ -66,27 +52,22 @@ function BaseSortableCard({
     transition,
     isDragging,
     isOver,
-    isSorting,
   } = useSortable({
-    id: galleryImage.id,
-    animateLayoutChanges: () => true, // Enable layout animations
+    id: props.galleryImage.id,
   });
   
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 1000 : 1,
-    opacity: isDragging ? 0.8 : 1,
   };
 
-  // Apply different styling based on dragging state
   const cardClasses = `
     bg-white dark:bg-gray-800 rounded-lg shadow 
-    ${isCover ? 'ring-2 ring-blue-500' : ''} 
-    ${isOver ? 'ring-2 ring-green-400 dark:ring-green-600 scale-[1.02] transform-gpu' : ''}
-    ${isDragging ? 'shadow-xl rotate-1' : ''}
-    ${isSorting && !isDragging ? 'transition-transform duration-200' : ''}
-    ${className}
+    ${props.isCover ? 'ring-2 ring-blue-500' : ''} 
+    ${isOver ? 'ring-2 ring-green-400 dark:ring-green-600' : ''}
+    ${isDragging ? 'opacity-50' : ''}
+    ${props.className || ''}
   `;
   
   return (
@@ -95,317 +76,309 @@ function BaseSortableCard({
       style={style}
       className={cardClasses.trim()}
     >
-      {children({attributes, listeners, isDragging, isOver})}
+      {props.children({
+        attributes,
+        listeners,
+        isDragging,
+        isOver
+      })}
     </div>
   );
 }
 
-// Compact view gallery image component
+// Compact view
 export function CompactGalleryCard(props: GalleryCardProps) {
-  const { galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage } = props;
-  
-  return (
-    <BaseSortableCard galleryImage={galleryImage} isCover={isCover} className="p-3 transition-all duration-200">
-      {({attributes, listeners, isDragging, isOver}) => (
-        <>
-          <div className="flex justify-between items-center mb-2">
-            <div 
-              className={`cursor-move flex items-center ${isDragging ? 'text-blue-600 dark:text-blue-400' : ''}`} 
-              {...attributes} 
-              {...listeners}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="8" cy="6" r="1"/><circle cx="8" cy="12" r="1"/><circle cx="8" cy="18" r="1"/>
-                <circle cx="16" cy="6" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="16" cy="18" r="1"/>
-              </svg>
-              <span className={`ml-2 text-xs ${isDragging ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                #{galleryImage.order}
-              </span>
-            </div>
-            <div className="flex space-x-1">
-              <button
-                type="button" 
-                onClick={() => setCoverImage(galleryImage.image.id)}
-                className={`text-xs px-2 py-1 rounded-md ${isCover 
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/50'}`}
-              >
-                {isCover ? 'Cover ✓' : 'Set Cover'}
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onRemoveImage(galleryImage.id);
-                }}
-                className="text-xs px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-800/50"
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-
-          <div className={`flex space-x-3 ${isDragging ? 'opacity-75' : ''}`}>
-            <div className="w-16 h-16 relative flex-shrink-0">
-              <Image
-                src={galleryImage.image.url}
-                alt={galleryImage.image.title}
-                fill
-                className={`object-cover rounded-md ${isOver ? 'ring-2 ring-green-400' : ''}`}
-              />
-              {isDragging && (
-                <div className="absolute inset-0 bg-blue-500/20 rounded-md" />
-              )}
-            </div>
-            
-            <div className="flex-grow min-w-0">
-              <h3 className="font-medium text-sm mb-1 truncate" title={galleryImage.image.title}>
-                {galleryImage.image.title}
-              </h3>
-              
-              <div className="flex flex-wrap gap-1 mb-2">
-                {galleryImage.image.tags.slice(0, 2).map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="text-xs px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
-                {galleryImage.image.tags.length > 2 && (
-                  <span className="text-xs px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
-                    +{galleryImage.image.tags.length - 2}
-                  </span>
-                )}
-              </div>
-              
-              <textarea
-                value={galleryImage.description || ''}
-                onChange={(e) => onDescriptionChange(galleryImage.id, e.target.value)}
-                className="w-full px-2 py-1 border text-xs rounded-md dark:bg-gray-700 dark:border-gray-600"
-                placeholder="Add description"
-                rows={2}
-              />
-            </div>
-          </div>
-          
-          {isOver && (
-            <div className="absolute inset-0 border-2 border-green-500 rounded-lg pointer-events-none" />
-          )}
-        </>
-      )}
-    </BaseSortableCard>
-  );
-}
-
-// Standard view gallery image component
-export function StandardGalleryCard(props: GalleryCardProps) {
-  const { galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage } = props;
-  
-  return (
-    <BaseSortableCard galleryImage={galleryImage} isCover={isCover} className="transition-all duration-200 relative">
-      {({attributes, listeners, isDragging, isOver}) => (
-        <>
-          <div 
-            className={`cursor-move flex items-center justify-between p-3 border-b dark:border-gray-700 ${isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`} 
-            {...attributes} 
-            {...listeners}
-          >
-            <div className="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="8" cy="6" r="1"/><circle cx="8" cy="12" r="1"/><circle cx="8" cy="18" r="1"/>
-                <circle cx="16" cy="6" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="16" cy="18" r="1"/>
-              </svg>
-              <span className={`ml-2 font-medium ${isDragging ? 'text-blue-600 dark:text-blue-400' : ''}`}>
-                {galleryImage.image.title}
-              </span>
-            </div>
-            <div className={`text-sm ${isDragging ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-              #{galleryImage.order}
-            </div>
-          </div>
-
-          <div className="aspect-square relative">
+  const renderContent = (data: {
+    attributes: ReturnType<typeof useSortable>['attributes'];
+    listeners: ReturnType<typeof useSortable>['listeners'];
+    isDragging: boolean;
+    isOver: boolean;
+  }) => {
+    const { galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage } = props;
+    const { attributes, listeners } = data;
+    
+    return (
+      <div className="flex flex-row p-3 border border-gray-200 dark:border-gray-700">
+        {/* Left section with image and index */}
+        <div className="relative flex-shrink-0 w-1/3 mr-4">
+          {/* Image */}
+          <div className="relative aspect-square overflow-hidden rounded-lg">
             <Image
               src={galleryImage.image.url}
               alt={galleryImage.image.title}
               fill
-              className={`object-cover ${isOver ? 'brightness-110' : ''}`}
+              className="object-cover"
             />
-            {isDragging && (
-              <div className="absolute inset-0 bg-blue-500/20" />
+            
+            {/* Order badge */}
+            <div className="absolute top-0 right-0 bg-black/70 text-white px-2 py-1 text-xs font-mono rounded-bl-lg">
+              #{galleryImage.order}
+            </div>
+            
+            {/* Cover indicator */}
+            {isCover && (
+              <div className="absolute bottom-0 left-0 right-0 bg-blue-600 py-1 text-xs text-white text-center font-medium">
+                COVER IMAGE
+              </div>
             )}
           </div>
           
-          <div className="p-4">
-            <div className="mb-3">
-              <label className="block text-sm font-medium mb-1">Description</label>
-              <textarea
-                value={galleryImage.description || ''}
-                onChange={(e) => onDescriptionChange(galleryImage.id, e.target.value)}
-                className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                placeholder="Add a description for this image"
-                rows={2}
-              />
-            </div>
-            
-            <div className="flex flex-wrap gap-1 mb-4">
+          {/* Drag handle */}
+          <div 
+            className="absolute -top-2 -left-2 w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center cursor-move shadow-md border border-gray-300 dark:border-gray-600"
+            {...attributes} 
+            {...listeners}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 dark:text-gray-400">
+              <circle cx="8" cy="6" r="1"/><circle cx="8" cy="12" r="1"/><circle cx="8" cy="18" r="1"/>
+              <circle cx="16" cy="6" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="16" cy="18" r="1"/>
+            </svg>
+          </div>
+        </div>
+        
+        {/* Right section with details */}
+        <div className="flex-grow flex flex-col">
+          {/* Title */}
+          <h3 className="font-medium text-sm mb-2 line-clamp-1" title={galleryImage.image.title}>
+            {galleryImage.image.title}
+          </h3>
+          
+          {/* Description */}
+          <div className="mb-2 flex-grow">
+            <textarea
+              value={galleryImage.description || ''}
+              onChange={(e) => onDescriptionChange(galleryImage.id, e.target.value)}
+              className="w-full px-2 py-1 border text-xs rounded-md dark:bg-gray-700 dark:border-gray-600"
+              placeholder="Add image description..."
+              rows={3}
+            />
+          </div>
+          
+          {/* Tags */}
+          {galleryImage.image.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2 max-h-8 overflow-y-auto">
               {galleryImage.image.tags.map((tag) => (
                 <span
                   key={tag.id}
-                  className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded"
+                  className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-sm border border-gray-200 dark:border-gray-600"
                 >
                   {tag.name}
                 </span>
               ))}
             </div>
+          )}
+          
+          {/* Action buttons */}
+          <div className="flex justify-between items-center mt-auto">
+            <button
+              type="button" 
+              onClick={() => setCoverImage(galleryImage.image.id)}
+              className={`py-1.5 px-2 text-xs rounded ${isCover 
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border border-blue-300' 
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/50'}`}
+            >
+              {isCover ? 'Cover ✓' : 'Set as Cover'}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                onRemoveImage(galleryImage.id);
+              }}
+              className="py-1.5 px-2 text-xs bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 rounded border border-red-200 dark:border-red-900 hover:bg-red-200"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <BaseSortableCard
+      galleryImage={props.galleryImage}
+      isCover={props.isCover}
+      className="transition-all duration-200 hover:shadow-md"
+    >
+      {renderContent}
+    </BaseSortableCard>
+  );
+}
+
+// Grid view
+export function GridGalleryCard(props: GalleryCardProps) {
+  const renderContent = (data: {
+    attributes: ReturnType<typeof useSortable>['attributes'];
+    listeners: ReturnType<typeof useSortable>['listeners'];
+    isDragging: boolean;
+    isOver: boolean;
+  }) => {
+    const { galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage } = props;
+    const { attributes, listeners } = data;
+    
+    return (
+      <div className="flex flex-col">
+        {/* Image container with large aspect ratio */}
+        <div className="relative aspect-[4/3] overflow-hidden group">
+          {/* Main image */}
+          <Image
+            src={galleryImage.image.url}
+            alt={galleryImage.image.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          
+          {/* Gradient overlay on hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          
+          {/* Order indicator */}
+          <div className="absolute top-3 right-3 flex items-center justify-center w-8 h-8 bg-black/70 rounded-full text-white text-xs font-bold">
+            {galleryImage.order}
+          </div>
+          
+          {/* Cover image badge */}
+          {isCover && (
+            <div className="absolute top-3 left-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+              COVER
+            </div>
+          )}
+          
+          {/* Bottom controls that appear on hover */}
+          <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out flex justify-between items-center">
+            {/* Left side - Set as cover button */}
+            <button
+              type="button"
+              onClick={() => setCoverImage(galleryImage.image.id)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors ${
+                isCover 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white/90 text-gray-800 hover:bg-blue-600 hover:text-white'
+              }`}
+            >
+              {isCover ? 'Cover ✓' : 'Set Cover'}
+            </button>
             
+            {/* Right side - Action buttons */}
             <div className="flex space-x-2">
+              {/* Drag handle */}
               <button
-                type="button" 
-                onClick={() => setCoverImage(galleryImage.image.id)}
-                className={`flex-1 py-2 text-sm rounded-md ${isCover 
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-blue-50'}`}
+                type="button"
+                {...attributes}
+                {...listeners}
+                className="w-8 h-8 bg-white/90 hover:bg-yellow-500 text-gray-800 hover:text-white rounded-full flex items-center justify-center"
+                title="Drag to reorder"
               >
-                {isCover ? 'Cover Image ✓' : 'Set as Cover'}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
+                </svg>
               </button>
+              
+              {/* Remove button */}
               <button
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   onRemoveImage(galleryImage.id);
                 }}
-                className="px-3 py-2 bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 rounded-md hover:bg-red-200"
+                className="w-8 h-8 bg-white/90 hover:bg-red-600 text-gray-800 hover:text-white rounded-full flex items-center justify-center"
+                title="Remove from gallery"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
           </div>
+        </div>
+        
+        {/* Image details */}
+        <div className="pt-3 pb-2 px-2">
+          {/* Title */}
+          <h3 className="font-semibold text-sm mb-1.5 truncate" title={galleryImage.image.title}>
+            {galleryImage.image.title}
+          </h3>
           
-          {isOver && (
-            <div className="absolute inset-0 border-2 border-green-500 rounded-lg pointer-events-none z-10" />
-          )}
-        </>
-      )}
-    </BaseSortableCard>
-  );
-}
-
-// Grid view gallery image component
-export function GridGalleryCard(props: GalleryCardProps) {
-  const { galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage } = props;
-  
-  return (
-    <BaseSortableCard galleryImage={galleryImage} isCover={isCover} className="transition-all duration-200 relative">
-      {({attributes, listeners, isDragging, isOver}) => (
-        <>
-          <div className="relative aspect-square group">
-            <Image
-              src={galleryImage.image.url}
-              alt={galleryImage.image.title}
-              fill
-              className={`object-cover rounded-t-lg ${isDragging ? 'brightness-110' : ''}`}
-            />
-            
-            <div className="absolute top-2 right-2 flex space-x-1">
-              {isCover && (
-                <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                  Cover
-                </div>
+          {/* Tags */}
+          {galleryImage.image.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {galleryImage.image.tags.slice(0, 3).map((tag) => (
+                <span
+                  key={tag.id}
+                  className="inline-block bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] px-1.5 py-0.5 rounded-sm"
+                >
+                  {tag.name}
+                </span>
+              ))}
+              {galleryImage.image.tags.length > 3 && (
+                <span className="inline-block text-[10px] text-gray-500 dark:text-gray-400">
+                  +{galleryImage.image.tags.length - 3} more
+                </span>
               )}
-              <div className={`${isDragging ? 'bg-blue-500' : 'bg-black/50'} text-white text-xs px-2 py-1 rounded`}>
-                #{galleryImage.order}
-              </div>
             </div>
-            
-            <div className={`absolute inset-0 ${isDragging ? 'bg-blue-50/30 dark:bg-blue-900/30' : 'bg-black/0 group-hover:bg-black/60'} transition-all duration-200 flex items-center justify-center ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-              <div className="p-2 flex space-x-2">
-                <button 
-                  type="button"
-                  onClick={() => setCoverImage(galleryImage.image.id)}
-                  className={`p-2 rounded-full ${isCover ? 'bg-blue-500 text-white' : 'bg-white/80 hover:bg-blue-500 hover:text-white'}`}
-                  title={isCover ? 'Cover Image' : 'Set as Cover'}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </button>
-                <button 
-                  type="button"
-                  {...attributes} {...listeners}
-                  className={`p-2 rounded-full ${isDragging ? 'bg-blue-500 text-white' : 'bg-white/80 hover:bg-yellow-500 hover:text-white'}`}
-                  title="Drag to reorder"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                  </svg>
-                </button>
-                <button 
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onRemoveImage(galleryImage.id);
-                  }}
-                  className="p-2 rounded-full bg-white/80 hover:bg-red-500 hover:text-white"
-                  title="Remove from gallery"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <div className={`p-3 ${isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
-            <h3 className="font-medium text-sm truncate mb-1" title={galleryImage.image.title}>
-              {galleryImage.image.title}
-            </h3>
-            <textarea
-              value={galleryImage.description || ''}
-              onChange={(e) => onDescriptionChange(galleryImage.id, e.target.value)}
-              className="w-full px-2 py-1 border text-xs rounded-md dark:bg-gray-700 dark:border-gray-600"
-              placeholder="Add description"
-              rows={2}
-            />
-          </div>
-          
-          {isOver && (
-            <div className="absolute inset-0 border-2 border-green-500 rounded-lg pointer-events-none z-10" />
           )}
-        </>
-      )}
+          
+          {/* Simple description input */}
+          <input
+            type="text"
+            value={galleryImage.description || ''}
+            onChange={(e) => onDescriptionChange(galleryImage.id, e.target.value)}
+            className="w-full px-2 py-1.5 text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700"
+            placeholder="Add quick description..."
+          />
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <BaseSortableCard
+      galleryImage={props.galleryImage}
+      isCover={props.isCover}
+      className="transition-all duration-300 hover:shadow-lg relative overflow-hidden"
+    >
+      {renderContent}
     </BaseSortableCard>
   );
 }
 
-// Drag overlay card component
+// Drag overlay component
 export function DragOverlayCard({ image }: { image: GalleryImage }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 w-72 rotate-1 transform-gpu ring-4 ring-blue-500/50 animate-pulse">
-      <div className="flex space-x-3">
-        <div className="w-16 h-16 relative flex-shrink-0">
+    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-3 border border-blue-500">
+      <div className="mb-2 flex justify-between items-center">
+        <div className="flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
+            <circle cx="8" cy="6" r="1"/><circle cx="8" cy="12" r="1"/><circle cx="8" cy="18" r="1"/>
+            <circle cx="16" cy="6" r="1"/><circle cx="16" cy="12" r="1"/><circle cx="16" cy="18" r="1"/>
+          </svg>
+          <span className="ml-2 font-medium text-sm text-blue-600 dark:text-blue-400 truncate max-w-[180px]">
+            {image.image.title}
+          </span>
+        </div>
+        <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded">
+          #{image.order}
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <div className="w-16 h-16 relative flex-shrink-0 rounded-md overflow-hidden">
           <Image
             src={image.image.url}
             alt={image.image.title}
             fill
-            className="object-cover rounded-md brightness-110"
+            className="object-cover"
           />
-          <div className="absolute inset-0 bg-blue-500/10 rounded-md" />
         </div>
         
         <div className="flex-grow">
-          <div className="flex justify-between items-center">
-            <h3 className="font-medium text-sm mb-1 truncate">{image.image.title}</h3>
-            <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded">
-              #{image.order}
-            </div>
-          </div>
+          <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Dragging...</div>
           
-          <div className="text-xs text-gray-500 mt-1">Dragging...</div>
+          {image.description && (
+            <div className="text-xs text-gray-500 mt-1 truncate">
+              {image.description}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -2,30 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  DndContext, 
-  KeyboardSensor, 
-  PointerSensor, 
-  useSensor, 
-  useSensors,
-  DragOverlay,
-  DragStartEvent,
-  DragEndEvent,
-  CollisionDetection,
-  rectIntersection,
-  MeasuringStrategy,
-} from '@dnd-kit/core';
-import { 
-  SortableContext, 
-  sortableKeyboardCoordinates, 
-  verticalListSortingStrategy,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable';
 
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
-import { ErrorMessage, LoadingSpinner, SuccessMessage, EmptyState } from '@/components/StatusMessages';
+import { ErrorMessage, LoadingSpinner, SuccessMessage } from '@/components/StatusMessages';
 import { useAsync, useFetch, useSubmit, useGalleryImages } from '@/lib/hooks';
 import { deepEqual } from '@/lib/deepEqual';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -33,9 +14,9 @@ import { use } from 'react';
 import logger from '@/lib/logger';
 
 // Import newly created components
-import { CompactGalleryCard, StandardGalleryCard, GridGalleryCard, DragOverlayCard } from '@/components/GalleryImageCards';
 import { GalleryDetailsForm } from '@/components/GalleryDetailsForm';
-import { GalleryViewSelector, ViewMode } from '@/components/GalleryViewSelector';
+import { GalleryViewSelector } from '@/components/GalleryViewSelector';
+import { GallerySortable, ViewMode } from '@/components/GallerySortable';
 
 // Types for gallery data
 interface Tag {
@@ -85,7 +66,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showSelectImagesDialog, setShowSelectImagesDialog] = useState(false);
   const [showDeleteGalleryDialog, setShowDeleteGalleryDialog] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Compact);
+  const [viewMode, setViewMode] = useState<ViewMode>('compact');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   // Store original gallery data for deep comparison
@@ -101,7 +82,6 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const {
     images,
     setImages,
-    activeImage,
     showRemoveImageDialog,
     showSuccessToast,
     toastMessage,
@@ -109,74 +89,12 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     handleRemoveImage,
     confirmRemoveImage,
     cancelRemoveImage,
-    handleDragStart,
-    handleDragEnd,
-    handleDragCancel,
     addImagesToGallery
   } = useGalleryImages();
   
   // Router and API hooks
   const router = useRouter();
   const { fetchApi, isLoading: isFetching, error: fetchError } = useFetch();
-  
-  // Add state for active dragging
-  const [isDragging, setIsDragging] = useState(false);
-  
-  // Configure the sensors for drag and drop with improved sensitivity
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Start drag after moving 8px to prevent accidental drags
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // Add a collision detection function with memory for better dragging experience
-  const collisionDetection: CollisionDetection = useCallback(
-    (args) => {
-      // First, find all intersections
-      const intersections = rectIntersection(args);
-      
-      if (!intersections.length) {
-        return intersections;
-      }
-
-      // Just return intersections without state updates during render
-      return intersections;
-    },
-    []
-  );
-
-  // Use an effect to safely manage state updates related to dragging
-  useEffect(() => {
-    // This is safe as it's in a useEffect, not during render
-  }, [isDragging]);
-
-  // Enhanced drag handlers
-  const enhancedDragStart = useCallback((event: DragStartEvent) => {
-    setIsDragging(true);
-    handleDragStart(event);
-  }, [handleDragStart]);
-
-  // Fix: Remove unused parameter warning by removing the parameter completely
-  const enhancedDragOver = useCallback(() => {
-    // Safe to update state here as this is an event handler, not during render
-    // No need to track the over ID if we're not using it
-  }, []);
-
-  const enhancedDragEnd = useCallback((event: DragEndEvent) => {
-    setIsDragging(false);
-    handleDragEnd(event);
-    // The useEffect with deepEqual will handle tracking changes
-  }, [handleDragEnd]);
-
-  const enhancedDragCancel = useCallback(() => {
-    setIsDragging(false);
-    handleDragCancel();
-  }, [handleDragCancel]);
 
   // Gallery update submission handler
   const { 
@@ -357,6 +275,11 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     addImagesToGallery(imageIds, fetchImagesForGallery);
   }, [fetchApi, addImagesToGallery]);
 
+  // Handle image reordering from GallerySortable
+  const handleImagesReordered = useCallback((reorderedImages: GalleryImage[]) => {
+    setImages(reorderedImages);
+  }, [setImages]);
+
   // Render loading state
   if (isFetching && !gallery) {
     return (
@@ -459,68 +382,16 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
               <GalleryViewSelector viewMode={viewMode} setViewMode={setViewMode} />
             </div>
             
-            {images.length === 0 ? (
-              <EmptyState
-                title="This gallery has no images"
-                description="Click the 'Add Images' button to add some."
-              />
-            ) : (
-              <DndContext 
-                sensors={sensors}
-                collisionDetection={collisionDetection}
-                onDragStart={enhancedDragStart}
-                onDragOver={enhancedDragOver}
-                onDragEnd={enhancedDragEnd}
-                onDragCancel={enhancedDragCancel}
-                measuring={{
-                  droppable: {
-                    strategy: MeasuringStrategy.Always
-                  }
-                }}
-              >
-                <SortableContext 
-                  items={images.map(img => img.id)}
-                  strategy={viewMode === ViewMode.Compact ? rectSortingStrategy : viewMode === ViewMode.Grid ? rectSortingStrategy : verticalListSortingStrategy}
-                >
-                  <div 
-                    className={`grid gap-3 ${
-                      viewMode === ViewMode.Compact 
-                        ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' 
-                        : viewMode === ViewMode.Standard
-                          ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3'
-                          : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                    } ${isDragging ? 'drop-shadow-md' : ''}`}
-                  >
-                    {images.map((galleryImage) => {
-                      // Extract the key and create a separate props object without the key
-                      const componentProps = {
-                        galleryImage,
-                        isCover: coverImageId === galleryImage.image.id,
-                        onDescriptionChange: handleImageDescriptionChange,
-                        setCoverImage: setCoverImageId,
-                        onRemoveImage: handleRemoveImage
-                      };
-
-                      switch (viewMode) {
-                        case ViewMode.Standard:
-                          return <StandardGalleryCard key={galleryImage.id} {...componentProps} />;
-                        case ViewMode.Grid:
-                          return <GridGalleryCard key={galleryImage.id} {...componentProps} />;
-                        default:
-                          return <CompactGalleryCard key={galleryImage.id} {...componentProps} />;
-                      }
-                    })}
-                  </div>
-                </SortableContext>
-                
-                <DragOverlay adjustScale={true} dropAnimation={{
-                  duration: 300,
-                  easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-                }}>
-                  {activeImage ? <DragOverlayCard image={activeImage} /> : null}
-                </DragOverlay>
-              </DndContext>
-            )}
+            {/* New GallerySortable Component */}
+            <GallerySortable 
+              galleryImages={images}
+              coverImageId={coverImageId}
+              viewMode={viewMode}
+              onImagesReordered={handleImagesReordered}
+              onDescriptionChange={handleImageDescriptionChange}
+              onSetCoverImage={setCoverImageId}
+              onRemoveImage={handleRemoveImage}
+            />
           </div>
 
           {/* Danger Zone */}
@@ -599,7 +470,6 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         <SelectImagesDialog
           isOpen={showSelectImagesDialog}
           onClose={() => setShowSelectImagesDialog(false)}
-          galleryId={galleryId}
           onImagesSelected={handleAddImages}
           existingImageIds={images.map(img => img.image.id)}
         />
