@@ -12,6 +12,7 @@ import { deepEqual } from '@/lib/deepEqual';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { use } from 'react';
 import logger from '@/lib/logger';
+import { PaginatedResponse, Image as ApiImageType } from '@/lib/types'; // Added PaginatedResponse and ApiImageType
 
 // Import newly created components
 import { GalleryDetailsForm } from '@/components/GalleryDetailsForm';
@@ -301,12 +302,24 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const handleAddImages = useCallback((imageIds: string[]) => {
     setShowSelectImagesDialog(false);
     
-    // Add proper type annotation to match the expected type in addImagesToGallery
-    const fetchImagesForGallery = async (): Promise<Array<{id: string; [key: string]: unknown}>> => {
-      return await fetchApi<Array<{id: string; [key: string]: unknown}>>('/api/images');
+    const fetchImagesForGallery = async (): Promise<ApiImageType[]> => {
+      // Adjust limit to be within the API's accepted range (max 100)
+      // This will fetch up to 100 images. If more images exist, pagination would be needed in SelectImagesDialog.
+      const response = await fetchApi<PaginatedResponse<ApiImageType>>('/api/images?limit=100&page=1');
+      
+      // Add a guard to ensure the response is correctly structured
+      if (response && typeof response === 'object' && Array.isArray(response.data)) {
+        return response.data;
+      }
+      
+      // Log an error and throw if the response format is unexpected
+      logger.error(
+        'fetchImagesForGallery: Unexpected response from fetchApi for /api/images. Expected PaginatedResponse.',
+        response
+      );
+      throw new Error('Failed to fetch images due to unexpected API response format.');
     };
     
-    // addImagesToGallery will update the images state, and the useEffect with deepEqual will detect the changes
     addImagesToGallery(imageIds, fetchImagesForGallery);
   }, [fetchApi, addImagesToGallery]);
 

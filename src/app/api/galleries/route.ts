@@ -7,12 +7,14 @@ import logger from "@/lib/logger";
 
 const createGallerySchema = z.object({
   title: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().optional(), // Gallery description can be undefined (if not provided) or a string
   isPublic: z.boolean().default(false),
   images: z.array(z.object({
-    id: z.string(),
-    description: z.string().optional()
+    id: z.string(), // This is the Image ID
+    description: z.string().nullable().optional(), // Image description can be null, undefined, or a string
+    order: z.number().optional(),
   })).optional(),
+  coverImageId: z.string().nullable().optional(),
 });
 
 export async function POST(req: Request) {
@@ -32,16 +34,21 @@ export async function POST(req: Request) {
         description: body.description,
         isPublic: body.isPublic,
         userId: session.user.id,
+        coverImageId: body.coverImageId, // Save cover image ID
       },
     });
 
     // Then create the image associations if there are any images
     if (body.images && body.images.length > 0) {
+      // Ensure images are sorted by order if provided, otherwise use index
+      const sortedImages = body.images.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+      
       await prisma.imageInGallery.createMany({
-        data: body.images.map(img => ({
+        data: sortedImages.map((img, index) => ({
           imageId: img.id,
           galleryId: gallery.id,
           description: img.description,
+          order: img.order ?? index, // Use provided order or fallback to index
         })),
       });
     }
