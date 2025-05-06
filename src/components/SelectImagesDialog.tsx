@@ -8,6 +8,7 @@ import logger from '@/lib/logger';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { PaginatedResponse } from '@/lib/types'; // Added import for PaginatedResponse
+import { ImageTags } from './ui/ImageTags';
 
 interface Tag {
   id: string;
@@ -261,21 +262,7 @@ export function SelectImagesDialog({
                       </div>
                       <div className="p-2">
                         <h3 className="font-medium text-sm truncate">{image.title}</h3>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {image.tags.slice(0, 2).map(tag => (
-                            <span
-                              key={tag.id}
-                              className="text-xs px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
-                            >
-                              {tag.name}
-                            </span>
-                          ))}
-                          {image.tags.length > 2 && (
-                            <span className="text-xs px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
-                              +{image.tags.length - 2}
-                            </span>
-                          )}
-                        </div>
+                        <ImageTags tags={image.tags} max={2} />
                       </div>
                     </div>
                   ))}

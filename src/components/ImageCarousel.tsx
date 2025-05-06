@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { LoadingSpinner, ErrorMessage } from './StatusMessages';
 import { ErrorBoundary } from './ErrorBoundary';
+import { ImageTags } from './ui/ImageTags';
 
 interface Tag {
   id: string;
@@ -134,16 +135,7 @@ export function ImageCarousel({ images, initialImageIndex, isOpen, onClose }: Im
                 {currentImage.description && (
                   <p className="text-gray-600 dark:text-gray-300 mb-4">{currentImage.description}</p>
                 )}
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {currentImage.image.tags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded"
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
-                </div>
+                <ImageTags tags={currentImage.image.tags} max={3} />
                 <div className="text-sm text-gray-500 dark:text-gray-400">
                   {currentIndex + 1} of {images.length}
                 </div>

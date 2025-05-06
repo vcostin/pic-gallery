@@ -86,6 +86,83 @@ function BaseSortableCard(props: {
   );
 }
 
+// Reusable component for image tags
+function GalleryImageTags({ tags, max = 3 }: { tags: Tag[]; max?: number }) {
+  if (!tags.length) return null;
+  return (
+    <div className="flex flex-wrap gap-1 mb-2 max-h-8 overflow-y-auto">
+      {tags.slice(0, max).map((tag) => (
+        <span
+          key={tag.id}
+          className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-sm border border-gray-200 dark:border-gray-600"
+        >
+          {tag.name}
+        </span>
+      ))}
+      {tags.length > max && (
+        <span className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-sm border border-gray-200 dark:border-gray-600">
+          +{tags.length - max} more
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Reusable component for action buttons
+function GalleryImageActionButtons({
+  isCover,
+  onSetCover,
+  onRemove,
+  coverLabel = 'Set as Cover',
+  removeLabel = 'Remove',
+  compact = false,
+}: {
+  isCover: boolean;
+  onSetCover: () => void;
+  onRemove: () => void;
+  coverLabel?: string;
+  removeLabel?: string;
+  compact?: boolean;
+}) {
+  return (
+    <div className={`flex ${compact ? 'justify-between items-center' : 'space-x-2'}`}>
+      <button
+        type="button"
+        onClick={onSetCover}
+        className={
+          compact
+            ? `py-1.5 px-2 text-xs rounded ${isCover
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border border-blue-300'
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/50'}`
+            : `px-3 py-1.5 text-xs font-semibold rounded-full transition-colors ${
+                isCover
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white/90 text-gray-800 hover:bg-blue-600 hover:text-white'
+              }`
+        }
+      >
+        {isCover ? 'Cover ✓' : coverLabel}
+      </button>
+      <button
+        type="button"
+        onClick={onRemove}
+        className={
+          compact
+            ? 'py-1.5 px-2 text-xs bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 rounded border border-red-200 dark:border-red-900 hover:bg-red-200'
+            : 'w-8 h-8 bg-white/90 hover:bg-red-600 text-gray-800 hover:text-white rounded-full flex items-center justify-center'
+        }
+        title={removeLabel}
+      >
+        {compact ? removeLabel : (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+}
+
 // Compact view
 export function CompactGalleryCard(props: GalleryCardProps) {
   const renderContent = (data: {
@@ -155,41 +232,15 @@ export function CompactGalleryCard(props: GalleryCardProps) {
           </div>
           
           {/* Tags */}
-          {galleryImage.image.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2 max-h-8 overflow-y-auto">
-              {galleryImage.image.tags.map((tag) => (
-                <span
-                  key={tag.id}
-                  className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-sm border border-gray-200 dark:border-gray-600"
-                >
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
+          <GalleryImageTags tags={galleryImage.image.tags} max={3} />
           
           {/* Action buttons */}
-          <div className="flex justify-between items-center mt-auto">
-            <button
-              type="button" 
-              onClick={() => setCoverImage(galleryImage.image.id)}
-              className={`py-1.5 px-2 text-xs rounded ${isCover 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border border-blue-300' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/50'}`}
-            >
-              {isCover ? 'Cover ✓' : 'Set as Cover'}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                onRemoveImage(galleryImage.id);
-              }}
-              className="py-1.5 px-2 text-xs bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 rounded border border-red-200 dark:border-red-900 hover:bg-red-200"
-            >
-              Remove
-            </button>
-          </div>
+          <GalleryImageActionButtons
+            isCover={isCover}
+            onSetCover={() => setCoverImage(galleryImage.image.id)}
+            onRemove={() => onRemoveImage(galleryImage.id)}
+            compact
+          />
         </div>
       </div>
     );
@@ -246,49 +297,26 @@ export function GridGalleryCard(props: GalleryCardProps) {
           
           {/* Bottom controls that appear on hover */}
           <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out flex justify-between items-center">
-            {/* Left side - Set as cover button */}
+            <GalleryImageActionButtons
+              isCover={isCover}
+              onSetCover={() => setCoverImage(galleryImage.image.id)}
+              onRemove={() => onRemoveImage(galleryImage.id)}
+              coverLabel="Set Cover"
+              removeLabel=""
+              compact={false}
+            />
+            {/* Drag handle */}
             <button
               type="button"
-              onClick={() => setCoverImage(galleryImage.image.id)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors ${
-                isCover 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-white/90 text-gray-800 hover:bg-blue-600 hover:text-white'
-              }`}
+              {...attributes}
+              {...listeners}
+              className="w-8 h-8 bg-white/90 hover:bg-yellow-500 text-gray-800 hover:text-white rounded-full flex items-center justify-center"
+              title="Drag to reorder"
             >
-              {isCover ? 'Cover ✓' : 'Set Cover'}
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
+              </svg>
             </button>
-            
-            {/* Right side - Action buttons */}
-            <div className="flex space-x-2">
-              {/* Drag handle */}
-              <button
-                type="button"
-                {...attributes}
-                {...listeners}
-                className="w-8 h-8 bg-white/90 hover:bg-yellow-500 text-gray-800 hover:text-white rounded-full flex items-center justify-center"
-                title="Drag to reorder"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
-                </svg>
-              </button>
-              
-              {/* Remove button */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onRemoveImage(galleryImage.id);
-                }}
-                className="w-8 h-8 bg-white/90 hover:bg-red-600 text-gray-800 hover:text-white rounded-full flex items-center justify-center"
-                title="Remove from gallery"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
           </div>
         </div>
         
@@ -300,23 +328,7 @@ export function GridGalleryCard(props: GalleryCardProps) {
           </h3>
           
           {/* Tags */}
-          {galleryImage.image.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {galleryImage.image.tags.slice(0, 3).map((tag) => (
-                <span
-                  key={tag.id}
-                  className="inline-block bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] px-1.5 py-0.5 rounded-sm"
-                >
-                  {tag.name}
-                </span>
-              ))}
-              {galleryImage.image.tags.length > 3 && (
-                <span className="inline-block text-[10px] text-gray-500 dark:text-gray-400">
-                  +{galleryImage.image.tags.length - 3} more
-                </span>
-              )}
-            </div>
-          )}
+          <GalleryImageTags tags={galleryImage.image.tags} max={3} />
           
           {/* Simple description input */}
           <input

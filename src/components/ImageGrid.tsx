@@ -7,6 +7,7 @@ import { EmptyState, SkeletonLoader } from './StatusMessages';
 import { useAsync } from '@/lib/hooks';
 import { ErrorBoundary } from './ErrorBoundary';
 import logger from '@/lib/logger';
+import { ImageTags } from './ui/ImageTags';
 
 interface Tag {
   id: string;
@@ -56,16 +57,7 @@ const ImageCard = memo(({ image, onEdit }: { image: ImageType; onEdit: (image: I
             {image.description}
           </p>
         )}
-        <div className="flex flex-wrap gap-1">
-          {image.tags.map(tag => (
-            <span
-              key={tag.id}
-              className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded"
-            >
-              {tag.name}
-            </span>
-          ))}
-        </div>
+        <ImageTags tags={image.tags} max={3} />
       </div>
     </div>
   );
