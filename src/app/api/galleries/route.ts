@@ -14,6 +14,14 @@ const createGallerySchema = z.object({
     order: z.number().optional(),
   })).optional(),
   coverImageId: z.string().nullable().optional(),
+  // Theming options
+  themeColor: z.string().optional().nullable(),
+  backgroundColor: z.string().optional().nullable(),
+  backgroundImageUrl: z.string().url().optional().nullable(),
+  accentColor: z.string().optional().nullable(),
+  fontFamily: z.string().optional().nullable(),
+  displayMode: z.string().optional().nullable(), // e.g., "carousel", "grid", "slideshow"
+  layoutType: z.string().optional().nullable(), // e.g., "full-width", "contained"
 });
 
 export const POST = withApiHandler(async (req) => {
@@ -30,6 +38,14 @@ export const POST = withApiHandler(async (req) => {
       isPublic: body.isPublic,
       userId: session.user.id,
       coverImageId: body.coverImageId,
+      // Theming options
+      themeColor: body.themeColor,
+      backgroundColor: body.backgroundColor,
+      backgroundImageUrl: body.backgroundImageUrl,
+      accentColor: body.accentColor,
+      fontFamily: body.fontFamily,
+      displayMode: body.displayMode,
+      layoutType: body.layoutType,
     },
   });
   if (body.images && body.images.length > 0) {

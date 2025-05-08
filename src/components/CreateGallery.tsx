@@ -42,6 +42,15 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
+  // Theming state
+  const [themeColor, setThemeColor] = useState<string>('');
+  const [backgroundColor, setBackgroundColor] = useState<string>('');
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string>('');
+  const [accentColor, setAccentColor] = useState<string>('');
+  const [fontFamily, setFontFamily] = useState<string>('');
+  const [displayMode, setDisplayMode] = useState<string>('');
+  const [layoutType, setLayoutType] = useState<string>('');
+
   // States from EditGalleryPage
   const {
     images,
@@ -84,6 +93,14 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
           isPublic,
           images: imagesToSubmit, // Send the structured image data
           coverImageId: coverImageId || null, // Send cover image id
+          // Theming options
+          themeColor: themeColor || null,
+          backgroundColor: backgroundColor || null,
+          backgroundImageUrl: backgroundImageUrl || null,
+          accentColor: accentColor || null,
+          fontFamily: fontFamily || null,
+          displayMode: displayMode || null,
+          layoutType: layoutType || null,
         }),
       });
 
@@ -180,6 +197,21 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
             setDescription={setDescription}
             isPublic={isPublic}
             setIsPublic={setIsPublic}
+            // Pass theming state and setters
+            themeColor={themeColor}
+            setThemeColor={setThemeColor}
+            backgroundColor={backgroundColor}
+            setBackgroundColor={setBackgroundColor}
+            backgroundImageUrl={backgroundImageUrl}
+            setBackgroundImageUrl={setBackgroundImageUrl}
+            accentColor={accentColor}
+            setAccentColor={setAccentColor}
+            fontFamily={fontFamily}
+            setFontFamily={setFontFamily}
+            displayMode={displayMode}
+            setDisplayMode={setDisplayMode}
+            layoutType={layoutType}
+            setLayoutType={setLayoutType}
           />
 
           {/* Images Section - similar to EditGalleryPage */}

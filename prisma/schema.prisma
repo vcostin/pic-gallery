@@ -89,6 +89,15 @@ model Gallery {
   updatedAt   DateTime        @updatedAt
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   images      ImageInGallery[]
+
+  // Theming options
+  themeColor         String? // e.g., hex code for a primary color
+  backgroundColor    String? // e.g., hex code for background
+  backgroundImageUrl String? // URL for a background image
+  accentColor        String? // e.g., hex code for accents
+  fontFamily         String? // e.g., "Arial, sans-serif"
+  displayMode        String? // e.g., "carousel", "grid", "slideshow"
+  layoutType         String? // e.g., "full-width", "contained"
 }
 
 model Tag {

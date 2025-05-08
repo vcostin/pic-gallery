@@ -52,6 +52,13 @@ interface Gallery {
   coverImageId: string | null;
   images: GalleryImage[];
   user: GalleryUser;
+  themeColor?: string | null;
+  backgroundColor?: string | null;
+  backgroundImageUrl?: string | null;
+  accentColor?: string | null;
+  fontFamily?: string | null;
+  displayMode?: string | null;
+  layoutType?: string | null;
 }
 
 export default function EditGalleryPage({ params }: { params: Promise<{ id: string }> }) {
@@ -70,6 +77,15 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const [viewMode, setViewMode] = useState<ViewMode>('compact');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Theming state
+  const [themeColor, setThemeColor] = useState<string | undefined>(undefined);
+  const [backgroundColor, setBackgroundColor] = useState<string | undefined>(undefined);
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | undefined>(undefined);
+  const [accentColor, setAccentColor] = useState<string | undefined>(undefined);
+  const [fontFamily, setFontFamily] = useState<string | undefined>(undefined);
+  const [displayMode, setDisplayMode] = useState<string | undefined>(undefined);
+  const [layoutType, setLayoutType] = useState<string | undefined>(undefined);
+
   // State for filtering images within the gallery editor
   const [galleryImageSearchQuery, setGalleryImageSearchQuery] = useState('');
   const [galleryImageTag, setGalleryImageTag] = useState('');
@@ -82,6 +98,13 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     isPublic: boolean;
     coverImageId: string;
     images: GalleryImage[];
+    themeColor?: string | null;
+    backgroundColor?: string | null;
+    backgroundImageUrl?: string | null;
+    accentColor?: string | null;
+    fontFamily?: string | null;
+    displayMode?: string | null;
+    layoutType?: string | null;
   } | null>(null);
   
   // Use our custom hook for gallery images
@@ -138,7 +161,15 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         description,
         isPublic,
         coverImageId: coverImageId || null,
-        images: imageUpdates
+        images: imageUpdates,
+        // Theming options
+        themeColor: themeColor || null,
+        backgroundColor: backgroundColor || null,
+        backgroundImageUrl: backgroundImageUrl || null,
+        accentColor: accentColor || null,
+        fontFamily: fontFamily || null,
+        displayMode: displayMode || null,
+        layoutType: layoutType || null,
       }),
     });
     const updatedGallery = response.data;
@@ -148,6 +179,14 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     setIsPublic(updatedGallery.isPublic);
     setCoverImageId(updatedGallery.coverImageId || '');
     setImages(updatedGallery.images);
+    // Update theming state
+    setThemeColor(updatedGallery.themeColor || undefined);
+    setBackgroundColor(updatedGallery.backgroundColor || undefined);
+    setBackgroundImageUrl(updatedGallery.backgroundImageUrl || undefined);
+    setAccentColor(updatedGallery.accentColor || undefined);
+    setFontFamily(updatedGallery.fontFamily || undefined);
+    setDisplayMode(updatedGallery.displayMode || undefined);
+    setLayoutType(updatedGallery.layoutType || undefined);
     
     // Update original gallery data with the data received from the server
     setOriginalGalleryData({
@@ -155,7 +194,15 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       description: updatedGallery.description || '',
       isPublic: updatedGallery.isPublic,
       coverImageId: updatedGallery.coverImageId || '',
-      images: updatedGallery.images
+      images: updatedGallery.images,
+      // Theming options
+      themeColor: updatedGallery.themeColor,
+      backgroundColor: updatedGallery.backgroundColor,
+      backgroundImageUrl: updatedGallery.backgroundImageUrl,
+      accentColor: updatedGallery.accentColor,
+      fontFamily: updatedGallery.fontFamily,
+      displayMode: updatedGallery.displayMode,
+      layoutType: updatedGallery.layoutType,
     });
     
     return "Gallery updated successfully!";
@@ -200,6 +247,14 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         setIsPublic(data.isPublic);
         setCoverImageId(data.coverImageId || '');
         setImages(data.images); // These images are now filtered by the backend
+        // Set initial theming state
+        setThemeColor(data.themeColor || undefined);
+        setBackgroundColor(data.backgroundColor || undefined);
+        setBackgroundImageUrl(data.backgroundImageUrl || undefined);
+        setAccentColor(data.accentColor || undefined);
+        setFontFamily(data.fontFamily || undefined);
+        setDisplayMode(data.displayMode || undefined);
+        setLayoutType(data.layoutType || undefined);
         
         // Only set originalGalleryData on the initial load (no filters)
         if (!galleryImageSearchQuery && !galleryImageTag && !originalGalleryData) {
@@ -208,7 +263,15 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
             description: data.description || '',
             isPublic: data.isPublic,
             coverImageId: data.coverImageId || '',
-            images: data.images // Store the initial, unfiltered images here
+            images: data.images, // Store the initial, unfiltered images here
+            // Theming options
+            themeColor: data.themeColor,
+            backgroundColor: data.backgroundColor,
+            backgroundImageUrl: data.backgroundImageUrl,
+            accentColor: data.accentColor,
+            fontFamily: data.fontFamily,
+            displayMode: data.displayMode,
+            layoutType: data.layoutType,
           });
         }
         return data;
@@ -246,11 +309,18 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       description,
       isPublic,
       coverImageId: coverImageId || '',
-      images
+      images,
+      themeColor: themeColor || null,
+      backgroundColor: backgroundColor || null,
+      backgroundImageUrl: backgroundImageUrl || null,
+      accentColor: accentColor || null,
+      fontFamily: fontFamily || null,
+      displayMode: displayMode || null,
+      layoutType: layoutType || null,
     };
     
     setHasUnsavedChanges(!deepEqual(currentData, originalGalleryData));
-  }, [originalGalleryData, title, description, isPublic, coverImageId, images]);
+  }, [originalGalleryData, title, description, isPublic, coverImageId, images, themeColor, backgroundColor, backgroundImageUrl, accentColor, fontFamily, displayMode, layoutType]);
 
   // Form submission handler
   const handleSubmit = async (e: React.FormEvent) => {
@@ -289,6 +359,14 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       setIsPublic(originalGalleryData.isPublic);
       setCoverImageId(originalGalleryData.coverImageId);
       setImages(originalGalleryData.images);
+      // Reset theming fields
+      setThemeColor(originalGalleryData.themeColor || undefined);
+      setBackgroundColor(originalGalleryData.backgroundColor || undefined);
+      setBackgroundImageUrl(originalGalleryData.backgroundImageUrl || undefined);
+      setAccentColor(originalGalleryData.accentColor || undefined);
+      setFontFamily(originalGalleryData.fontFamily || undefined);
+      setDisplayMode(originalGalleryData.displayMode || undefined);
+      setLayoutType(originalGalleryData.layoutType || undefined);
       
       // Close the dialog
       setShowConfirmDialog(false);
@@ -306,17 +384,17 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     const fetchImagesForGallery = async (): Promise<Array<{id: string; [key: string]: unknown}>> => {
       // Adjust limit to be within the API's accepted range (max 100)
       // This will fetch up to 100 images. If more images exist, pagination would be needed in SelectImagesDialog.
-      const response = await fetchApi<PaginatedResponse<ApiImageType>>('/api/images?limit=100&page=1');
+      const response = await fetchApi<{ data: PaginatedResponse<ApiImageType> }>('/api/images?limit=100&page=1');
       
       // Add a guard to ensure the response is correctly structured
-      if (response && typeof response === 'object' && Array.isArray(response.data)) {
+      if (response && typeof response === 'object' && response.data && Array.isArray(response.data.data)) {
         // Cast ApiImageType[] to Array<{id: string; [key: string]: unknown}> to satisfy the hook
-        return response.data.map(image => ({ ...image, id: image.id } as {id: string; [key: string]: unknown}));
+        return response.data.data.map(image => ({ ...image, id: image.id } as {id: string; [key: string]: unknown}));
       }
       
       // Log an error and throw if the response format is unexpected
       logger.error(
-        'fetchImagesForGallery: Unexpected response from fetchApi for /api/images. Expected PaginatedResponse.',
+        'fetchImagesForGallery: Unexpected response from fetchApi for /api/images. Expected PaginatedResponse within a data object.',
         response
       );
       throw new Error('Failed to fetch images due to unexpected API response format.');
@@ -407,6 +485,21 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
             setDescription={setDescription}
             isPublic={isPublic}
             setIsPublic={setIsPublic}
+            // Pass theming props
+            themeColor={themeColor}
+            setThemeColor={setThemeColor}
+            backgroundColor={backgroundColor}
+            setBackgroundColor={setBackgroundColor}
+            backgroundImageUrl={backgroundImageUrl}
+            setBackgroundImageUrl={setBackgroundImageUrl}
+            accentColor={accentColor}
+            setAccentColor={setAccentColor}
+            fontFamily={fontFamily}
+            setFontFamily={setFontFamily}
+            displayMode={displayMode}
+            setDisplayMode={setDisplayMode}
+            layoutType={layoutType}
+            setLayoutType={setLayoutType}
           />
           
           {/* Images Section */}

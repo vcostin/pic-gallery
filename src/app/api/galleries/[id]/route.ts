@@ -32,6 +32,14 @@ const updateGallerySchema = z.object({
   })).optional(),
   // New field for adding images
   addImages: z.array(z.string()).optional(),
+  // Theming options
+  themeColor: z.string().optional().nullable(),
+  backgroundColor: z.string().optional().nullable(),
+  backgroundImageUrl: z.string().url().optional().nullable(),
+  accentColor: z.string().optional().nullable(),
+  fontFamily: z.string().optional().nullable(),
+  displayMode: z.string().optional().nullable(),
+  layoutType: z.string().optional().nullable(),
 });
 
 export async function GET(
@@ -146,25 +154,43 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } } // Corrected type for params
 ) {
+  const session = await getServerSession(authOptions);
+  const { id } = params; // No await needed for params directly
+
+  if (!session?.user.id) {
+    return apiUnauthorized();
+  }
+
   try {
-    // Await params to solve the Next.js dynamic route parameters issue
-    const { id } = await params;
-    
-    const session = await getServerSession(authOptions);
-    if (!session?.user.id) {
-      return apiUnauthorized();
+    const body = await req.json();
+    const validation = updateGallerySchema.safeParse(body);
+
+    if (!validation.success) {
+      return apiValidationError(validation.error);
     }
+
+    const {
+      title,
+      description,
+      isPublic,
+      coverImageId, // This is string | null | undefined
+      images: imagesDataFromValidation,
+      addImages: addImagesFromValidation,
+      themeColor,
+      backgroundColor,
+      backgroundImageUrl,
+      accentColor,
+      fontFamily,
+      displayMode,
+      layoutType
+    } = validation.data;
 
     const gallery = await prisma.gallery.findUnique({
       where: { id: id },
-      include: { 
-        images: {
-          include: {
-            image: true
-          }
-        } 
+      include: {
+        images: true,
       },
     });
 
@@ -176,183 +202,146 @@ export async function PATCH(
       return apiUnauthorized();
     }
 
-    const json = await req.json();
-    logger.log("Received update request:", JSON.stringify(json));
-    let body;
-    try {
-      body = updateGallerySchema.parse(json);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return apiValidationError(err);
+    const dataToUpdate: Prisma.GalleryUpdateInput = {};
+    if (title !== undefined) dataToUpdate.title = title;
+    if (description !== undefined) dataToUpdate.description = description;
+    if (isPublic !== undefined) dataToUpdate.isPublic = isPublic;
+
+    // Handle coverImage relation update based on coverImageId
+    if (coverImageId !== undefined) {
+      if (coverImageId === null) {
+        dataToUpdate.coverImage = { disconnect: true };
+      } else {
+        dataToUpdate.coverImage = { connect: { id: coverImageId } };
       }
-      throw err;
-    }
-
-    // Update gallery metadata
-    const updateData: Record<string, unknown> = {};
-    
-    if (body.title !== undefined) {
-      updateData.title = body.title;
     }
     
-    if (body.description !== undefined) {
-      updateData.description = body.description;
-    }
+    // Theming options from validated data
+    // These assignments assume that schema.prisma is up-to-date and these fields exist on the Gallery model.
+    // If TS errors persist here, it likely means `npx prisma generate` needs to be run or LSP is stale.
+    if (themeColor !== undefined) dataToUpdate.themeColor = themeColor;
+    if (backgroundColor !== undefined) dataToUpdate.backgroundColor = backgroundColor;
+    if (backgroundImageUrl !== undefined) dataToUpdate.backgroundImageUrl = backgroundImageUrl;
+    if (accentColor !== undefined) dataToUpdate.accentColor = accentColor;
+    if (fontFamily !== undefined) dataToUpdate.fontFamily = fontFamily;
+    if (displayMode !== undefined) dataToUpdate.displayMode = displayMode;
+    if (layoutType !== undefined) dataToUpdate.layoutType = layoutType;
     
-    if (body.isPublic !== undefined) {
-      updateData.isPublic = body.isPublic;
-    }
-
-    // Handle cover image updates - properly handle null/empty cases
-    if (body.coverImageId !== undefined) {
-      // If coverImageId is an empty string or null, set it to null in the database
-      updateData.coverImageId = body.coverImageId || null;
-    }
-
-    logger.log("Updating gallery with data:", updateData);
-
-    // First update the gallery metadata
+    // Perform the update for gallery fields (including theming and coverImage relation)
     await prisma.gallery.update({
       where: { id: id },
-      data: updateData,
+      data: dataToUpdate, 
     });
 
-    // Handle adding new images to the gallery if addImages is provided
-    if (body.addImages && body.addImages.length > 0) {
-      logger.log(`Adding ${body.addImages.length} new images to gallery`);
-      
-      // Get the current highest order value
-      const maxOrder = gallery.images.length > 0
+    // Handle image updates, additions, and reordering using validated data
+    if (imagesDataFromValidation) {
+      const imageUpdates: Prisma.Prisma__ImageInGalleryClient<ImageInGallery, never>[] = [];
+      const newImageLinks: Prisma.ImageInGalleryCreateManyInput[] = [];
+      let maxOrder = gallery.images.length > 0
         ? Math.max(...gallery.images.map(img => (img as ImageInGalleryWithImage).order || 0))
         : -1;
-      
-      // Check that the images belong to the user
-      const userImages = await prisma.image.findMany({
-        where: {
-          id: { in: body.addImages },
-          userId: session.user.id
-        }
-      });
-      
-      if (userImages.length !== body.addImages.length) {
-        return apiError("Some images don't exist or don't belong to you", 400);
-      }
-      
-      // Add images to the gallery with incrementing order values
-      await Promise.all(
-        userImages.map(async (image, index) => {
-          await prisma.imageInGallery.create({
-            data: {
-              galleryId: id,
-              imageId: image.id,
-              order: maxOrder + index + 1,
-            }
-          });
-        })
-      );
-    }
 
-    // If image updates are provided (including empty arrays for removing all images)
-    if (body.images !== undefined) {
-      // First, get the current image IDs in the gallery
-      const currentImageIds = gallery.images.map(img => img.id);
-      
-      // If body.images is empty, it means all images should be removed
-      if (body.images.length === 0) {
-        // Remove all images from the gallery
-        await prisma.imageInGallery.deleteMany({
-          where: {
-            galleryId: id
+      const tempImageMap = new Map<string, { imageId: string, description: string | null | undefined, order: number }>();
+
+      for (const imgData of imagesDataFromValidation) { // Use validated data
+        if (imgData.id.startsWith('temp-') && imgData.imageId) {
+          tempImageMap.set(imgData.id, {
+            imageId: imgData.imageId,
+            description: imgData.description,
+            order: imgData.order !== undefined ? imgData.order : ++maxOrder,
+          });
+        } else {
+          const existingImageInGallery = gallery.images.find(img => img.id === imgData.id);
+          if (existingImageInGallery) {
+            imageUpdates.push(
+              prisma.imageInGallery.update({
+                where: { id: imgData.id },
+                data: {
+                  description: imgData.description,
+                  order: imgData.order,
+                },
+              })
+            );
           }
-        });
-        logger.log(`Removed all images from gallery ${id}`);
-      } else {
-        // Find the image IDs in the request
-        const requestImageIds = body.images.map(img => img.id);
-        
-        // Find images that should be removed (in current but not in request)
-        const imageIdsToRemove = currentImageIds.filter(id => !requestImageIds.includes(id));
-        
-        // Remove images that are no longer in the gallery
-        if (imageIdsToRemove.length > 0) {
-          await prisma.imageInGallery.deleteMany({
-            where: {
-              id: {
-                in: imageIdsToRemove
-              }
-            }
+        }
+      }
+
+      if (tempImageMap.size > 0) {
+        tempImageMap.forEach(data => {
+          newImageLinks.push({
+            galleryId: id,
+            imageId: data.imageId,
+            description: data.description,
+            order: data.order,
           });
-          logger.log(`Removed ${imageIdsToRemove.length} images from gallery`);
-        }
-        
-        // Separate permanent images from temporary ones
-        const permanentImages = body.images.filter(img => !img.id.startsWith('temp-'));
-        const tempImages = body.images.filter(img => img.id.startsWith('temp-'));
-        
-        // Update the existing permanent images
-        if (permanentImages.length > 0) {
-          const imageUpdates = await Promise.all(
-            permanentImages.map(async (imageUpdate) => {
-              try {
-                logger.log(`Updating image ${imageUpdate.id} with order ${imageUpdate.order}`);
-                // Update ImageInGallery with description and order
-                return prisma.imageInGallery.update({
-                  where: { id: imageUpdate.id },
-                  data: {
-                    description: imageUpdate.description !== undefined ? imageUpdate.description : undefined,
-                    // Ensure order is always updated with the new value
-                    order: imageUpdate.order
-                  },
-                });
-              } catch (error) {
-                logger.error(`Error updating image ${imageUpdate.id}:`, error);
-                return null;
-              }
-            })
-          );
-          
-          logger.log(`Updated ${imageUpdates.filter(Boolean).length} gallery images`);
-        }
-        
-        // Handle temporary images - these need to be created
-        if (tempImages.length > 0) {
-          logger.log(`Creating ${tempImages.length} new gallery images`);
-          
-          // For temp images, create new ImageInGallery records
-          await Promise.all(
-            tempImages.map(async (tempImg) => {
-              // Log the entire tempImg object for debugging
-              logger.log(`Processing temp image: ${JSON.stringify(tempImg)}`);
-              
-              // Only process if imageId is provided
-              if (!tempImg.imageId) {
-                logger.error(`Missing imageId for temp image ${tempImg.id}`);
-                return null;
-              }
-              
-              try {
-                // Create a new ImageInGallery record
-                return prisma.imageInGallery.create({
-                  data: {
-                    galleryId: id,
-                    imageId: tempImg.imageId,
-                    order: tempImg.order || 0,
-                    description: tempImg.description,
-                  }
-                });
-              } catch (error) {
-                logger.error(`Error creating image from temp ${tempImg.id}:`, error);
-                return null;
-              }
-            })
-          );
-          
-          logger.log(`Created ${tempImages.length} new gallery images`);
-        }
+        });
+      }
+
+      if (imageUpdates.length > 0 || newImageLinks.length > 0) {
+        await prisma.$transaction([
+          ...imageUpdates,
+          ...(newImageLinks.length > 0 ? [prisma.imageInGallery.createMany({ data: newImageLinks })] : []),
+        ]);
+        logger.log(`Updated ${imageUpdates.length} images and created ${newImageLinks.length} new image links.`);
       }
     }
 
-    // Get the updated gallery with all related data
+    if (addImagesFromValidation && addImagesFromValidation.length > 0) { // Use validated data
+      const imagesToAddById = await prisma.image.findMany({
+        where: {
+          id: { in: addImagesFromValidation }, // Use validated data
+          userId: session.user.id,
+        },
+      });
+
+      if (imagesToAddById.length !== addImagesFromValidation.length) {
+        logger.warn("Some images to add were not found or don't belong to the user.");
+      }
+
+      const currentMaxOrder = await prisma.imageInGallery.aggregate({
+        _max: { order: true },
+        where: { galleryId: id },
+      });
+      let nextOrder = (currentMaxOrder._max.order ?? -1) + 1;
+
+      const newImagesInGalleryData = imagesToAddById.map((img) => ({
+        galleryId: id,
+        imageId: img.id,
+        order: nextOrder++,
+      }));
+
+      if (newImagesInGalleryData.length > 0) {
+        await prisma.imageInGallery.createMany({
+          data: newImagesInGalleryData,
+        });
+        logger.log(`Added ${newImagesInGalleryData.length} new images to gallery.`);
+      }
+    }
+
+    // The galleryUpdateData object is already constructed and used above.
+    // The prisma.gallery.update call for these fields was also done.
+    // This section can be removed if all fields are covered in the initial dataToUpdate.
+    // For now, I'm commenting out the redundant update block as the fields are in dataToUpdate.
+    /*
+    const galleryUpdateData: Prisma.GalleryUpdateInput = {};
+    if (title !== undefined) galleryUpdateData.title = title;
+    if (description !== undefined) galleryUpdateData.description = description;
+    if (isPublic !== undefined) galleryUpdateData.isPublic = isPublic;
+    if (coverImageId !== undefined) galleryUpdateData.coverImageId = coverImageId;
+    if (themeColor !== undefined) galleryUpdateData.themeColor = themeColor;
+    if (backgroundColor !== undefined) galleryUpdateData.backgroundColor = backgroundColor;
+    if (backgroundImageUrl !== undefined) galleryUpdateData.backgroundImageUrl = backgroundImageUrl;
+    if (accentColor !== undefined) galleryUpdateData.accentColor = accentColor;
+    if (fontFamily !== undefined) galleryUpdateData.fontFamily = fontFamily;
+    if (displayMode !== undefined) galleryUpdateData.displayMode = displayMode;
+    if (layoutType !== undefined) galleryUpdateData.layoutType = layoutType;
+
+    await prisma.gallery.update({
+      where: { id: id },
+      data: galleryUpdateData,
+    });
+    */
+
     const fullUpdatedGallery = await prisma.gallery.findUnique({
       where: { id: id },
       include: {
@@ -381,10 +370,12 @@ export async function PATCH(
     logger.log("Gallery updated successfully");
     return apiSuccess(fullUpdatedGallery);
   } catch (err) {
-    logger.error("Error updating gallery:", err);
     if (err instanceof z.ZodError) {
+      logger.error("Validation error updating gallery:", err.errors);
+      // Pass the ZodError instance directly
       return apiValidationError(err);
     }
+    logger.error("Error updating gallery:", err);
     return apiError("Internal Server Error");
   }
 }

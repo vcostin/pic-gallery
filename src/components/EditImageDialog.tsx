@@ -36,7 +36,7 @@ interface EditImageDialogProps {
 }
 
 export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps) {
-  const [title, setTitle] = useState(image.title);
+  const [title, setTitle] = useState(image.title || ''); // Ensure title is always a string
   const [description, setDescription] = useState(image.description || '');
   const [tags, setTags] = useState(image.tags?.map(t => t.name).join(', ') || '');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

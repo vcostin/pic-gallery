@@ -2,7 +2,9 @@ import { getServerSession } from "next-auth";
 import { notFound } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { GalleryView } from "@/components/GalleryView";
+import { ThemedGalleryView } from "@/components/ThemedGalleryView";
+import { FullGallery } from "@/lib/types"; // Assuming FullGallery is defined here or adjust path
+import { UserRole } from '@prisma/client'; // Import UserRole
 
 export default async function GalleryPage({
   params,
@@ -50,5 +52,29 @@ export default async function GalleryPage({
 
   const isOwner = session?.user?.id === gallery.userId;
 
-  return <GalleryView gallery={gallery} isOwner={isOwner} />;
+  // Augment the user object to match the expected structure for FullGallery
+  const augmentedUser = {
+    ...gallery.user,
+    email: null, // Add missing property
+    emailVerified: null, // Add missing property
+    role: UserRole.USER, // Add missing property, provide a default or fetch actual role
+  };
+
+  const fullGallery: FullGallery = {
+    ...gallery,
+    user: augmentedUser,
+    // Ensure all theming fields from the fetched gallery are mapped
+    // These should already be on `gallery` if your GET request includes them
+    // and if the Prisma model for Gallery has them.
+    // If they are optional and might be null/undefined, ensure FullGallery type allows this.
+    themeColor: gallery.themeColor || null,
+    backgroundColor: gallery.backgroundColor || null,
+    backgroundImageUrl: gallery.backgroundImageUrl || null,
+    accentColor: gallery.accentColor || null,
+    fontFamily: gallery.fontFamily || null,
+    displayMode: gallery.displayMode || null,
+    layoutType: gallery.layoutType || null,
+  };
+
+  return <ThemedGalleryView gallery={fullGallery} isOwner={isOwner} />;
 }
