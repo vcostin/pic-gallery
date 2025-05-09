@@ -4,6 +4,8 @@ import { useState, useCallback } from 'react';
 import logger from '@/lib/logger';
 import { arrayMove } from '@dnd-kit/sortable';
 import { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { FullImageInGallery, ImageType as BasicImageType } from '@/lib/types'; // Import FullImageInGallery and BasicImageType
+import { Image as PrismaImage, Tag as PrismaTag } from '@prisma/client'; // Import Prisma types
 
 interface UseAsyncState<T> {
   data: T | null;
@@ -137,29 +139,9 @@ export function useFetch() {
   return { fetchApi, isLoading, error, setError };
 }
 
-// Interface for Tag
-interface Tag {
-  id: string;
-  name: string;
-}
-
-// Interface for Gallery Image
-export interface GalleryImage {
-  id: string;
-  description: string | null;
-  order: number;
-  image: {
-    id: string;
-    url: string;
-    title: string;
-    tags: Tag[];
-  };
-  imageId?: string;
-}
-
 // Hook for managing gallery images
-export function useGalleryImages(initialImages: GalleryImage[] = []) {
-  const [images, setImages] = useState<GalleryImage[]>(initialImages);
+export function useGalleryImages(initialImages: FullImageInGallery[] = []) { // Changed to FullImageInGallery
+  const [images, setImages] = useState<FullImageInGallery[]>(initialImages); // Changed to FullImageInGallery
   const [imageToRemove, setImageToRemove] = useState<string | null>(null);
   const [showRemoveImageDialog, setShowRemoveImageDialog] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -167,7 +149,7 @@ export function useGalleryImages(initialImages: GalleryImage[] = []) {
   const [toastMessage, setToastMessage] = useState('');
   
   // Get the active image for drag overlay
-  const activeImage = activeId ? images.find(img => img.id === activeId) : null;
+  const activeImage = activeId ? images.find(img => img.id === activeId) : null; // Type is now FullImageInGallery | null
   
   // Handle image description change
   const handleImageDescriptionChange = useCallback((id: string, newDescription: string) => {
@@ -270,22 +252,22 @@ export function useGalleryImages(initialImages: GalleryImage[] = []) {
   }, []);
   
   // Add images to gallery
-  const addImagesToGallery = useCallback(async (imageIds: string[], fetchImages: () => Promise<Array<{id: string; [key: string]: unknown}>>) => {
+  const addImagesToGallery = useCallback(async (imageIds: string[], fetchImages: () => Promise<BasicImageType[]>) => { // fetchImages returns BasicImageType[]
     // Only proceed if we have image IDs to add
     if (!imageIds?.length) return false;
     
     try {
-      const allImages = await fetchImages();
+      const allBasicImages = await fetchImages(); // Now returns BasicImageType[]
       
       // Create a map of all available images
-      const availableImagesMap = new Map();
-      allImages.forEach(img => {
+      const availableImagesMap = new Map<string, BasicImageType>();
+      allBasicImages.forEach(img => {
         availableImagesMap.set(img.id, img);
       });
       
       // Get all images that aren't already in the gallery
       const newImageIds = imageIds.filter(id => 
-        !images.some(img => img.image.id === id)
+        !images.some(galleryImg => galleryImg.image.id === id) // Compare with galleryImg.image.id
       );
       
       if (!newImageIds.length) {
@@ -302,37 +284,53 @@ export function useGalleryImages(initialImages: GalleryImage[] = []) {
       
       // Create new temp images for the UI with unique and consistent IDs
       const timestamp = Date.now();
-      const newImages = newImageIds.map((id, index) => {
-        const imageInfo = availableImagesMap.get(id);
+      const newImagesToAdd = newImageIds.map((id, index) => {
+        const basicImageInfo = availableImagesMap.get(id);
         
-        // If we don't have the image information, log a warning
-        if (!imageInfo) {
+        if (!basicImageInfo) {
           logger.warn(`Image with ID ${id} not found in available images`);
           return null;
         }
         
-        // Create a temporary ID for the gallery image with a more consistent format
-        // Using a string ID that's guaranteed to be unique but still stable
         const tempId = `temp-${timestamp}-${index}`;
         
+        // Construct a FullImageInGallery object
         return {
-          id: tempId,
+          id: tempId, // This is the ImageInGallery id (from dnd-kit, not Prisma)
+          imageId: basicImageInfo.id, // This is the actual Image id
+          galleryId: 'temp-gallery', // Placeholder, will be set on save by backend
           description: null,
           order: maxOrder + index + 1,
-          image: {
-            ...imageInfo,
-            id: imageInfo.id || id // Ensure image.id is always set
-          },
-          // Store the real image ID for when we save
-          imageId: id
-        };
-      }).filter(Boolean) as GalleryImage[];
+          createdAt: new Date(), // Placeholder for UI, backend will set actual
+          updatedAt: new Date(), // Placeholder for UI, backend will set actual
+          image: { // This is the PrismaImage structure (or FullImageInGalleryImage)
+            id: basicImageInfo.id,
+            title: basicImageInfo.title,
+            description: basicImageInfo.description,
+            url: basicImageInfo.url,
+            userId: 'temp-user', // Placeholder, should ideally come from session or context if needed by UI
+            createdAt: new Date(), // Placeholder
+            updatedAt: new Date(), // Placeholder
+            tags: basicImageInfo.tags || [], // Assuming BasicImageType includes tags as PrismaTag[]
+            // Add other PrismaImage fields with default/placeholder values if necessary for UI consistency
+            // These might not be strictly required by FullImageInGalleryImage if it makes them optional
+            // or if the components using this data can handle their absence for temp items.
+            blurDataURL: null, 
+            height: 0, 
+            width: 0, 
+            size: 0, 
+            views: 0,
+            isFeatured: false,
+            lastViewedAt: null,
+          } as PrismaImage & { tags: PrismaTag[] }, // Cast to ensure it matches FullImageInGalleryImage structure
+        } as FullImageInGallery;
+      }).filter(Boolean) as FullImageInGallery[]; // filter(Boolean) removes nulls
       
       // Add the new images to the state
-      setImages(prev => [...prev, ...newImages]);
+      setImages(prev => [...prev, ...newImagesToAdd]);
       
       // Show success toast
-      setToastMessage(`Added ${newImages.length} image${newImages.length > 1 ? 's' : ''} to gallery`);
+      setToastMessage(`Added ${newImagesToAdd.length} image${newImagesToAdd.length > 1 ? 's' : ''} to gallery`);
       setShowSuccessToast(true);
       
       // Hide toast after 3 seconds
@@ -351,13 +349,13 @@ export function useGalleryImages(initialImages: GalleryImage[] = []) {
   }, [images]);
   
   // Set images (used when initializing from API)
-  const updateImages = useCallback((newImages: GalleryImage[]) => {
+  const updateImages = useCallback((newImages: FullImageInGallery[]) => { // Changed to FullImageInGallery
     setImages(newImages);
   }, []);
   
   return {
     images,
-    setImages: updateImages,
+    setImages: updateImages, // Expose updateImages as setImages
     activeImage,
     showRemoveImageDialog,
     imageToRemove,

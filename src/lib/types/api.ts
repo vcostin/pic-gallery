@@ -1,3 +1,5 @@
+import { PaginatedResponse } from '../types';
+
 // API response types
 export interface ApiSuccess<T> {
   success: true;
@@ -13,12 +15,5 @@ export interface ApiError {
 
 export type ApiResponse<T> = ApiSuccess<T> | ApiError;
 
-// Paginated response type
-export interface PaginatedResponse<T> {
-  data: T[];
-  meta: {
-    currentPage: number;
-    lastPage: number;
-    total: number;
-  };
-}
+// Re-export the PaginatedResponse from ../types
+export type { PaginatedResponse };

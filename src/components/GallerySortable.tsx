@@ -21,17 +21,18 @@ import {
 } from '@dnd-kit/sortable';
 import { arrayMove } from '@dnd-kit/sortable';
 
-import { CompactGalleryCard, GridGalleryCard, DragOverlayCard, GalleryImage } from './GalleryImageCards';
+import { CompactGalleryCard, GridGalleryCard, DragOverlayCard } from './GalleryImageCards';
+import { FullImageInGallery } from '@/lib/types';
 import { EmptyState } from './StatusMessages';
 
 // Define view mode type
 export type ViewMode = 'compact' | 'grid';
 
 interface GallerySortableProps {
-  galleryImages: GalleryImage[];
+  galleryImages: FullImageInGallery[];
   coverImageId: string;
   viewMode: ViewMode;
-  onImagesReordered: (reorderedImages: GalleryImage[]) => void;
+  onImagesReordered: (reorderedImages: FullImageInGallery[]) => void;
   onDescriptionChange: (id: string, description: string) => void;
   onSetCoverImage: (id: string) => void;
   onRemoveImage: (id: string) => void;
@@ -178,7 +179,7 @@ export function GallerySortable({
         duration: 300,
         easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
       }}>
-        {activeImage ? <DragOverlayCard image={activeImage} /> : null}
+        {activeImage ? <DragOverlayCard image={activeImage as FullImageInGallery} /> : null}
       </DragOverlay>
     </DndContext>
   );

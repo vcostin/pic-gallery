@@ -4,28 +4,11 @@ import React from 'react';
 import Image from 'next/image';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-
-// Define types
-interface Tag {
-  id: string;
-  name: string;
-}
-
-export interface GalleryImage {
-  id: string;
-  description: string | null;
-  order: number;
-  image: {
-    id: string;
-    url: string;
-    title: string;
-    tags: Tag[];
-  };
-  imageId?: string;
-}
+import { FullImageInGallery } from '@/lib/types'; // Import FullImageInGallery
+import { Tag as PrismaTag } from '@prisma/client'; // Import PrismaTag
 
 export interface GalleryCardProps {
-  galleryImage: GalleryImage;
+  galleryImage: FullImageInGallery; // Changed to FullImageInGallery
   isCover: boolean;
   onDescriptionChange: (id: string, description: string) => void;
   setCoverImage: (id: string) => void;
@@ -34,7 +17,7 @@ export interface GalleryCardProps {
 
 // Base sortable card
 function BaseSortableCard(props: { 
-  galleryImage: GalleryImage; 
+  galleryImage: FullImageInGallery; // Changed to FullImageInGallery
   isCover: boolean;
   className?: string;
   children: (data: {
@@ -87,7 +70,7 @@ function BaseSortableCard(props: {
 }
 
 // Reusable component for image tags
-function GalleryImageTags({ tags, max = 3 }: { tags: Tag[]; max?: number }) {
+function GalleryImageTags({ tags, max = 3 }: { tags: PrismaTag[]; max?: number }) { // Changed to PrismaTag[]
   if (!tags.length) return null;
   return (
     <div className="flex flex-wrap gap-1 mb-2 max-h-8 overflow-y-auto">
@@ -171,7 +154,7 @@ export function CompactGalleryCard(props: GalleryCardProps) {
     isDragging: boolean;
     isOver: boolean;
   }) => {
-    const { galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage } = props;
+    const { galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage } = props; // galleryImage is FullImageInGallery
     const { attributes, listeners } = data;
     
     return (
@@ -265,7 +248,7 @@ export function GridGalleryCard(props: GalleryCardProps) {
     isDragging: boolean;
     isOver: boolean;
   }) => {
-    const { galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage } = props;
+    const { galleryImage, isCover, onDescriptionChange, setCoverImage, onRemoveImage } = props; // galleryImage is FullImageInGallery
     const { attributes, listeners } = data;
     
     return (
@@ -355,7 +338,7 @@ export function GridGalleryCard(props: GalleryCardProps) {
 }
 
 // Drag overlay component
-export function DragOverlayCard({ image }: { image: GalleryImage }) {
+export function DragOverlayCard({ image }: { image: FullImageInGallery }) { // Changed to FullImageInGallery
   return (
     <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-3 border border-blue-500">
       <div className="mb-2 flex justify-between items-center">

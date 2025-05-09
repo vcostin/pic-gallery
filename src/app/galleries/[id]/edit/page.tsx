@@ -7,77 +7,56 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import { ErrorMessage, LoadingSpinner, SuccessMessage } from '@/components/StatusMessages';
-import { useAsync, useFetch, useSubmit, useGalleryImages } from '@/lib/hooks';
+import { useAsync, useSubmit, useGalleryImages, useFetch } from '@/lib/hooks';
 import { deepEqual } from '@/lib/deepEqual';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { use } from 'react';
 import logger from '@/lib/logger';
-import { PaginatedResponse, Image as ApiImageType } from '@/lib/types'; // Added PaginatedResponse and ApiImageType
+import { PaginatedResponse, FullGallery, ImageType as ApiImageType } from '@/lib/types'; 
 
 // Import newly created components
 import { GalleryDetailsForm } from '@/components/GalleryDetailsForm';
 import { GalleryViewSelector } from '@/components/GalleryViewSelector';
 import { GallerySortable, ViewMode } from '@/components/GallerySortable';
 
-// Types for gallery data
-interface Tag {
-  id: string;
-  name: string;
-}
-
-interface GalleryImage {
-  id: string;
-  description: string | null;
-  order: number;
-  image: {
-    id: string;
-    url: string;
-    title: string;
-    tags: Tag[];
-  };
-  imageId?: string;
-}
-
-interface GalleryUser {
-  id: string;
-  name: string | null;
-  image: string | null;
-}
-
-interface Gallery {
-  id: string;
-  title: string;
-  description: string | null;
-  isPublic: boolean;
-  coverImageId: string | null;
-  images: GalleryImage[];
-  user: GalleryUser;
-  themeColor?: string | null;
-  backgroundColor?: string | null;
-  backgroundImageUrl?: string | null;
-  accentColor?: string | null;
-  fontFamily?: string | null;
-  displayMode?: string | null;
-  layoutType?: string | null;
-}
-
 export default function EditGalleryPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const galleryId = resolvedParams.id;
   
-  // Basic gallery state
+  const { fetchApi, error: fetchError } = useFetch(); 
+  
+  const { 
+    images, 
+    setImages, 
+    addImagesToGallery, 
+    handleRemoveImage, 
+    handleImageDescriptionChange, 
+    showRemoveImageDialog, 
+    confirmRemoveImage,    
+    cancelRemoveImage,     
+    showSuccessToast,      
+    toastMessage           
+  } = useGalleryImages();
+
+  const { run: fetchGalleryAsync, isLoading: galleryIsLoading, error: galleryError, data: galleryData, setData: setGalleryData } = useAsync<FullGallery>();
+
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false); 
+  const [showDeleteGalleryDialog, setShowDeleteGalleryDialog] = useState(false); 
+  
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<Error | null>(null);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
-  const [coverImageId, setCoverImageId] = useState('');
+  const [coverImageId, setCoverImageId] = useState<string | ''>('');
+  const [originalGalleryData, setOriginalGalleryData] = useState<FullGallery | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid'); 
   const [showSelectImagesDialog, setShowSelectImagesDialog] = useState(false);
-  const [showDeleteGalleryDialog, setShowDeleteGalleryDialog] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('compact');
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const router = useRouter();
 
-  // Theming state
   const [themeColor, setThemeColor] = useState<string | undefined>(undefined);
   const [backgroundColor, setBackgroundColor] = useState<string | undefined>(undefined);
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | undefined>(undefined);
@@ -86,168 +65,49 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const [displayMode, setDisplayMode] = useState<string | undefined>(undefined);
   const [layoutType, setLayoutType] = useState<string | undefined>(undefined);
 
-  // State for filtering images within the gallery editor
-  const [galleryImageSearchQuery, setGalleryImageSearchQuery] = useState('');
-  const [galleryImageTag, setGalleryImageTag] = useState('');
-  const [galleryFilterDebounceTimeout, setGalleryFilterDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
-  
-  // Store original gallery data for deep comparison
-  const [originalGalleryData, setOriginalGalleryData] = useState<{
-    title: string;
-    description: string;
-    isPublic: boolean;
-    coverImageId: string;
-    images: GalleryImage[];
-    themeColor?: string | null;
-    backgroundColor?: string | null;
-    backgroundImageUrl?: string | null;
-    accentColor?: string | null;
-    fontFamily?: string | null;
-    displayMode?: string | null;
-    layoutType?: string | null;
-  } | null>(null);
-  
-  // Use our custom hook for gallery images
-  const {
-    images,
-    setImages,
-    showRemoveImageDialog,
-    showSuccessToast,
-    toastMessage,
-    handleImageDescriptionChange,
-    handleRemoveImage,
-    confirmRemoveImage,
-    cancelRemoveImage,
-    addImagesToGallery
-  } = useGalleryImages();
-  
-  // Router and API hooks
-  const router = useRouter();
-  const { fetchApi, isLoading: isFetching, error: fetchError } = useFetch();
-
-  // Gallery update submission handler
-  const { 
-    isSubmitting,
-    error: submitError, 
-    handleSubmit: submitGalleryUpdate,
-    reset: resetSubmitState
-  } = useSubmit(async () => {
-    // Prepare the image order and descriptions data
-    const imageUpdates = images.map((img, index) => {
-      // For temp images, include the real imageId property
-      if (img.id.startsWith('temp-')) {
-        return {
-          id: img.id,
-          imageId: img.imageId, // Include the real image ID for temp images
-          description: img.description,
-          order: index
-        };
-      }
-      
-      // For existing images, just include the regular properties
-      return {
-        id: img.id,
+  const performGalleryUpdate = async () => {
+    if (!originalGalleryData) throw new Error("Original gallery data not loaded.");
+    const payload = {
+      title,
+      description,
+      isPublic,
+      coverImageId: coverImageId || null,
+      images: images.map(img => ({ 
+        id: img.imageId, 
         description: img.description,
-        order: index
-      };
-    });
-    
-    // Update the gallery on the server
-    const response = await fetchApi<{ data: Gallery }>(`/api/galleries/${galleryId}`, {
+        order: img.order,
+      })),
+      themeColor: themeColor || null,
+      backgroundColor: backgroundColor || null,
+      backgroundImageUrl: backgroundImageUrl || null,
+      accentColor: accentColor || null,
+      fontFamily: fontFamily || null,
+      displayMode: displayMode || null,
+      layoutType: layoutType || null,
+    };
+    const response = await fetchApi<{ data: FullGallery; message: string }>(`/api/galleries/${galleryId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title,
-        description,
-        isPublic,
-        coverImageId: coverImageId || null,
-        images: imageUpdates,
-        // Theming options
-        themeColor: themeColor || null,
-        backgroundColor: backgroundColor || null,
-        backgroundImageUrl: backgroundImageUrl || null,
-        accentColor: accentColor || null,
-        fontFamily: fontFamily || null,
-        displayMode: displayMode || null,
-        layoutType: layoutType || null,
-      }),
+      body: JSON.stringify(payload),
     });
-    const updatedGallery = response.data;
-    // Update state with the data returned directly from the PATCH response
-    setTitle(updatedGallery.title);
-    setDescription(updatedGallery.description || '');
-    setIsPublic(updatedGallery.isPublic);
-    setCoverImageId(updatedGallery.coverImageId || '');
-    setImages(updatedGallery.images);
-    // Update theming state
-    setThemeColor(updatedGallery.themeColor || undefined);
-    setBackgroundColor(updatedGallery.backgroundColor || undefined);
-    setBackgroundImageUrl(updatedGallery.backgroundImageUrl || undefined);
-    setAccentColor(updatedGallery.accentColor || undefined);
-    setFontFamily(updatedGallery.fontFamily || undefined);
-    setDisplayMode(updatedGallery.displayMode || undefined);
-    setLayoutType(updatedGallery.layoutType || undefined);
-    
-    // Update original gallery data with the data received from the server
-    setOriginalGalleryData({
-      title: updatedGallery.title,
-      description: updatedGallery.description || '',
-      isPublic: updatedGallery.isPublic,
-      coverImageId: updatedGallery.coverImageId || '',
-      images: updatedGallery.images,
-      // Theming options
-      themeColor: updatedGallery.themeColor,
-      backgroundColor: updatedGallery.backgroundColor,
-      backgroundImageUrl: updatedGallery.backgroundImageUrl,
-      accentColor: updatedGallery.accentColor,
-      fontFamily: updatedGallery.fontFamily,
-      displayMode: updatedGallery.displayMode,
-      layoutType: updatedGallery.layoutType,
-    });
-    
-    return "Gallery updated successfully!";
-  });
+    setOriginalGalleryData(response.data);
+    setImages(response.data.images);
+    setGalleryData(response.data); 
+    return response.message || "Gallery updated successfully";
+  };
   
-  // Delete gallery handler
-  const { 
-    handleSubmit: handleDeleteGallery, 
-    isSubmitting: isDeleting, 
-    error: deleteError 
-  } = useSubmit(async () => {
-    await fetchApi(`/api/galleries/${galleryId}`, { method: 'DELETE' });
-    router.push('/galleries');
-    router.refresh();
-  });
-  
-  // Fetch the gallery data
-  const { 
-    data: gallery,
-    error: galleryError,
-    run: fetchGallery
-  } = useAsync<Gallery>();
-  
-  // Load gallery data on component mount and when filters change
-  useEffect(() => {
-    const loadGallery = async () => {
-      try {
-        const queryParams = new URLSearchParams();
-        if (galleryImageSearchQuery) {
-          queryParams.set('imageSearchQuery', galleryImageSearchQuery);
-        }
-        if (galleryImageTag) {
-          queryParams.set('imageTag', galleryImageTag);
-        }
-        const queryString = queryParams.toString();
-        const apiUrl = `/api/galleries/${galleryId}${queryString ? `?${queryString}` : ''}`;
+  const { handleSubmit: submitGalleryUpdate, isSubmitting, error: submitErrorEncountered, reset: resetSubmitState } = useSubmit(performGalleryUpdate);
 
-        const response = await fetchApi<{ data: Gallery }>(apiUrl);
+  useEffect(() => {
+    const loadInitialGallery = async () => {
+      try {
+        const response = await fetchApi<{ data: FullGallery }>(`/api/galleries/${galleryId}`);
         const data = response.data;
         setTitle(data.title);
         setDescription(data.description || '');
         setIsPublic(data.isPublic);
         setCoverImageId(data.coverImageId || '');
-        setImages(data.images); // These images are now filtered by the backend
-        // Set initial theming state
+        setImages(data.images); 
         setThemeColor(data.themeColor || undefined);
         setBackgroundColor(data.backgroundColor || undefined);
         setBackgroundImageUrl(data.backgroundImageUrl || undefined);
@@ -256,54 +116,38 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         setDisplayMode(data.displayMode || undefined);
         setLayoutType(data.layoutType || undefined);
         
-        // Only set originalGalleryData on the initial load (no filters)
-        if (!galleryImageSearchQuery && !galleryImageTag && !originalGalleryData) {
-          setOriginalGalleryData({
-            title: data.title,
-            description: data.description || '',
-            isPublic: data.isPublic,
-            coverImageId: data.coverImageId || '',
-            images: data.images, // Store the initial, unfiltered images here
-            // Theming options
-            themeColor: data.themeColor,
-            backgroundColor: data.backgroundColor,
-            backgroundImageUrl: data.backgroundImageUrl,
-            accentColor: data.accentColor,
-            fontFamily: data.fontFamily,
-            displayMode: data.displayMode,
-            layoutType: data.layoutType,
-          });
-        }
+        const fullLoadedData = {
+          ...data,
+          title: data.title,
+          description: data.description || '',
+          isPublic: data.isPublic,
+          coverImageId: data.coverImageId || '',
+          images: data.images, 
+          themeColor: data.themeColor || null, 
+          backgroundColor: data.backgroundColor || null,
+          backgroundImageUrl: data.backgroundImageUrl || null,
+          accentColor: data.accentColor || null,
+          fontFamily: data.fontFamily || null,
+          displayMode: data.displayMode || null,
+          layoutType: data.layoutType || null,
+        };
+        setOriginalGalleryData(fullLoadedData);
+        setGalleryData(fullLoadedData); 
         return data;
       } catch (error) {
         logger.error('Error fetching gallery:', error);
-        throw error;
+        throw error; 
       }
     };
     
-    if (galleryFilterDebounceTimeout) {
-      clearTimeout(galleryFilterDebounceTimeout);
-    }
+    fetchGalleryAsync(loadInitialGallery()).catch(() => {
+      // Error is handled by useAsync and useFetch hooks, no need to handle 'err' parameter if unused
+    });
 
-    const timeoutId = setTimeout(() => {
-        fetchGallery(loadGallery());
-    }, 500); // 500ms debounce
+  }, [galleryId, fetchApi, fetchGalleryAsync, setImages, setGalleryData]);
 
-    setGalleryFilterDebounceTimeout(timeoutId);
-
-    return () => {
-        if (galleryFilterDebounceTimeout) {
-            clearTimeout(galleryFilterDebounceTimeout);
-        }
-    };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [galleryId, fetchApi, fetchGallery, setImages, galleryImageSearchQuery, galleryImageTag]); // Add filter states to dependencies
-
-  // Track unsaved changes
   useEffect(() => {
     if (!originalGalleryData) return;
-    
     const currentData = {
       title,
       description,
@@ -318,29 +162,40 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       displayMode: displayMode || null,
       layoutType: layoutType || null,
     };
-    
-    setHasUnsavedChanges(!deepEqual(currentData, originalGalleryData));
+    // Construct originalComparableData with the same structure as currentData
+    // to ensure accurate comparison by deepEqual.
+    const originalComparableData = {
+      title: originalGalleryData.title,
+      description: originalGalleryData.description, // Already normalized to '' if null/undefined in originalGalleryData
+      isPublic: originalGalleryData.isPublic,
+      coverImageId: originalGalleryData.coverImageId, // Already normalized to '' if null/undefined in originalGalleryData
+      images: originalGalleryData.images,
+      themeColor: originalGalleryData.themeColor, // Already normalized to null if null/undefined in originalGalleryData
+      backgroundColor: originalGalleryData.backgroundColor, // Already normalized
+      backgroundImageUrl: originalGalleryData.backgroundImageUrl, // Already normalized
+      accentColor: originalGalleryData.accentColor, // Already normalized
+      fontFamily: originalGalleryData.fontFamily, // Already normalized
+      displayMode: originalGalleryData.displayMode, // Already normalized
+      layoutType: originalGalleryData.layoutType, // Already normalized
+    };
+    setHasUnsavedChanges(!deepEqual(currentData, originalComparableData));
   }, [originalGalleryData, title, description, isPublic, coverImageId, images, themeColor, backgroundColor, backgroundImageUrl, accentColor, fontFamily, displayMode, layoutType]);
 
-  // Form submission handler
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowConfirmDialog(false);
-    
+  const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => { 
+    if (e) e.preventDefault();
+    setShowConfirmDialog(false); 
     try {
-      const message = await submitGalleryUpdate(e);
+      const message = await submitGalleryUpdate({}); 
       setSuccessMessage(message as string);
-      
-      // Clear success message after 3 seconds
+      setHasUnsavedChanges(false); 
       setTimeout(() => {
         setSuccessMessage(null);
       }, 3000);
-    } catch {
-      // Error is already handled by the useSubmit hook
+    } catch (err) {
+      logger.error("Submit error caught in handleSubmit:", err);
     }
   };
 
-  // Cancel edit handler
   const handleCancelEdit = () => {
     if (hasUnsavedChanges) {
       setShowConfirmDialog(true);
@@ -349,17 +204,13 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     }
   };
 
-  // New function to handle discarding changes
   const handleDiscardChanges = () => {
-    // Only reset if we have original data
     if (originalGalleryData) {
-      // Reset all form fields to original values
       setTitle(originalGalleryData.title);
-      setDescription(originalGalleryData.description);
+      setDescription(originalGalleryData.description || '');
       setIsPublic(originalGalleryData.isPublic);
-      setCoverImageId(originalGalleryData.coverImageId);
+      setCoverImageId(originalGalleryData.coverImageId || '');
       setImages(originalGalleryData.images);
-      // Reset theming fields
       setThemeColor(originalGalleryData.themeColor || undefined);
       setBackgroundColor(originalGalleryData.backgroundColor || undefined);
       setBackgroundImageUrl(originalGalleryData.backgroundImageUrl || undefined);
@@ -367,63 +218,62 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       setFontFamily(originalGalleryData.fontFamily || undefined);
       setDisplayMode(originalGalleryData.displayMode || undefined);
       setLayoutType(originalGalleryData.layoutType || undefined);
-      
-      // Close the dialog
       setShowConfirmDialog(false);
-      
-      // Show feedback to the user
+      setHasUnsavedChanges(false); 
       setSuccessMessage("Changes discarded");
       setTimeout(() => setSuccessMessage(null), 3000);
     }
   };
 
-  // Handler to add images to the gallery
   const handleAddImages = useCallback((imageIds: string[]) => {
     setShowSelectImagesDialog(false);
-    
-    const fetchImagesForGallery = async (): Promise<Array<{id: string; [key: string]: unknown}>> => {
-      // Adjust limit to be within the API's accepted range (max 100)
-      // This will fetch up to 100 images. If more images exist, pagination would be needed in SelectImagesDialog.
+    const fetchImagesForGallery = async (): Promise<ApiImageType[]> => { 
       const response = await fetchApi<{ data: PaginatedResponse<ApiImageType> }>('/api/images?limit=100&page=1');
-      
-      // Add a guard to ensure the response is correctly structured
       if (response && typeof response === 'object' && response.data && Array.isArray(response.data.data)) {
-        // Cast ApiImageType[] to Array<{id: string; [key: string]: unknown}> to satisfy the hook
-        return response.data.data.map(image => ({ ...image, id: image.id } as {id: string; [key: string]: unknown}));
+        return response.data.data; 
       }
-      
-      // Log an error and throw if the response format is unexpected
       logger.error(
         'fetchImagesForGallery: Unexpected response from fetchApi for /api/images. Expected PaginatedResponse within a data object.',
         response
       );
       throw new Error('Failed to fetch images due to unexpected API response format.');
     };
-    
     addImagesToGallery(imageIds, fetchImagesForGallery);
   }, [fetchApi, addImagesToGallery]);
 
-  // Handle image reordering from GallerySortable
-  const handleImagesReordered = useCallback((reorderedImages: GalleryImage[]) => {
-    setImages(reorderedImages);
-  }, [setImages]);
+  const handleDeleteGallery = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await fetchApi(`/api/galleries/${galleryId}`, { method: 'DELETE' });
+      setSuccessMessage("Gallery deleted successfully.");
+      setTimeout(() => {
+        router.push('/galleries'); 
+      }, 2000);
+    } catch (err) {
+      logger.error("Error deleting gallery:", err);
+      setDeleteError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteGalleryDialog(false);
+    }
+  };
 
-  // Render loading state
-  if (isFetching && !gallery) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <LoadingSpinner size="large" text="Loading gallery..." />
-      </div>
-    );
+  // Use fetchError for initial load error, galleryError for async operations after load
+  // Corrected initialLoadError definition to ensure it's Error | null
+  let initialLoadErrorTypeSafe: Error | null = null;
+  if (fetchError) {
+    initialLoadErrorTypeSafe = fetchError;
+  } else if (galleryError && !galleryData) {
+    initialLoadErrorTypeSafe = galleryError;
   }
 
-  // Render error state if we couldn't load the gallery
-  if ((galleryError || fetchError) && !gallery) {
+  if (initialLoadErrorTypeSafe && !galleryData) {
     return (
       <div className="container mx-auto px-4 py-8">
         <ErrorMessage 
-          error={galleryError || fetchError} 
-          retry={() => fetchGallery(fetchApi<Gallery>(`/api/galleries/${galleryId}`))}
+          error={initialLoadErrorTypeSafe} // Use the type-safe version
+          retry={() => fetchGalleryAsync(fetchApi<{ data: FullGallery }>(`/api/galleries/${galleryId}`).then(res => res.data))} 
           className="mb-4"
         />
         <button
@@ -436,8 +286,12 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  if (!gallery) {
-    return <div className="container mx-auto px-4 py-8">Gallery not found</div>;
+  if (!galleryData && !galleryIsLoading && !initialLoadErrorTypeSafe) { 
+    return <div className="container mx-auto px-4 py-8">Gallery not found or failed to load.</div>;
+  }
+  
+  if (!galleryData) { 
+      return <LoadingSpinner size="large" text="Preparing gallery editor..." />;
   }
 
   return (
@@ -446,17 +300,20 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         <Breadcrumbs
           items={[
             { label: 'Galleries', href: '/galleries' },
-            { label: gallery?.title || 'Gallery', href: `/galleries/${galleryId}` },
+            { label: galleryData?.title || 'Gallery', href: `/galleries/${galleryId}` },
             { label: 'Edit', href: `/galleries/${galleryId}/edit` },
           ]}
         />
         
-        <h1 className="text-2xl font-bold mb-6">Edit Gallery</h1>
+        <h1 className="text-2xl font-bold mb-6">Edit Gallery: {galleryData?.title}</h1>
         
-        {submitError && (
+        {submitErrorEncountered && (
           <ErrorMessage 
-            error={submitError} 
-            retry={() => resetSubmitState()}
+            error={submitErrorEncountered} 
+            retry={() => {
+              resetSubmitState(); 
+              handleSubmit(); 
+            }}
             className="mb-4"
           />
         )}
@@ -469,15 +326,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           />
         )}
         
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          if (hasUnsavedChanges) {
-            setShowConfirmDialog(true);
-          } else {
-            router.push(`/galleries/${gallery.id}`);
-          }
-        }} className="space-y-6">
-          {/* Gallery Details Section */}
+        <form onSubmit={handleSubmit} className="space-y-6"> {/* Corrected: form onSubmit calls handleSubmit directly */}
           <GalleryDetailsForm 
             title={title}
             setTitle={setTitle}
@@ -485,7 +334,6 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
             setDescription={setDescription}
             isPublic={isPublic}
             setIsPublic={setIsPublic}
-            // Pass theming props
             themeColor={themeColor}
             setThemeColor={setThemeColor}
             backgroundColor={backgroundColor}
@@ -502,7 +350,6 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
             setLayoutType={setLayoutType}
           />
           
-          {/* Images Section */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Images ({images.length})</h2>
@@ -510,7 +357,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
                 type="button"
                 onClick={() => setShowSelectImagesDialog(true)}
                 className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                disabled={isSubmitting}
+                disabled={isSubmitting} 
               >
                 Add Images
               </button>
@@ -520,89 +367,49 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Drag and drop to reorder images. You can also set a cover image and edit descriptions.
               </p>
-              
-              {/* View Mode Selector Component */}
               <GalleryViewSelector viewMode={viewMode} setViewMode={setViewMode} />
             </div>
-
-            {/* Filter inputs for images within the gallery */}
-            <div className="mb-4 p-3 border rounded-md bg-gray-50 dark:bg-gray-700/30">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="galleryImageSearchQuery" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Search Images in Gallery
-                  </label>
-                  <input
-                    type="text"
-                    id="galleryImageSearchQuery"
-                    value={galleryImageSearchQuery}
-                    onChange={(e) => setGalleryImageSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Filter by title/description..."
-                  />
-                </div>
-                <div>
-                  <label htmlFor="galleryImageTag" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Filter by Tag in Gallery
-                  </label>
-                  <input
-                    type="text"
-                    id="galleryImageTag"
-                    value={galleryImageTag}
-                    onChange={(e) => setGalleryImageTag(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Filter by tag..."
-                  />
-                </div>
-              </div>
-            </div>
             
-            {/* New GallerySortable Component */}
             <GallerySortable 
               galleryImages={images}
               coverImageId={coverImageId}
-              viewMode={viewMode}
-              onImagesReordered={handleImagesReordered}
-              onDescriptionChange={handleImageDescriptionChange}
+              viewMode={viewMode} 
+              onImagesReordered={setImages} 
+              onDescriptionChange={handleImageDescriptionChange} 
               onSetCoverImage={setCoverImageId}
-              onRemoveImage={handleRemoveImage}
+              onRemoveImage={handleRemoveImage} 
             />
           </div>
 
-          {/* Danger Zone */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Danger Zone</h2>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
               Once you delete a gallery, there is no going back. Please be certain.
             </p>
-            
             {deleteError && (
               <ErrorMessage error={deleteError} className="mb-4" />
             )}
-            
             <button
               type="button"
               onClick={() => setShowDeleteGalleryDialog(true)}
               className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-              disabled={isDeleting}
+              disabled={isDeleting || isSubmitting} 
             >
               {isDeleting ? "Deleting..." : "Delete Gallery"}
             </button>
           </div>
           
-          {/* Form Buttons */}
           <div className="flex justify-between mt-8">
             <button
               type="button"
               onClick={handleCancelEdit}
               className="px-4 py-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
-              disabled={isSubmitting}
+              disabled={isSubmitting} 
             >
               Cancel
             </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
+            <button 
+              type="submit" 
               disabled={isSubmitting || !hasUnsavedChanges}
               className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400"
             >
@@ -619,11 +426,10 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           </div>
         </form>
         
-        {/* Dialogs */}
         <ConfirmDialog
-          isOpen={showConfirmDialog}
+          isOpen={showConfirmDialog} 
           onClose={() => setShowConfirmDialog(false)}
-          onConfirm={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
+          onConfirm={() => handleSubmit()} 
           onCancel={handleDiscardChanges}
           title="Save Changes?"
           message="You have unsaved changes. Do you want to save them before leaving?"
@@ -632,9 +438,9 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         />
         
         <ConfirmDialog
-          isOpen={showRemoveImageDialog}
-          onClose={cancelRemoveImage}
-          onConfirm={confirmRemoveImage}
+          isOpen={showRemoveImageDialog} 
+          onClose={cancelRemoveImage}    
+          onConfirm={confirmRemoveImage}  
           title="Remove Image"
           message="Are you sure you want to remove this image from the gallery? This action cannot be undone."
           confirmButtonText="Remove"
@@ -650,9 +456,9 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         />
 
         <ConfirmDialog
-          isOpen={showDeleteGalleryDialog}
+          isOpen={showDeleteGalleryDialog} 
           onClose={() => setShowDeleteGalleryDialog(false)}
-          onConfirm={() => handleDeleteGallery(undefined)}
+          onConfirm={handleDeleteGallery} 
           title="Delete Gallery"
           message={
             <div>
@@ -675,7 +481,6 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           confirmButtonColor="red"
         />
 
-        {/* Toast notification */}
         {showSuccessToast && (
           <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg flex items-center animate-fade-in-up z-50">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

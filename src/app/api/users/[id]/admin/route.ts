@@ -19,7 +19,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id: targetUserId } = params;
+    const { id: targetUserId } = await params; // Added await
     
     // Check authentication
     const session = await getServerSession(authOptions);

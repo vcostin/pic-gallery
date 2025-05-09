@@ -20,7 +20,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
       return apiUnauthorized();
@@ -69,7 +69,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
       return apiUnauthorized();
@@ -128,7 +128,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
       return apiUnauthorized();

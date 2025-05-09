@@ -157,7 +157,7 @@ export async function PATCH(
   { params }: { params: { id: string } } // Corrected type for params
 ) {
   const session = await getServerSession(authOptions);
-  const { id } = params; // No await needed for params directly
+  const { id } = await params; // Added await here
 
   if (!session?.user.id) {
     return apiUnauthorized();
