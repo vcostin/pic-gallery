@@ -89,15 +89,15 @@ export function GallerySortable({
       const oldIndex = galleryImages.findIndex(img => img.id === active.id);
       const newIndex = galleryImages.findIndex(img => img.id === over.id);
       
-      // Reorder the items
+      // Reorder the items and set explicit orders starting from 0
       const reorderedImages = arrayMove(galleryImages, oldIndex, newIndex).map(
         (image, index) => ({
           ...image,
-          order: index
+          order: index // Explicit numeric order starting from 0
         })
       );
       
-      // Notify parent component
+      // Notify parent component with the reordered images
       onImagesReordered(reorderedImages);
       
       // Add haptic feedback for successful drop

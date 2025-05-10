@@ -1,0 +1,210 @@
+import React from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
+import EditGalleryPage from '@/app/galleries/[id]/edit/page';
+
+// Mock the useSubmit hook
+jest.mock('@/lib/hooks', () => {
+  const originalHooks = jest.requireActual('@/lib/hooks');
+  return {
+    ...originalHooks,
+    useSubmit: jest.fn((fn) => {
+      return {
+        handleSubmit: jest.fn(async (params) => {
+          try {
+            const result = await fn();
+            return result;
+          } catch (error) {
+            throw error;
+          }
+        }),
+        isSubmitting: false,
+        error: null,
+        reset: jest.fn(),
+      };
+    }),
+    useGalleryImages: jest.fn(() => ({
+      images: [],
+      setImages: jest.fn(),
+      addImagesToGallery: jest.fn(),
+      handleRemoveImage: jest.fn(),
+      handleImageDescriptionChange: jest.fn(),
+      showRemoveImageDialog: false,
+      confirmRemoveImage: jest.fn(),
+      cancelRemoveImage: jest.fn(),
+      showSuccessToast: false,
+      toastMessage: '',
+    })),
+    useFetch: jest.fn(() => ({
+      fetchApi: mockFetchApi,
+      error: null,
+    })),
+    useAsync: jest.fn(() => ({
+      run: jest.fn(),
+      isLoading: false,
+      error: null,
+      data: null,
+      setData: jest.fn(),
+    })),
+  };
+});
+
+// Mock the react hooks to avoid hooks rule violations
+jest.mock('react', () => {
+  const originalReact = jest.requireActual('react');
+  return {
+    ...originalReact,
+    useState: jest.fn((initial) => [initial, jest.fn()]),
+    useEffect: jest.fn(),
+    useCallback: jest.fn((fn) => fn),
+  };
+});
+
+// Mock the next/navigation
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+  })),
+}));
+
+// Mock next.js use
+jest.mock('react', () => {
+  const originalReact = jest.requireActual('react');
+  return {
+    ...originalReact,
+    use: jest.fn((param) => param),
+  };
+});
+
+// Create a mock for fetchApi
+const mockFetchApi = jest.fn();
+
+// Mock components used in the page
+jest.mock('@/components/Breadcrumbs', () => ({
+  Breadcrumbs: () => <div data-testid="breadcrumbs" />,
+}));
+
+jest.mock('@/components/ConfirmDialog', () => ({
+  ConfirmDialog: () => <div data-testid="confirm-dialog" />,
+}));
+
+jest.mock('@/components/SelectImagesDialog', () => ({
+  SelectImagesDialog: () => <div data-testid="select-images-dialog" />,
+}));
+
+jest.mock('@/components/StatusMessages', () => ({
+  ErrorMessage: ({ error }: { error: Error }) => <div data-testid="error-message">{error?.message}</div>,
+  LoadingSpinner: () => <div data-testid="loading-spinner" />,
+  SuccessMessage: () => <div data-testid="success-message" />,
+}));
+
+jest.mock('@/components/ErrorBoundary', () => ({
+  ErrorBoundary: ({ children }: { children: React.ReactNode }) => <div data-testid="error-boundary">{children}</div>,
+}));
+
+jest.mock('@/components/GalleryDetailsForm', () => ({
+  GalleryDetailsForm: () => <div data-testid="gallery-details-form" />,
+}));
+
+jest.mock('@/components/GallerySortable', () => ({
+  GallerySortable: () => <div data-testid="gallery-sortable" />,
+}));
+
+jest.mock('@/components/GalleryViewSelector', () => ({
+  GalleryViewSelector: () => <div data-testid="gallery-view-selector" />,
+}));
+
+describe('EditGalleryPage - Image Ordering', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('performGalleryUpdate correctly prepares image orders', async () => {
+    // Mock specific implementation for this test
+    const originalImages = [
+      {
+        id: 'img1',
+        imageId: 'image1',
+        description: 'First image',
+        // Order is missing!
+      },
+      {
+        id: 'img2',
+        imageId: 'image2',
+        description: 'Second image',
+        order: 1,
+      },
+      {
+        id: 'img3',
+        imageId: 'image3',
+        description: 'Third image',
+        order: 2,
+      },
+    ];
+
+    // We'll inject our test data by mocking the specific module function instead of using useState
+    const { performGalleryUpdate } = require('@/app/galleries/[id]/edit/page');
+    
+    // Let's create a direct mock for this function to test it
+    const mockPerformUpdate = jest.fn().mockImplementation((formData, images, galleryId) => {
+      // This simulates what the function should do correctly
+      const updatedImages = images.map((img, index) => ({ 
+        id: img.id, // Using the correct ID property
+        imageId: img.imageId,
+        description: img.description,
+        order: typeof img.order === 'number' ? img.order : index, // Ensure valid order
+      }));
+      
+      // Return what the function would normally return
+      return {
+        title: formData?.title || '',
+        description: formData?.description || '',
+        published: formData?.published || false,
+        coverImage: formData?.coverImage || null,
+        theme: formData?.theme || 'default',
+        images: updatedImages,
+      };
+    });
+
+    // Mock originalGalleryData
+    (React.useState as jest.Mock).mockImplementation((initial) => {
+      if (initial === null && typeof initial === 'object') {
+        return [{ id: 'gallery1' }, jest.fn()];
+      }
+      return [initial, jest.fn()];
+    });
+
+    mockFetchApi.mockResolvedValue({
+      data: {
+        id: 'gallery1',
+        title: 'Test Gallery',
+        images: [],
+      },
+      message: 'Gallery updated',
+    });
+
+    // Render the page
+    render(<EditGalleryPage params={Promise.resolve({ id: 'gallery1' })} />);
+
+    // Get the performGalleryUpdate function
+    const { performGalleryUpdate } = require('@/app/galleries/[id]/edit/page');
+    
+    // Execute the function
+    await performGalleryUpdate();
+
+    // Check that fetchApi was called with correct payload
+    expect(mockFetchApi).toHaveBeenCalled();
+    
+    // Extract the payload from the fetchApi call
+    const payload = JSON.parse(mockFetchApi.mock.calls[0][1].body);
+    
+    // Verify that all images have an order
+    expect(payload.images[0].order).toBe(0); // Should have received a default order
+    expect(payload.images[1].order).toBe(1);
+    expect(payload.images[2].order).toBe(2);
+    
+    // Verify image IDs were preserved correctly
+    expect(payload.images[0].id).toBe('img1');
+    expect(payload.images[1].id).toBe('img2');
+    expect(payload.images[2].id).toBe('img3');
+  });
+});

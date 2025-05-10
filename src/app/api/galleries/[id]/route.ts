@@ -28,7 +28,7 @@ const updateGallerySchema = z.object({
     id: z.string(),
     imageId: z.string().optional(), // Add imageId for temp images
     description: z.string().nullable().optional(),
-    order: z.number().optional()
+    order: z.number().int().nonnegative() // Require explicit numeric order
   })).optional(),
   // New field for adding images
   addImages: z.array(z.string()).optional(),
@@ -240,10 +240,10 @@ export async function PATCH(
       let maxOrder = gallery.images.length > 0
         ? Math.max(...gallery.images.map(img => (img as ImageInGalleryWithImage).order || 0))
         : -1;
-
+      
       const tempImageMap = new Map<string, { imageId: string, description: string | null | undefined, order: number }>();
 
-      for (const imgData of imagesDataFromValidation) { // Use validated data
+      for (const imgData of imagesDataFromValidation) {
         if (imgData.id.startsWith('temp-') && imgData.imageId) {
           tempImageMap.set(imgData.id, {
             imageId: imgData.imageId,
@@ -251,14 +251,18 @@ export async function PATCH(
             order: imgData.order !== undefined ? imgData.order : ++maxOrder,
           });
         } else {
+          // Find the existing gallery image by its ID
           const existingImageInGallery = gallery.images.find(img => img.id === imgData.id);
           if (existingImageInGallery) {
+            const currentOrder = (existingImageInGallery as ImageInGalleryWithImage).order || 0;
+            const newOrder = imgData.order !== undefined ? imgData.order : currentOrder;
+            
             imageUpdates.push(
               prisma.imageInGallery.update({
                 where: { id: imgData.id },
                 data: {
                   description: imgData.description,
-                  order: imgData.order,
+                  order: newOrder,
                 },
               })
             );

@@ -13,7 +13,7 @@ const customJestConfig = {
   testEnvironment: 'jest-environment-jsdom',
   
   // Add more setup options before each test is run
-  setupFilesAfterEnv: ['<rootDir>/jest-setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest-setup.cjs'],
   
   // Handle aliases from tsconfig
   moduleNameMapper: {
@@ -27,6 +27,17 @@ const customJestConfig = {
   transformIgnorePatterns: [
     'node_modules/(?!(@dnd-kit|uuid)/)'
   ],
+  
+  // Coverage configuration
+  collectCoverageFrom: [
+    'src/**/*.{js,jsx,ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/__mocks__/**',
+    '!src/app/api/uploadthing/**',
+    '!**/node_modules/**'
+  ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['lcov', 'text', 'text-summary'],
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config

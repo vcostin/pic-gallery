@@ -67,16 +67,21 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
 
   const performGalleryUpdate = async () => {
     if (!originalGalleryData) throw new Error("Original gallery data not loaded.");
+    
+    // Ensure all images have valid order values before sending to backend
+    const updatedImages = images.map((img, index) => ({ 
+      id: img.id,
+      imageId: img.imageId,
+      description: img.description,
+      order: typeof img.order === 'number' ? img.order : index,
+    }));
+    
     const payload = {
       title,
       description,
       isPublic,
       coverImageId: coverImageId || null,
-      images: images.map(img => ({ 
-        id: img.imageId, 
-        description: img.description,
-        order: img.order,
-      })),
+      images: updatedImages,
       themeColor: themeColor || null,
       backgroundColor: backgroundColor || null,
       backgroundImageUrl: backgroundImageUrl || null,
