@@ -1,109 +1,22 @@
 /**
- * Custom hooks for interacting with galleries
+ * Enhanced gallery hooks for UI and API operations
  */
 import { useState, useCallback, useEffect } from 'react';
 import { GalleryService } from '../services/galleryService';
-import { UpdateGallerySchema, CreateGallerySchema, ImageSchema, ImageInGallerySchema } from '../schemas';
+import { ImageInGallerySchema } from '../schemas';
 import { z } from 'zod';
 import { arrayMove } from '@dnd-kit/sortable';
 import { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import logger from '@/lib/logger';
 
+// Type alias for the full gallery with images
 type FullGallery = Awaited<ReturnType<typeof GalleryService.getGallery>>;
-type GalleryCreationData = z.infer<typeof CreateGallerySchema>;
-type GalleryUpdateData = z.infer<typeof UpdateGallerySchema>;
-
-/**
- * Hook for fetching a gallery by ID
- */
-export function useGallery(id: string | undefined) {
-  const [gallery, setGallery] = useState<FullGallery | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  const fetchGallery = useCallback(async () => {
-    if (!id) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await GalleryService.getGallery(id);
-      setGallery(data);
-      return data;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  const updateGallery = useCallback(async (updateData: GalleryUpdateData) => {
-    if (!id) return null;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await GalleryService.updateGallery(id, updateData);
-      setGallery(data);
-      return data;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  return {
-    gallery,
-    loading,
-    error,
-    fetchGallery,
-    updateGallery
-  };
-}
-
-/**
- * Hook for creating a new gallery
- */
-export function useCreateGallery() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [newGallery, setNewGallery] = useState<FullGallery | null>(null);
-
-  const createGallery = useCallback(async (galleryData: GalleryCreationData) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await GalleryService.createGallery(galleryData);
-      setNewGallery(data);
-      return data;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return {
-    loading,
-    error,
-    newGallery,
-    createGallery
-  };
-}
 
 /**
  * Enhanced hook for managing gallery images with UI functionality
  * Combines API operations with UI management (drag/drop, description updates, etc.)
  */
-
-export function useGalleryImages(
+export function useEnhancedGalleryImages(
   galleryId: string | undefined, 
   initialImages: z.infer<typeof ImageInGallerySchema>[] = []
 ) {

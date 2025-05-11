@@ -20,6 +20,7 @@ interface UseAsyncState<T> {
  * A hook for handling asynchronous operations with consistent loading and error states
  * @param initialData Initial data value
  * @returns Object containing data, loading state, error state, and functions to control them
+ * @deprecated Consider using `useApi` from `@/lib/hooks/useApi` instead for API calls with schema validation
  */
 export function useAsync<T>(initialData: T | null = null): UseAsyncState<T> {
   const [data, setData] = useState<T | null>(initialData);
@@ -57,6 +58,7 @@ export function useAsync<T>(initialData: T | null = null): UseAsyncState<T> {
  * A hook for handling form submissions with consistent loading and error states
  * @param onSubmit The submission handler function
  * @returns Object containing submit function, loading state, and error state
+ * @deprecated Consider using a form library with schema validation like react-hook-form + zod
  */
 export function useSubmit<T>(
   onSubmit: (data: T) => Promise<unknown>
@@ -99,6 +101,7 @@ export function useSubmit<T>(
 /**
  * A hook to handle API requests with automatic error handling and response parsing
  * @returns Object containing fetch function and state
+ * @deprecated Use `useApi` or `useApiGet` from `@/lib/hooks/useApi` instead, which provide schema validation
  */
 export function useFetch() {
   const [isLoading, setIsLoading] = useState(false);
@@ -140,6 +143,9 @@ export function useFetch() {
 }
 
 // Hook for managing gallery images
+/**
+ * @deprecated Use `useGalleryImages` from `@/lib/hooks/useGallery` instead, which integrates with the GalleryService
+ */
 export function useGalleryImages(initialImages: FullImageInGallery[] = []) { // Changed to FullImageInGallery
   const [images, setImages] = useState<FullImageInGallery[]>(initialImages); // Changed to FullImageInGallery
   const [imageToRemove, setImageToRemove] = useState<string | null>(null);
