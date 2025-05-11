@@ -7,7 +7,7 @@
 import React, { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { useGallery } from '@/lib/hooks/useGallery';
-import { UpdateGallerySchema, CreateGallerySchema } from '@/lib/schemas';
+import { UpdateGallerySchema } from '@/lib/schemas';
 import { LoadingSpinner, ErrorMessage } from '@/components/StatusMessages';
 
 type GalleryUpdateData = z.infer<typeof UpdateGallerySchema>;
@@ -101,7 +101,7 @@ export function GalleryEditor({ galleryId }: GalleryEditorProps) {
   }
 
   if (error) {
-    return <ErrorMessage message={error.message} />;
+    return <ErrorMessage error={error} />;
   }
 
   if (!gallery || !formData) {

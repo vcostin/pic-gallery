@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { ConfirmDialog } from './ConfirmDialog';
 import { LoadingSpinner, ErrorMessage } from './StatusMessages';
 import { useFetch, useSubmit } from '@/lib/hooks';

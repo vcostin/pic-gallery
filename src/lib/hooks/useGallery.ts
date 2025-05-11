@@ -3,7 +3,7 @@
  */
 import { useState, useCallback } from 'react';
 import { GalleryService } from '../services/galleryService';
-import { GallerySchema, UpdateGallerySchema, CreateGallerySchema } from '../schemas';
+import { UpdateGallerySchema, CreateGallerySchema } from '../schemas';
 import { z } from 'zod';
 
 type FullGallery = Awaited<ReturnType<typeof GalleryService.getGallery>>;

@@ -3,10 +3,10 @@
  */
 import { useState, useCallback } from 'react';
 import { z } from 'zod';
-import { fetchApi, isApiError, isApiSuccess } from '../apiUtils';
+import { fetchApi } from '../apiUtils';
 
-interface UseApiOptions {
-  onSuccess?: (data: any) => void;
+interface UseApiOptions<T = unknown> {
+  onSuccess?: (data: T) => void;
   onError?: (error: Error) => void;
 }
 
@@ -75,17 +75,21 @@ export function useApi<T extends z.ZodTypeAny>(
 export function useApiGet<T extends z.ZodTypeAny>(
   url: string | null,
   dataSchema: T,
-  options: UseApiOptions & {
+  options: UseApiOptions<z.infer<T>> & {
     skip?: boolean;
-    deps?: any[];
+    deps?: unknown[];
   } = {}
 ) {
   const api = useApi(dataSchema, options);
   
+  // Extract dependencies to avoid spread in dependencies array
+  const { skip, deps = [] } = options;
+  
   const fetchData = useCallback(async () => {
-    if (!url || options.skip) return;
+    if (!url || skip) return;
     return api.fetch(url, { method: 'GET' });
-  }, [url, options.skip, ...(options.deps || []), api.fetch]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url, skip, api, api.fetch, ...deps]);
   
   return {
     ...api,

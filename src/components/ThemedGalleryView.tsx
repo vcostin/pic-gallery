@@ -66,7 +66,7 @@ export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) { // Remo
     fontFamily,
     displayMode,
     layoutType,
-    accentColor,
+    // Keep accentColor in the destructuring since it's passed to child components
   } = gallery;
 
   const galleryStyle: React.CSSProperties = {
