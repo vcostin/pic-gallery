@@ -1,28 +1,8 @@
 import { getServerSession } from "next-auth";
-import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import { apiSuccess, withApiHandler } from "@/lib/apiResponse";
-
-const createGallerySchema = z.object({
-  title: z.string().min(1),
-  description: z.string().optional(), // Gallery description can be undefined (if not provided) or a string
-  isPublic: z.boolean().default(false),
-  images: z.array(z.object({
-    id: z.string(), // This is the Image ID
-    description: z.string().nullable().optional(), // Image description can be null, undefined, or a string
-    order: z.number().optional(),
-  })).optional(),
-  coverImageId: z.string().nullable().optional(),
-  // Theming options
-  themeColor: z.string().optional().nullable(),
-  backgroundColor: z.string().optional().nullable(),
-  backgroundImageUrl: z.string().url().optional().nullable(),
-  accentColor: z.string().optional().nullable(),
-  fontFamily: z.string().optional().nullable(),
-  displayMode: z.string().optional().nullable(), // e.g., "carousel", "grid", "slideshow"
-  layoutType: z.string().optional().nullable(), // e.g., "full-width", "contained"
-});
+import { CreateGallerySchema } from "@/lib/schemas";
 
 export const POST = withApiHandler(async (req) => {
   const session = await getServerSession(authOptions);
@@ -30,7 +10,7 @@ export const POST = withApiHandler(async (req) => {
     return apiSuccess(null, 401); // Or import and use apiUnauthorized if you want the helper
   }
   const json = await req.json();
-  const body = createGallerySchema.parse(json);
+  const body = CreateGallerySchema.parse(json);
   const gallery = await prisma.gallery.create({
     data: {
       title: body.title,

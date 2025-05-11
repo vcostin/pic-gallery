@@ -4,17 +4,10 @@ import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import { apiSuccess, apiUnauthorized, withApiHandler } from "@/lib/apiResponse";
 import { getPaginationOptions, formatPaginatedResponse } from "@/lib/dataFetching";
-import { Image } from "@/lib/types";
+import { Image } from "@prisma/client";
 import logger from "@/lib/logger";
 import { Prisma } from "@prisma/client";
-
-// Schema validation for image creation
-const createImageSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  url: z.string().min(1, "Image URL is required"),
-  tags: z.array(z.string()).optional(),
-});
+import { CreateImageSchema } from "@/lib/schemas";
 
 // Schema validation for query parameters
 const getImagesQuerySchema = z.object({
@@ -35,7 +28,7 @@ export const POST = withApiHandler(async (req) => {
     return apiUnauthorized();
   }
   const json = await req.json();
-  const body = createImageSchema.parse(json);
+  const body = CreateImageSchema.parse(json);
   const image = await prisma.image.create({
     data: {
       title: body.title,

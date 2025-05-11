@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import logger from "@/lib/logger";
 import { apiSuccess, apiError, apiValidationError, apiUnauthorized, apiNotFound } from "@/lib/apiResponse";
+import { UpdateGallerySchema } from "@/lib/schemas";
 
 import { ImageInGallery, Image, Prisma } from "@prisma/client";
 
@@ -17,29 +18,6 @@ const getGalleryImagesQuerySchema = z.object({
   imageSearchQuery: z.string().optional(),
   imageTag: z.string().optional(),
   // Potentially add sortBy, sortDir for images within gallery later
-});
-
-const updateGallerySchema = z.object({
-  title: z.string().min(1).optional(),
-  description: z.string().optional(),
-  isPublic: z.boolean().optional(),
-  coverImageId: z.string().nullable().optional(),
-  images: z.array(z.object({
-    id: z.string(),
-    imageId: z.string().optional(), // Add imageId for temp images
-    description: z.string().nullable().optional(),
-    order: z.number().int().nonnegative() // Require explicit numeric order
-  })).optional(),
-  // New field for adding images
-  addImages: z.array(z.string()).optional(),
-  // Theming options
-  themeColor: z.string().optional().nullable(),
-  backgroundColor: z.string().optional().nullable(),
-  backgroundImageUrl: z.string().url().optional().nullable(),
-  accentColor: z.string().optional().nullable(),
-  fontFamily: z.string().optional().nullable(),
-  displayMode: z.string().optional().nullable(),
-  layoutType: z.string().optional().nullable(),
 });
 
 export async function GET(
@@ -165,7 +143,7 @@ export async function PATCH(
 
   try {
     const body = await req.json();
-    const validation = updateGallerySchema.safeParse(body);
+    const validation = UpdateGallerySchema.safeParse(body);
 
     if (!validation.success) {
       return apiValidationError(validation.error);

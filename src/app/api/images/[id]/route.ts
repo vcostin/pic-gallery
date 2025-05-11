@@ -7,18 +7,13 @@ import path from 'path';
 import { Gallery } from "@prisma/client";
 import logger from "@/lib/logger";
 import { apiSuccess, apiError, apiValidationError, apiUnauthorized, apiNotFound } from "@/lib/apiResponse";
+import { UpdateImageSchema } from "@/lib/schemas";
 
 interface GalleryWithCoverImage extends Gallery {
   id: string;
   title: string;
   coverImageId: string | null;
 }
-
-const updateImageSchema = z.object({
-  title: z.string().min(1).optional(),
-  description: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-});
 
 export async function PATCH(
   req: Request,
@@ -40,12 +35,12 @@ export async function PATCH(
     const json = await req.json();
     let body;
     try {
-      body = updateImageSchema.parse(json);
+      body = UpdateImageSchema.parse(json);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return apiValidationError(err);
       }
-      throw err;
+      return apiError("Failed to validate request body");
     }
     const updatedImage = await prisma.image.update({
       where: { id: id },

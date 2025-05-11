@@ -1,7 +1,20 @@
 /**
  * Centralized type definitions for the application
  * This helps maintain consistency and avoid duplication
+ * 
+ * Note: Core data types are now defined using Zod schemas in schemas.ts
+ * Import specific types from there when needed
  */
+
+// Import Zod-generated types
+import { 
+  User as ZodUser, 
+  Image as ZodImage, 
+  Gallery as ZodGallery,
+  Tag as ZodTag,
+  ImageInGallery as ZodImageInGallery
+} from './schemas';
+import { Gallery, ImageInGallery, Tag as PrismaTag, UserRole, Image as PrismaImage } from '@prisma/client';
 
 // API Response types
 export interface ApiErrorResponse {
@@ -39,10 +52,8 @@ export type ViewMode = 'compact' | 'standard' | 'grid';
 export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;
 
-import { Gallery, ImageInGallery, Tag as PrismaTag, UserRole, Image as PrismaImage } from '@prisma/client';
-
-// Export Prisma-defined types that are used in other parts of the application
-export type { UserRole }; // Added export for UserRole
+// Export Prisma-defined types and Zod-generated types
+export type { UserRole, ZodUser as User, ZodImage as Image, ZodGallery as Gallery, ZodTag as Tag, ZodImageInGallery as ImageInGallery };
 
 // Represents the 'image' object within FullImageInGallery
 export interface FullImageInGalleryImage extends PrismaImage {
