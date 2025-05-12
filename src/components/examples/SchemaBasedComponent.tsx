@@ -4,15 +4,12 @@
  */
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+import Image from 'next/image';
 import { z } from 'zod';
 import { ImageSchema, GallerySchema } from '@/lib/schemas';
 import { useApi } from '@/lib/hooks/useApi';
 import { ErrorMessage, LoadingSpinner } from '@/components/StatusMessages';
-
-// Define types from schemas
-type Image = z.infer<typeof ImageSchema>;
-type Gallery = z.infer<typeof GallerySchema>;
 
 // Create a response schema for the API
 const GalleryWithImagesSchema = GallerySchema.extend({
@@ -45,7 +42,7 @@ export function SchemaBasedComponent({ galleryId }: SchemaBasedComponentProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner size="large" />
       </div>
     );
   }
@@ -70,11 +67,14 @@ export function SchemaBasedComponent({ galleryId }: SchemaBasedComponentProps) {
       <div className="grid grid-cols-3 gap-4 mt-4">
         {data.images.map(item => (
           <div key={item.id} className="border rounded-md overflow-hidden">
-            <img 
-              src={item.image.url} 
-              alt={item.image.title} 
-              className="w-full h-48 object-cover"
-            />
+            <div className="relative w-full h-48">
+              <Image 
+                src={item.image.url} 
+                alt={item.image.title}
+                fill
+                className="object-cover"
+              />
+            </div>
             <div className="p-2">
               <h3 className="font-semibold">{item.image.title}</h3>
               {item.description && <p className="text-sm">{item.description}</p>}

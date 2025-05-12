@@ -40,9 +40,8 @@ const FullGallerySchema = GallerySchema.extend({
 type FullGallery = z.infer<typeof FullGallerySchema>;
 type GalleryCreationData = z.infer<typeof CreateGallerySchema>;
 type GalleryUpdateData = z.infer<typeof UpdateGallerySchema>;
-// Fix: Create the schema first, then infer from it
-const PaginatedGalleriesSchema = createPaginatedResponseSchema(GallerySchema);
-type PaginatedGalleries = z.infer<typeof PaginatedGalleriesSchema>;
+// Schema for paginated gallery responses
+createPaginatedResponseSchema(GallerySchema);
 
 /**
  * Service for interacting with the gallery API

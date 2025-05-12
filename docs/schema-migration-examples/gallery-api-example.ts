@@ -28,8 +28,8 @@ const UpdateGalleryRequestSchema = z.object({
 // Define response schema using the base gallery schema
 const GalleryResponseSchema = createApiSuccessSchema(GallerySchema);
 
-// Type for request data from schema
-type UpdateGalleryRequest = z.infer<typeof UpdateGalleryRequestSchema>;
+// Type for request data from schema - export it so it can be used elsewhere
+export type UpdateGalleryRequest = z.infer<typeof UpdateGalleryRequestSchema>;
 
 export async function PATCH(
   request: NextRequest,

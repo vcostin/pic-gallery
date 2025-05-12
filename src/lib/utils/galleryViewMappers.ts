@@ -3,13 +3,10 @@
  */
 import { z } from 'zod';
 import { 
-  ImageSchema, 
-  ImageInGallerySchema,
   GallerySchema,
-  UserSchema,
   TagSchema
 } from '../schemas';
-import { DisplayGallery, DisplayImage } from './typeMappers';
+import { DisplayGallery } from './typeMappers';
 
 /**
  * Schema for Gallery View

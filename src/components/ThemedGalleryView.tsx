@@ -6,9 +6,7 @@ import {
   DisplayGallery, 
   DisplayImage,
   mapGalleryImageToDisplayImage,
-  mapGalleryImagesToDisplayImages,
-  findImageInGallery,
-  findImageInGalleryIndex
+  mapGalleryImagesToDisplayImages
 } from '@/lib/utils/typeMappers';
 import { GalleryCarousel } from './gallery-display/GalleryCarousel';
 import { ImageGrid } from './ImageGrid'; 
@@ -74,7 +72,7 @@ export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) {
         return (
           <GalleryCarousel
             images={imagesForDisplay}
-            onImageClick={(image, index) => {
+            onImageClick={(image) => {
               // Find the original image in gallery by ID
               const imageId = image.id;
               const galleryImageIndex = gallery.images.findIndex(img => img.image && img.image.id === imageId);
@@ -98,7 +96,7 @@ export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) {
         return (
           <GalleryCarousel
             images={imagesForDisplay}
-            onImageClick={(image, index) => {
+            onImageClick={(image) => {
               const imageId = image.id;
               const galleryImageIndex = gallery.images.findIndex(img => img.image && img.image.id === imageId);
               if (galleryImageIndex >= 0) {

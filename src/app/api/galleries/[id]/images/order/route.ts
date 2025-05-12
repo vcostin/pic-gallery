@@ -6,7 +6,6 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import logger from '@/lib/logger';
-import { ImageInGallerySchema } from '@/lib/schemas';
 import { NextResponse } from 'next/server';
 
 // Schema for validating the request body

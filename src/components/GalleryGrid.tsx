@@ -12,25 +12,17 @@ import { Button } from '@/components/ui/Button';
 import { z } from 'zod';
 import { GallerySchema } from '@/lib/schemas';
 
-// Define schema for the gallery grid displays
-const GalleryGridItemSchema = GallerySchema.pick({
-  id: true,
-  title: true,
-  description: true,
-  isPublic: true,
-  coverImageId: true,
-}).extend({
-  images: z.array(z.object({
-    id: z.string(),
-    image: z.object({
-      id: z.string(),
-      url: z.string(),
-      title: z.string()
-    })
-  }))
-});
-
-type GalleryGridItem = z.infer<typeof GalleryGridItemSchema>;
+// Define type for the gallery grid displays
+type GalleryGridItem = z.infer<typeof GallerySchema> & {
+  images: Array<{
+    id: string;
+    image: {
+      id: string;
+      url: string;
+      title: string;
+    };
+  }>;
+};
 
 interface GalleryGridProps {
   galleries: GalleryGridItem[];

@@ -3,7 +3,7 @@
  */
 import { useState, useCallback, useEffect } from 'react';
 import { GalleryService } from '../services/galleryService';
-import { UpdateGallerySchema, CreateGallerySchema, ImageSchema, ImageInGallerySchema } from '../schemas';
+import { UpdateGallerySchema, CreateGallerySchema, ImageInGallerySchema } from '../schemas';
 import { z } from 'zod';
 import { arrayMove } from '@dnd-kit/sortable';
 import { DragStartEvent, DragEndEvent } from '@dnd-kit/core';

@@ -6,9 +6,19 @@
  */
 
 // Import the schema validation logic (adapting tests to avoid import issues)
-const validateGalleryData = (data) => {
+// Define a type for the gallery payload
+interface GalleryUpdatePayload {
+  title?: string;
+  images?: Array<{ 
+    id: string;
+    order: number | string | null;
+    imageId?: string;
+  }>;
+}
+
+const validateGalleryData = (data: GalleryUpdatePayload) => {
   // Simplified validation logic based on the actual Zod schema
-  const errors = [];
+  const errors: string[] = [];
   
   // Check that image orders are numeric
   if (data.images) {
@@ -16,7 +26,8 @@ const validateGalleryData = (data) => {
       if (typeof img.order !== 'number') {
         errors.push(`Image at index ${index} has invalid order: ${img.order}`);
       }
-      if (img.order < 0) {
+      // Only check for negative values if it's a number
+      if (typeof img.order === 'number' && img.order < 0) {
         errors.push(`Image at index ${index} has negative order: ${img.order}`);
       }
     });
@@ -61,16 +72,8 @@ describe('Gallery Update API', () => {
   });
 
   test('handles reordering of images correctly', () => {
-    // Mock gallery with initial order
-    const initialGallery = {
-      id: 'gallery1',
-      title: 'Test Gallery',
-      images: [
-        { id: 'img1', order: 0 },
-        { id: 'img2', order: 1 },
-        { id: 'img3', order: 2 },
-      ]
-    };
+    // Setup for the test
+    // Note: we're focusing on the update payload directly
     
     // Mock update payload with changed order
     const updatePayload = {

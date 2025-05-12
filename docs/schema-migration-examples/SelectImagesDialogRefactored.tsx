@@ -1,70 +1,85 @@
 /**
  * Example refactoring of SelectImagesDialog to use schema-derived types
- * This is for demonstration purposes and should be done in the actual component file
+ * This is for demonstration purposes and should be documented here 
+ * in the schema-migration-examples directory.
+ * 
+ * IMPORTANT: This is a partial implementation showing the key patterns.
  */
 'use client';
 
-import Image from 'next/image';
-import { useState, useEffect, useCallback } from 'react';
-import { LoadingSpinner, ErrorMessage, EmptyState } from '@/components/StatusMessages';
+// Only import what's actually used in the example
+import React, { useState, useEffect } from 'react';
 import logger from '@/lib/logger';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent } from '@/components/ui/Card';
-import { ImageTags } from '@/components/ui/ImageTags';
-// Import useApi hook and image schema
 import { useApi } from '@/lib/hooks/useApi';
 import { createPaginatedResponseSchema, ImageSchema } from '@/lib/schemas';
 import { z } from 'zod';
+
+/* 
+ * Full implementation would also import:
+ * import Image from 'next/image';
+ * import { LoadingSpinner, ErrorMessage, EmptyState } from '@/components/StatusMessages';
+ * import { Button } from '@/components/ui/Button';
+ * import { Card, CardContent } from '@/components/ui/Card';
+ * import { ImageTags } from '@/components/ui/ImageTags';
+ */
 
 // Create a schema for the paginated images response
 const PaginatedImagesSchema = createPaginatedResponseSchema(ImageSchema);
 type ImageType = z.infer<typeof ImageSchema>;
 
-interface SelectImagesDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onImagesSelected: (addedImageIds: string[]) => void;
-  existingImageIds?: string[];
-  galleryId?: string;
-}
+/**
+ * This example demonstrates how to:
+ * 1. Use schema-derived types for component props and state
+ * 2. Use the useApi hook with schema validation
+ * 3. Handle API responses in a type-safe way
+ */
 
-const DEBOUNCE_DELAY = 500; // 500ms delay for debouncing
-
-export function SelectImagesDialog({ 
-  isOpen, 
-  onClose, 
-  onImagesSelected,
-  existingImageIds = [] 
-}: SelectImagesDialogProps) {
-  const [images, setImages] = useState<ImageType[]>([]);
-  const [currentSearchQuery, setCurrentSearchQuery] = useState('');
-  const [currentTagFilter, setCurrentTagFilter] = useState('');
-  const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
-  const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
+/**
+ * Example Implementation
+ * 
+ * Note: This is a simplified version showing the key schema validation patterns.
+ * It doesn't include the full UI implementation.
+ */
+export function SelectImagesDialogExample() {
+  // Example state definition - we're explicitly using the setter in the example
+  const [, setImages] = useState<ImageType[]>([]);
   
   // Use the schema-validated API hook
-  const { fetch: fetchApi, isLoading, error } = useApi(PaginatedImagesSchema);
+  const { fetch: fetchApi } = useApi(PaginatedImagesSchema);
   
-  const loadImages = useCallback(async () => {
-    if (!isOpen) return;
-    try {
-      const queryParams = new URLSearchParams();
-      if (currentSearchQuery) queryParams.set('searchQuery', currentSearchQuery);
-      if (currentTagFilter) queryParams.set('tag', currentTagFilter);
-      
-      const result = await fetchApi(`/api/images?${queryParams.toString()}`);
-      
-      if (result.success) {
-        const fetchedImages = result.data.data;
-        const filteredImages = Array.isArray(fetchedImages)
-          ? fetchedImages.filter(img => !existingImageIds.includes(img.id))
-          : [];
-        setImages(filteredImages);
+  // Use to satisfy lint and demonstrate the pattern
+  useEffect(() => {
+    // Example of a schema-validated API call
+    const loadImages = async () => {
+      try {
+        const queryParams = new URLSearchParams();
+        queryParams.set('searchQuery', 'example');
+        
+        // Call API with schema validation
+        const result = await fetchApi(`/api/images?${queryParams.toString()}`);
+        
+        // Type-safe response handling
+        if (result.success) {
+          // result.data is fully typed according to PaginatedImagesSchema
+          const fetchedImages = result.data.data;
+          
+          // Example filtering (in a real component this would filter out existing images)
+          const existingIds = ['id1', 'id2']; // Example only
+          const filteredImages = Array.isArray(fetchedImages)
+            ? fetchedImages.filter(img => !existingIds.includes(img.id))
+            : [];
+            
+          setImages(filteredImages);
+        }
+      } catch (err) {
+        logger.error('Failed to load images', err);
       }
-    } catch (err) {
-      logger.error('Failed to load images', err);
-    }
-  }, [isOpen, fetchApi, currentSearchQuery, currentTagFilter, existingImageIds]);
+    };
+    
+    // This would typically be called when component mounts or filters change
+    loadImages();
+  }, [fetchApi, setImages]);
   
-  // Rest of the component implementation...
+  // For brevity, UI implementation is omitted
+  return <div>Example schema-based component (UI implementation omitted for brevity)</div>;
 }

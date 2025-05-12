@@ -4,8 +4,7 @@ import {
   mapGalleryImagesToDisplayImages,
   findImageInGallery,
   findImageInGalleryIndex,
-  DisplayGallery,
-  DisplayImage
+  DisplayGallery
 } from '../typeMappers';
 import { z } from 'zod';
 import { ImageInGallerySchema } from '../../schemas';

@@ -5,7 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { ApiSuccessResponseSchema, ApiErrorResponseSchema } from '@/lib/schemas';
+// Uncomment these when using the helper functions
+// import { ApiSuccessResponseSchema, ApiErrorResponseSchema } from '@/lib/schemas';
 
 /**
  * Step 1: Define your request schemas
@@ -25,6 +26,8 @@ const CreateRequestSchema = z.object({
 /**
  * Step 2: Define your response schema
  */
+// Example schema (uncomment when implementing)
+/*
 const ItemSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -33,6 +36,7 @@ const ItemSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
 });
+*/
 
 /**
  * Step 3: Create handler functions with schema validation
@@ -148,8 +152,10 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Helper function to create typed API responses
+ * Helper functions to create typed API responses
+ * Uncomment and use these when implementing the API endpoints
  */
+/*
 function createSuccessResponse<T>(data: T) {
   const response = { success: true as const, data };
   return ApiSuccessResponseSchema.parse(response); // Validate response shape
@@ -163,3 +169,4 @@ function createErrorResponse(error: string, status = 500, issues?: { path: strin
   };
   return ApiErrorResponseSchema.parse(response); // Validate response shape
 }
+*/
