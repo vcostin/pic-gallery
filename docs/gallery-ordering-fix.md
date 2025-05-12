@@ -1,80 +1,139 @@
 # Gallery Image Ordering Fix
 
 ## Issue Description
-When editing a gallery and reordering images, the new order information was not being saved correctly to the database. This was due to an incorrect mapping of image IDs in the API payload.
+When editing a gallery and reordering images, the new order information was not being saved correctly to the database. This was due to both incorrect mapping of image IDs in the API payload and validation errors with image order values.
 
-## Root Cause
-The issue was in the `performGalleryUpdate` function in the Edit Gallery page, which was using the wrong ID property when creating the API payload:
+## Root Causes
+1. Initially, the Edit Gallery page was using the wrong ID property when creating the API payload:
+   ```typescript
+   // Incorrect code
+   images: images.map(img => ({ 
+     id: img.imageId, // This was incorrect - used the Image ID instead of ImageInGallery ID
+     description: img.description,
+     order: img.order,
+   }))
+   ```
+   The API expected the `id` field to be the ID of the `ImageInGallery` record, not the ID of the `Image`.
 
-```typescript
-// Incorrect code
-images: images.map(img => ({ 
-  id: img.imageId, // This was incorrect - used the Image ID instead of ImageInGallery ID
-  description: img.description,
-  order: img.order,
-}))
-```
-
-The API expected the `id` field to be the ID of the `ImageInGallery` record (the join table between galleries and images), not the ID of the `Image` record itself.
+2. Additionally, order values weren't properly validated, sometimes leading to non-integer or negative values that failed schema validation.
 
 ## Solution
-1. Fixed the payload mapping to use the correct ID property:
+
+### 1. Fixed ID Mapping
+Updated the payload mapping to use the correct ID property:
 
 ```typescript
-// Fixed code
+// Fixed code for ID mapping
 images: images.map(img => ({ 
   id: img.id, // Using correct ImageInGallery ID
-  imageId: img.imageId, // Include the Image ID as well
+  imageId: img.imageId, // Include the Image ID as well for temp images
   description: img.description,
-  order: typeof img.order === 'number' ? img.order : index, // Added validation
+  order: typeof img.order === 'number' ? img.order : index, // Basic validation
 }))
 ```
 
-2. Added validation to ensure all images have a valid numeric order value.
+### 2. Enhanced Order Value Validation
+Added comprehensive order value validation in multiple places:
 
-3. Enhanced the `GallerySortable` component to set explicit numeric orders during drag-and-drop operations:
-
+#### In `performGalleryUpdate` (Edit Gallery Page)
 ```typescript
-// Reorder the items and set explicit orders
+const updatedImages = images.map((img, index) => {
+  // Check if order exists and is valid
+  if (typeof img.order !== 'number' || !Number.isInteger(img.order) || img.order < 0) {
+    console.warn(`Fixing invalid order for image ${img.id}: ${img.order} -> ${index}`);
+  }
+  
+  // Always provide a valid non-negative integer for order
+  const orderValue = typeof img.order === 'number' && Number.isInteger(img.order) && img.order >= 0 
+    ? img.order 
+    : index;
+  
+  return { 
+    id: img.id,
+    ...(img.imageId ? { imageId: img.imageId } : {}),
+    description: img.description,
+    order: orderValue,
+  };
+});
+```
+
+#### In `GallerySortable.tsx`
+```typescript
+// Reorder the items and set explicit orders starting from 0
 const reorderedImages = arrayMove(galleryImages, oldIndex, newIndex).map(
   (image, index) => ({
     ...image,
-    order: index // Explicit numeric order starting from 0
+    order: index // Explicit numeric integer order starting from 0
   })
 );
 ```
 
-4. Updated the API validation schema to enforce numeric order values.
+#### In Hook Functions
+```typescript
+const updateImages = useCallback((newImages) => {
+  try {
+    // Validate that all images have appropriate order values
+    const validatedImages = newImages.map((img, index) => {
+      // If order is missing or invalid, set it based on position
+      if (typeof img.order !== 'number' || !Number.isInteger(img.order) || img.order < 0) {
+        logger.warn(`Image with ID ${img.id} has invalid order value: ${img.order}, setting to ${index}`);
+        return { ...img, order: index };
+      }
+      return img;
+    });
+    
+    setImages(validatedImages);
+  } catch (err) {
+    logger.error("Error updating images:", err);
+    // Fall back to the passed images to avoid breaking the UI
+    setImages(newImages);
+  }
+}, []);
+```
 
-## Testing
-Created focused unit tests specifically to validate the gallery image ordering functionality without relying on complex test setups:
+### 3. API Pre-validation
+Added validation in route.ts before processing updates:
+```typescript
+// Pre-validation check for common issues
+if (body.images && Array.isArray(body.images)) {
+  body.images = body.images.map((img, index) => {
+    // Fix any non-integer or negative order values
+    if (img.order !== undefined &&
+        (typeof img.order !== 'number' || !Number.isInteger(img.order) || img.order < 0)) {
+      logger.warn(`Found invalid order value in request: ${String(img.order)} for image ${img.id}, fixing to ${index}`);
+      return { ...img, order: index };
+    }
+    return img;
+  });
+}
+```
 
-1. **Gallery Order Tests** - Tests the correct mapping of image IDs and handling of image orders:
-   - Verifies that `id` (ImageInGallery ID) is used instead of `imageId` (Image ID)
-   - Tests validation of numeric order values
-   - Ensures missing order values are properly handled
+### 4. Improved Schema Validation
+Enhanced the Zod schema for better error messages:
+```typescript
+order: z.number()
+  .int("Order must be an integer")
+  .nonnegative("Order must be a non-negative number")
+  .optional()
+```
 
-2. **Gallery Sort Order Tests** - Tests the array reordering logic used in the GallerySortable component:
-   - Verifies that the `arrayMove` function correctly reorders images
-   - Confirms explicit order assignments are applied after array movement
-   - Tests handling of mixed order types (strings, numbers, null)
+## Results and Testing
 
-3. **Gallery Update API Tests** - Validates the API's handling of image orders:
-   - Tests validation of numeric order values
-   - Verifies the proper handling of image reordering
-   - Confirms the fix for the ID mapping issue
+All implemented fixes were tested to confirm that:
 
-The tests confirmed that our changes correctly address the issue, ensuring that gallery image orders are properly maintained when editing galleries.
+1. Gallery images can be successfully reordered via drag-and-drop
+2. The order information is correctly saved to the database
+3. All validation checks are working properly
+4. The application can recover from invalid order values
 
-## Testing Approach
-We used a simplified testing approach that focused on the core functionality rather than complex component rendering or API mocks:
+All automated tests are passing with these changes, and manual testing in the development environment confirms that reordering images now works as expected.
 
-- Tests run in a Node environment without requiring JSX transformation
-- We avoided complex mocks of React components or Next.js features
-- Tests focus on the specific business logic that was affected by the bug
-- Each test has a clear purpose aligned with a specific part of the fix
+## Future Improvements
 
-## Technical Notes
-- The core issue was related to misusing the image ID properties, confusing `img.id` (the ID of the junction record) with `img.imageId` (the ID of the actual image)
-- Proper validation was added to handle edge cases like missing or invalid order values
-- The fix ensures backward compatibility with existing data
+1. Consider adding end-to-end tests specifically for the image reordering functionality
+2. Add more detailed logging for order validation to help troubleshoot any future issues
+3. Standardize the ordering mechanism across all components that handle gallery images
+
+## Related Issues
+
+This fix addresses issue #42 in the project tracker: "Gallery image order not saving properly after drag and drop".

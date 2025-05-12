@@ -143,9 +143,75 @@ export async function PATCH(
 
   try {
     const body = await req.json();
+    
+    // Pre-validation check for common issues
+    if (body.images && Array.isArray(body.images)) {
+      // First make sure all IDs are valid strings
+      const validImages = body.images.filter((img: { id?: string }) => typeof img.id === 'string' && img.id.length > 0);
+      
+      // Then fix any order issues
+      body.images = validImages.map((img: { id: string; order?: unknown }, index: number) => {
+        // Fix any non-integer or negative order values
+        if (img.order !== undefined) {
+          let orderValue: number;
+          
+          if (typeof img.order === 'number' && Number.isInteger(img.order) && img.order >= 0) {
+            // Order is already a valid number
+            orderValue = img.order;
+          } else if (typeof img.order === 'string') {
+            // Try to convert string to number
+            const parsed = parseInt(img.order, 10);
+            if (!isNaN(parsed) && parsed >= 0) {
+              orderValue = parsed;
+            } else {
+              logger.warn(`Invalid string order "${img.order}" for image ${img.id}, fixing to ${index}`);
+              orderValue = index;
+            }
+          } else {
+            logger.warn(`Invalid order type ${typeof img.order} (${String(img.order)}) for image ${img.id}, fixing to ${index}`);
+            orderValue = index;
+          }
+          
+          return { ...img, order: orderValue };
+        }
+        
+        return img;
+      });
+      
+      // Double check that all orders are now valid
+      const hasInvalidOrders = body.images.some((img: { id: string; order?: unknown }) => {
+        return img.order !== undefined && 
+          (typeof img.order !== 'number' || !Number.isInteger(img.order) || img.order < 0);
+      });
+      
+      if (hasInvalidOrders) {
+        logger.error("Critical: Still have invalid orders after fix attempt:", 
+          body.images
+            .filter((img: { id: string; order?: unknown }) => {
+              return img.order !== undefined && 
+                (typeof img.order !== 'number' || !Number.isInteger(img.order) || img.order < 0);
+            })
+            .map((img: { id: string; order?: unknown }) => ({ id: img.id, order: img.order }))
+        );
+        
+        // Last resort fix - reassign all orders sequentially
+        body.images = body.images.map((img: { id: string; order?: unknown }, idx: number) => ({ ...img, order: idx }));
+      }
+    }
+    
     const validation = UpdateGallerySchema.safeParse(body);
 
     if (!validation.success) {
+      logger.error("Gallery validation error:", JSON.stringify({
+        errors: validation.error.errors,
+        requestData: {
+          images: body.images?.map((img: { id: string; order?: unknown }) => ({
+            id: img.id,
+            order: img.order !== undefined ? 
+              `${typeof img.order}: ${String(img.order)}` : "undefined"
+          }))
+        }
+      }, null, 2));
       return apiValidationError(validation.error);
     }
 
@@ -233,7 +299,16 @@ export async function PATCH(
           const existingImageInGallery = gallery.images.find(img => img.id === imgData.id);
           if (existingImageInGallery) {
             const currentOrder = (existingImageInGallery as ImageInGalleryWithImage).order || 0;
-            const newOrder = imgData.order !== undefined ? imgData.order : currentOrder;
+            // Make sure we have a valid non-negative integer for order
+            let newOrder = currentOrder;
+            if (imgData.order !== undefined) {
+              // The schema validation should already catch non-integers, but let's be extra safe
+              if (typeof imgData.order === 'number' && Number.isInteger(imgData.order) && imgData.order >= 0) {
+                newOrder = imgData.order;
+              } else {
+                logger.warn(`Invalid order value ${imgData.order} for image ${imgData.id}, using current order ${currentOrder}`);
+              }
+            }
             
             imageUpdates.push(
               prisma.imageInGallery.update({

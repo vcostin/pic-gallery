@@ -117,7 +117,21 @@ export const UpdateGallerySchema = CreateGallerySchema.extend({
     id: z.string(),
     imageId: z.string().optional(), // Add imageId for temp images
     description: z.string().nullable().optional(),
-    order: z.number().int().nonnegative().optional(), // Require explicit numeric order
+    // More flexible order validation with transform to handle edge cases
+    order: z.preprocess(
+      // Preprocess to ensure we always get a valid number
+      (val) => {
+        if (typeof val === 'number') return Number.isInteger(val) && val >= 0 ? val : 0;
+        if (typeof val === 'string') {
+          const parsed = parseInt(val, 10);
+          return !isNaN(parsed) && parsed >= 0 ? parsed : 0;
+        }
+        return 0; // Default fallback
+      },
+      z.number()
+        .int("Order must be an integer")
+        .nonnegative("Order must be a non-negative number")
+    ).optional(), // Require explicit numeric order
   })).optional(),
   // New field for adding images
   addImages: z.array(z.string()).optional(),

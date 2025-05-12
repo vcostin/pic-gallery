@@ -90,10 +90,11 @@ export function GallerySortable({
       const newIndex = galleryImages.findIndex(img => img.id === over.id);
       
       // Reorder the items and set explicit orders starting from 0
+      // Ensure each order value is a valid non-negative integer
       const reorderedImages = arrayMove(galleryImages, oldIndex, newIndex).map(
         (image, index) => ({
           ...image,
-          order: index // Explicit numeric order starting from 0
+          order: index // Explicit numeric integer order starting from 0
         })
       );
       

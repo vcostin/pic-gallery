@@ -277,7 +277,23 @@ export function useGalleryImages(
   
   // Update gallery images (from API or parent component)
   const updateImages = useCallback((newImages: z.infer<typeof ImageInGallerySchema>[]) => {
-    setImages(newImages);
+    try {
+      // Validate that all images have appropriate order values
+      const validatedImages = newImages.map((img, index) => {
+        // If order is missing or invalid, set it based on position
+        if (typeof img.order !== 'number' || !Number.isInteger(img.order) || img.order < 0) {
+          logger.warn(`Image with ID ${img.id} has invalid order value: ${img.order}, setting to ${index}`);
+          return { ...img, order: index };
+        }
+        return img;
+      });
+      
+      setImages(validatedImages);
+    } catch (err) {
+      logger.error("Error updating images:", err);
+      // Fall back to the passed images to avoid breaking the UI
+      setImages(newImages);
+    }
   }, []);
   
   // Fetch gallery data when galleryId changes

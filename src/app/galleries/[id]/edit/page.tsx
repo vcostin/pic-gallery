@@ -69,14 +69,38 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     if (!originalGalleryData) throw new Error("Original gallery data not loaded.");
     
     // Ensure all images have valid order values before sending to backend
-    const updatedImages = images.map((img, index) => ({ 
-      id: img.id,
-      imageId: img.imageId,
-      description: img.description,
-      order: typeof img.order === 'number' ? img.order : index,
-    }));
+    // Guarantee that each order is a non-negative integer as required by the schema
+    const updatedImages = images.map((img, index) => {
+      // Check if order exists and is valid
+      if (typeof img.order !== 'number' || !Number.isInteger(img.order) || img.order < 0) {
+        logger.warn(`Fixing invalid order for image ${img.id}: ${img.order} -> ${index}`);
+      }
+      
+      // Always provide a valid non-negative integer for order
+      const orderValue = typeof img.order === 'number' && Number.isInteger(img.order) && img.order >= 0 
+        ? img.order 
+        : index;
+      
+      return { 
+        id: img.id,
+        // Only include imageId if it exists (for temp images)
+        ...(img.imageId ? { imageId: img.imageId } : {}),
+        description: img.description,
+        order: orderValue,
+      };
+    });
+    
+    // Final verification of order values
+    for (const img of updatedImages) {
+      if (typeof img.order !== 'number' || !Number.isInteger(img.order) || img.order < 0) {
+        logger.error(`Critical: Image ${img.id} still has invalid order value after fix attempt: ${img.order}`);
+        // Force fix the value as a last resort
+        img.order = updatedImages.indexOf(img);
+      }
+    }
     
     const payload = {
+      id: galleryId, // Include the gallery ID which is required by the schema
       title,
       description,
       isPublic,
@@ -90,11 +114,20 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       displayMode: displayMode || null,
       layoutType: layoutType || null,
     };
+    
+    // Check for any potential issues with the payload before sending
+    if (payload.images?.some(img => typeof img.order !== 'number' || !Number.isInteger(img.order) || img.order < 0)) {
+      console.warn('Gallery update payload contains invalid image orders:', 
+        payload.images?.filter(img => typeof img.order !== 'number' || !Number.isInteger(img.order) || img.order < 0)
+      );
+    }
+    
     const response = await fetchApi<{ data: FullGallery; message: string }>(`/api/galleries/${galleryId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    
     setOriginalGalleryData(response.data);
     setImages(response.data.images);
     setGalleryData(response.data); 

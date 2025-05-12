@@ -124,8 +124,19 @@ export function useFetch() {
       const data = isJson ? await response.json() : await response.text();
 
       if (!response.ok) {
+        // Enhanced error handling with more details
         const errorMessage = isJson && data.error ? data.error : `Request failed with status: ${response.status}`;
-        throw new Error(errorMessage);
+        
+        // Log detailed validation errors if present
+        if (isJson && data.issues) {
+          logger.error('Validation errors:', JSON.stringify(data.issues, null, 2));
+        }
+        
+        // Create a custom error object with additional properties
+        const error = new Error(errorMessage) as Error & { status?: number; details?: unknown };
+        error.status = response.status;
+        error.details = isJson ? data : null;
+        throw error;
       }
 
       return data as T;
@@ -356,7 +367,23 @@ export function useGalleryImages(initialImages: FullImageInGallery[] = []) { // 
   
   // Set images (used when initializing from API)
   const updateImages = useCallback((newImages: FullImageInGallery[]) => { // Changed to FullImageInGallery
-    setImages(newImages);
+    try {
+      // Validate that all images have appropriate order values
+      const validatedImages = newImages.map((img, index) => {
+        // If order is missing or invalid, set it based on position
+        if (typeof img.order !== 'number' || !Number.isInteger(img.order) || img.order < 0) {
+          logger.warn(`Image with ID ${img.id} has invalid order value: ${img.order}, setting to ${index}`);
+          return { ...img, order: index };
+        }
+        return img;
+      });
+      
+      setImages(validatedImages);
+    } catch (err) {
+      logger.error("Error updating images:", err);
+      // Fall back to the passed images to avoid breaking the UI
+      setImages(newImages);
+    }
   }, []);
   
   return {
