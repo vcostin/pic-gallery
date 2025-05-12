@@ -1,46 +1,32 @@
 'use client';
 
 import React from 'react';
-// Import the centralized types
-import { FullGallery, FullImageInGallery, ImageType } from '@/lib/types'; 
+// Import schema-derived types and mappers
+import { 
+  DisplayGallery, 
+  DisplayImage,
+  mapGalleryImageToDisplayImage,
+  mapGalleryImagesToDisplayImages,
+  findImageInGallery,
+  findImageInGalleryIndex
+} from '@/lib/utils/typeMappers';
 import { GalleryCarousel } from './gallery-display/GalleryCarousel';
 import { ImageGrid } from './ImageGrid'; 
 import { GalleryFullscreen } from './gallery-display/GalleryFullscreen';
 
 interface ThemedGalleryViewProps {
-  gallery: FullGallery;
+  gallery: DisplayGallery;
 }
 
-// Helper to map FullImageInGallery to ImageType, ensuring description compatibility
-const mapToImageType = (fig: FullImageInGallery): ImageType => ({
-  id: fig.image.id,
-  url: fig.image.url,
-  title: fig.image.title,
-  description: fig.description, // Use gallery-specific description
-  tags: fig.image.tags,
-});
 
-// Helper to map FullImageInGalleryImage (from FullImageInGallery.image) to ImageType
-// This helper seems to be used for the fullscreen view.
-// We need to ensure it also uses the correct description if the intent is to show gallery-specific one.
-// However, GalleryFullscreen might be intended to show the master image details.
-// For now, let's assume Fullscreen should also show gallery-specific description if available.
-// This requires passing the FullImageInGallery to mapPrismaImageToImageType or finding it.
-// Let's adjust mapPrismaImageToImageType to accept FullImageInGallery
-const mapFullImageInGalleryToImageType = (fig: FullImageInGallery): ImageType => ({
-  id: fig.image.id,
-  url: fig.image.url,
-  title: fig.image.title,
-  description: fig.description, // Use gallery-specific description
-  tags: fig.image.tags,
-});
+export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) {
+  const [fullscreenImageInfo, setFullscreenImageInfo] = React.useState<{ image: DisplayImage, originalIndex: number } | null>(null);
 
-
-export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) { // Removed isOwner
-  const [fullscreenImageInfo, setFullscreenImageInfo] = React.useState<{ image: ImageType, originalIndex: number } | null>(null);
-
-  const openFullscreen = (imageInGallery: FullImageInGallery, index: number) => {
-    setFullscreenImageInfo({ image: mapToImageType(imageInGallery), originalIndex: index });
+  const openFullscreen = (imageInGallery: typeof gallery.images[0], index: number) => {
+    setFullscreenImageInfo({ 
+      image: mapGalleryImageToDisplayImage(imageInGallery), 
+      originalIndex: index 
+    });
   };
 
   const closeFullscreen = () => {
@@ -55,8 +41,10 @@ export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) { // Remo
       : (originalIndex - 1 + gallery.images.length) % gallery.images.length;
     
     const nextImageInGallery = gallery.images[newIndex];
-    // Use the corrected mapping for fullscreen
-    setFullscreenImageInfo({ image: mapFullImageInGalleryToImageType(nextImageInGallery), originalIndex: newIndex });
+    setFullscreenImageInfo({ 
+      image: mapGalleryImageToDisplayImage(nextImageInGallery), 
+      originalIndex: newIndex 
+    });
   };
 
   const {
@@ -77,8 +65,8 @@ export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) { // Remo
 
   const containerClass = layoutType === 'full-width' ? 'w-full' : 'container mx-auto';
 
-  // Prepare images for child components, ensuring they match ImageType
-  const imagesForDisplay: ImageType[] = gallery.images.map(mapToImageType);
+  // Prepare images for child components using our fixed utility function
+  const imagesForDisplay = mapGalleryImagesToDisplayImages(gallery.images);
 
   const renderGalleryContent = () => {
     switch (displayMode) {
@@ -87,10 +75,12 @@ export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) { // Remo
           <GalleryCarousel
             images={imagesForDisplay}
             onImageClick={(image, index) => {
-              // Find the original FullImageInGallery object based on id or use index if arrays correspond
-              const originalImageInGallery = gallery.images.find(img => img.image.id === image.id) || gallery.images[index];
-              if (originalImageInGallery) {
-                openFullscreen(originalImageInGallery, gallery.images.findIndex(img => img.image.id === image.id));
+              // Find the original image in gallery by ID
+              const imageId = image.id;
+              const galleryImageIndex = gallery.images.findIndex(img => img.image && img.image.id === imageId);
+              if (galleryImageIndex >= 0) {
+                const imageInGallery = gallery.images[galleryImageIndex];
+                openFullscreen(imageInGallery, galleryImageIndex);
               }
             }}
             themeColor={gallery.themeColor}
@@ -101,8 +91,7 @@ export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) { // Remo
         return (
           <ImageGrid
             images={imagesForDisplay}
-            // If ImageGrid needs onImageClick that expects FullImageInGallery, adjust accordingly
-            // For now, assuming ImageGrid might not have a click handler or uses ImageType
+            // ImageGrid doesn't have a click handler in this component
           />
         );
       default:
@@ -110,9 +99,11 @@ export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) { // Remo
           <GalleryCarousel
             images={imagesForDisplay}
             onImageClick={(image, index) => {
-              const originalImageInGallery = gallery.images.find(img => img.image.id === image.id) || gallery.images[index];
-              if (originalImageInGallery) {
-                openFullscreen(originalImageInGallery, gallery.images.findIndex(img => img.image.id === image.id));
+              const imageId = image.id;
+              const galleryImageIndex = gallery.images.findIndex(img => img.image && img.image.id === imageId);
+              if (galleryImageIndex >= 0) {
+                const imageInGallery = gallery.images[galleryImageIndex];
+                openFullscreen(imageInGallery, galleryImageIndex);
               }
             }}
             themeColor={gallery.themeColor}
@@ -142,7 +133,7 @@ export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) { // Remo
 
       {fullscreenImageInfo && gallery.images[fullscreenImageInfo.originalIndex] && (
         <GalleryFullscreen
-          image={mapFullImageInGalleryToImageType(gallery.images[fullscreenImageInfo.originalIndex])}
+          image={fullscreenImageInfo.image}
           onClose={closeFullscreen}
           onNext={() => navigateFullscreen('next')}
           onPrev={() => navigateFullscreen('prev')}

@@ -7,10 +7,23 @@ This is a task list for gradually migrating from the old hooks to the new Zod sc
 - [ ] Modify components currently using `useFetch` to use `useApi` instead
   - Look for `import { useFetch } from '@/lib/hooks'` patterns
   - Replace with `import { useApi } from '@/lib/hooks/useApi'` and add schema validation
+  - [x] Updated `SelectImagesDialog` component
 
 - [ ] Update `GalleryView` and `GallerySortable` components to use `useEnhancedGalleryImages`
   - Look for `import { useGalleryImages } from '@/lib/hooks'` patterns
   - Replace with `import { useEnhancedGalleryImages } from '@/lib/hooks/useEnhancedGallery'`
+
+- [x] Update `ThemedGalleryView` component to use schema-derived types
+  - Created utility functions in `lib/utils/typeMappers.ts` for mapping between types
+  - Added tests for type mapping functions
+
+- [x] Update `GalleryView` component to use schema-derived types
+  - Added support for schema-based typing 
+  - Fixed compatibility with ImageCarousel component
+
+- [x] Update `GalleryGrid` component to use schema-derived types
+  - Added schema-based typing with Zod
+  - Improved type safety
 
 ## Medium Priority
 
@@ -29,6 +42,11 @@ This is a task list for gradually migrating from the old hooks to the new Zod sc
   - Test schema validation
   - Test error handling
   - Test UI interactions in `useEnhancedGalleryImages`
+  
+- [x] Add additional type mapping utilities to `lib/utils/typeMappers.ts`
+  - Created `imageSelectionMappers.ts` for image selection components
+  - Added mapping functions for gallery view components
+  - Created schema types for UI components 
 
 - [ ] Create migration scripts to help with the transition
   - Script to find and suggest replacements for deprecated hooks

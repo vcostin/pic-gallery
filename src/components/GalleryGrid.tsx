@@ -4,32 +4,36 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
-import { SkeletonLoader, EmptyState } from './StatusMessages';
+import { EmptyState } from './StatusMessages';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useAsync } from '@/lib/hooks';
 import { Card, CardImage, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { z } from 'zod';
+import { GallerySchema } from '@/lib/schemas';
 
-interface GalleryImage {
-  id: string;
-  image: {
-    id: string;
-    url: string;
-    title: string;
-  };
-}
+// Define schema for the gallery grid displays
+const GalleryGridItemSchema = GallerySchema.pick({
+  id: true,
+  title: true,
+  description: true,
+  isPublic: true,
+  coverImageId: true,
+}).extend({
+  images: z.array(z.object({
+    id: z.string(),
+    image: z.object({
+      id: z.string(),
+      url: z.string(),
+      title: z.string()
+    })
+  }))
+});
 
-interface Gallery {
-  id: string;
-  title: string;
-  description: string | null;
-  isPublic: boolean;
-  coverImageId: string | null;
-  images: GalleryImage[];
-}
+type GalleryGridItem = z.infer<typeof GalleryGridItemSchema>;
 
 interface GalleryGridProps {
-  galleries: Gallery[];
+  galleries: GalleryGridItem[];
   isOwner: boolean;
 }
 
@@ -38,7 +42,7 @@ export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
   const router = useRouter();
   
   // Use state to store galleries
-  const { data: galleriesData, setData: setGalleriesData } = useAsync<Gallery[]>(galleries);
+  const { data: galleriesData, setData: setGalleriesData } = useAsync<GalleryGridItem[]>(galleries);
 
   // Set initial data
   useEffect(() => {
@@ -49,15 +53,30 @@ export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
   }, [galleries, setGalleriesData]);
 
   const handleEditGallery = useCallback((e: React.MouseEvent, galleryId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); // Prevent navigation to gallery view
+    e.stopPropagation(); // Stop event from bubbling up
     router.push(`/galleries/${galleryId}/edit`);
   }, [router]);
 
+  // Show skeleton loader during initial load
   if (isInitializing) {
-    return <SkeletonLoader count={4} type="card" />;
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <Card key={i}>
+            <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            <CardContent>
+              <div className="w-3/4 h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
+              <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-3" />
+              <div className="w-1/4 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
   }
 
+  // Empty state when there are no galleries
   if (!galleriesData || galleriesData.length === 0) {
     return (
       <EmptyState
@@ -133,22 +152,17 @@ export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
                     variant="secondary"
                     size="sm"
                     aria-label="Edit gallery"
-                    icon={
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    }
                   >
-                    Edit
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
                   </Button>
                 )}
               </CardImage>
               <CardContent>
-                <h3 className="font-semibold mb-1 group-hover:text-blue-500 transition-colors">
-                  {gallery.title}
-                </h3>
+                <h2 className="font-semibold truncate">{gallery.title}</h2>
                 {gallery.description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mt-1">
                     {gallery.description}
                   </p>
                 )}

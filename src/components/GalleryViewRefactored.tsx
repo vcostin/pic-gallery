@@ -8,45 +8,16 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ErrorMessage, EmptyState } from "@/components/StatusMessages";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 // Import schema-derived types
-import { GalleryViewSchema } from "@/lib/utils/galleryViewMappers";
-import { z } from "zod";
+import { GalleryViewType } from "@/lib/utils/galleryViewMappers";
 
-// Define the GalleryImage type used by ImageCarousel
-interface GalleryImageForCarousel {
-  id: string;
-  description: string | null;
-  image: {
-    id: string;
-    url: string;
-    title: string;
-    tags: Array<{
-      id: string;
-      name: string;
-    }>;
-  };
-}
-
-// Define props type using the schema
 interface GalleryViewProps {
-  gallery: z.infer<typeof GalleryViewSchema>;
+  gallery: GalleryViewType;
   isOwner: boolean;
 }
 
 export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const router = useRouter();
-  
-  // Adapt gallery images to the format expected by ImageCarousel
-  const galleryImagesForCarousel: GalleryImageForCarousel[] = gallery.images.map(img => ({
-    id: img.id,
-    description: img.description || null,
-    image: {
-      id: img.image.id,
-      url: img.image.url,
-      title: img.image.title,
-      tags: img.image.tags || []
-    }
-  }));
   
   return (
     <ErrorBoundary fallback={(error) => (
@@ -175,7 +146,7 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
 
         {gallery.images.length > 0 && (
           <ImageCarousel
-            images={galleryImagesForCarousel}
+            images={gallery.images}
             initialImageIndex={selectedImageIndex ?? 0}
             isOpen={selectedImageIndex !== null}
             onClose={() => setSelectedImageIndex(null)}
