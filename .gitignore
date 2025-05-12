@@ -53,5 +53,6 @@ Icon
 dist
 dist-ssr
 *.local
+tsconfig.tsbuildinfo
 
 .env*
