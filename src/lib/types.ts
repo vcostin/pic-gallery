@@ -53,7 +53,8 @@ export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;
 
 // Export Prisma-defined types and Zod-generated types
-export type { UserRole, ZodUser as User, ZodImage as Image, ZodGallery as Gallery, ZodTag as Tag, ZodImageInGallery as ImageInGallery };
+export { UserRole } from '@prisma/client'; // Export UserRole as a value since it's an enum
+export type { ZodUser as User, ZodImage as Image, ZodGallery as Gallery, ZodTag as Tag, ZodImageInGallery as ImageInGallery };
 
 // Represents the 'image' object within FullImageInGallery
 export interface FullImageInGalleryImage extends PrismaImage {

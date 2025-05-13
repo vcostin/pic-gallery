@@ -48,13 +48,20 @@ describe('Gallery Image Ordering', () => {
     expect(incorrectMapping[0].order).toBe(2);
     
     // Also ensure we properly handle missing order values
-    const imagesWithMissingOrder = [
+    interface GalleryImage {
+      id: string;
+      imageId: string;
+      description: string;
+      order?: number | null;
+    }
+    
+    const imagesWithMissingOrder: GalleryImage[] = [
       { id: 'imgGallery4', imageId: 'img4', description: 'No Order' }, // Missing order
       { id: 'imgGallery5', imageId: 'img5', order: null, description: 'Null Order' }, // Null order
     ];
     
     // This simulates the fix we implemented to handle missing/invalid orders
-    const fixedMapping = imagesWithMissingOrder.map((img, index) => ({
+    const fixedMapping = imagesWithMissingOrder.map((img, index: number) => ({
       id: img.id,
       imageId: img.imageId,
       description: img.description,
@@ -67,7 +74,7 @@ describe('Gallery Image Ordering', () => {
   
   test('explicit orders are set during drag and drop', () => {
     // This simulates the arrayMove function from dnd-kit
-    const mockArrayMove = (items, oldIndex, newIndex) => {
+    const mockArrayMove = <T>(items: T[], oldIndex: number, newIndex: number): T[] => {
       const result = [...items];
       const [removed] = result.splice(oldIndex, 1);
       result.splice(newIndex, 0, removed);

@@ -3,10 +3,13 @@
  */
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import logger from '@/lib/logger';
 import { NextResponse } from 'next/server';
+
+// Create a new PrismaClient instance
+const prisma = new PrismaClient();
 
 // Schema for validating the request body
 const ImageOrderSchema = z.object({
@@ -74,7 +77,7 @@ export async function PATCH(
 
     // Validate that all images exist in the gallery
     const imageIds = requestData.images.map(img => img.id);
-    const existingIds = gallery.images.map(img => img.id);
+    const existingIds = gallery.images.map((img: { id: string }) => img.id);
     const invalidIds = imageIds.filter(id => !existingIds.includes(id));
 
     if (invalidIds.length > 0) {

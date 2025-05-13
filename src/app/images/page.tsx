@@ -152,7 +152,13 @@ export default function ImagesPage() {
       )}
       {!isLoading && !error && images.length > 0 && (
         <>
-          <ImageGrid images={images} />
+          <ImageGrid images={images.map(img => ({
+            id: img.id,
+            title: img.title,
+            url: img.url,
+            description: img.description || null, // Ensure description is string | null not undefined
+            tags: img.tags || []
+          }))} />
           {pagination && pagination.lastPage > 1 && (
             <div className="mt-8 flex justify-center items-center space-x-2">
               <Button 

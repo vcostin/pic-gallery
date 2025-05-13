@@ -6,7 +6,7 @@
  */
 
 // Mock the arrayMove function from @dnd-kit/sortable
-const arrayMove = (array, from, to) => {
+const arrayMove = <T>(array: T[], from: number, to: number): T[] => {
   const result = [...array];
   const [removed] = result.splice(from, 1);
   result.splice(to, 0, removed);

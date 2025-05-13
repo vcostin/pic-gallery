@@ -146,7 +146,16 @@ export function GalleryView({ gallery, isOwner }: GalleryViewProps) {
 
         {gallery.images.length > 0 && (
           <ImageCarousel
-            images={gallery.images}
+            images={gallery.images.map(img => ({
+              id: img.id,
+              description: img.description || null,
+              image: {
+                id: img.image.id,
+                url: img.image.url,
+                title: img.image.title,
+                tags: img.image.tags || []
+              }
+            }))}
             initialImageIndex={selectedImageIndex ?? 0}
             isOpen={selectedImageIndex !== null}
             onClose={() => setSelectedImageIndex(null)}

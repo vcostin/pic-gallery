@@ -50,7 +50,7 @@ export default async function GalleryPage({
     notFound();
   }
 
-  const isOwner = session?.user?.id === gallery.userId;
+  // Removed unused isOwner variable
 
   // Augment the user object to match the expected structure for FullGallery
   const augmentedUser = {
@@ -76,5 +76,5 @@ export default async function GalleryPage({
     layoutType: gallery.layoutType || null,
   };
 
-  return <ThemedGalleryView gallery={fullGallery} isOwner={isOwner} />;
+  return <ThemedGalleryView gallery={fullGallery} />;
 }

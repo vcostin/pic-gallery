@@ -1,10 +1,30 @@
 /**
  * API endpoint template using schema validation
  * Use this as a reference when creating new API endpoints or refactoring existing ones
+ * 
+ * Note: This is an example file with mock implementations that use 'any' types
+ * deliberately to simplify the template. In real implementations, define proper types.
  */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { db } from '@/lib/db';
+// Example mock database client for demonstration purposes
+const db = {
+  item: {
+    findMany: async (query: any) => {
+      // Simple mock implementation that respects the query
+      console.log('Mock DB query:', query);
+      return [];
+    },
+    count: async () => 0,
+    create: async (query: any) => {
+      // Return mock data based on the query
+      console.log('Mock DB create:', query);
+      return { id: '123', title: query?.data?.title || 'New Item' };
+    }
+  }
+};
 // Uncomment these when using the helper functions
 // import { ApiSuccessResponseSchema, ApiErrorResponseSchema } from '@/lib/schemas';
 

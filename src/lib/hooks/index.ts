@@ -4,7 +4,15 @@
  */
 
 // Legacy hooks (deprecated but still available for backwards compatibility)
-export * from '../hooks';
+// Selectively import from ../hooks to avoid naming conflicts
+import { 
+  useAsync, 
+  useFetch, 
+  useSubmit,
+  // Exclude useGalleryImages as it's also defined in ./useGallery
+} from '../hooks';
+
+export { useAsync, useFetch, useSubmit };
 
 // API hooks
 export * from './useApi';

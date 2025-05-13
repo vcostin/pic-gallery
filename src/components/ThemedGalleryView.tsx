@@ -14,6 +14,7 @@ import { GalleryFullscreen } from './gallery-display/GalleryFullscreen';
 
 interface ThemedGalleryViewProps {
   gallery: DisplayGallery;
+  // Removed unused isOwner parameter
 }
 
 
@@ -88,8 +89,13 @@ export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) {
       case 'grid':
         return (
           <ImageGrid
-            images={imagesForDisplay}
-            // ImageGrid doesn't have a click handler in this component
+            images={imagesForDisplay.map(img => ({
+              id: img.id,
+              url: img.url,
+              title: img.title || 'Untitled', // Ensure title is always a string
+              description: img.description || null, // Ensure description is string | null
+              tags: img.tags || []
+            }))}
           />
         );
       default:

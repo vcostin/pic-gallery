@@ -5,9 +5,40 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { db } from '@/lib/db';
 import { GallerySchema, createApiSuccessSchema } from '@/lib/schemas';
 import { validateApiResponse } from '@/lib/apiUtils';
+
+// Mock database for the example
+interface UpdateArgs {
+  where: { 
+    id: string 
+  };
+  data: { 
+    title?: string;
+    description?: string | null;
+    isPublic?: boolean;
+    coverImageId?: string | null;
+    themeColor?: string | null;
+    backgroundColor?: string | null;
+    backgroundImageUrl?: string | null;
+    accentColor?: string | null;
+    fontFamily?: string | null;
+    displayMode?: string | null;
+    layoutType?: string | null;
+    [key: string]: any;
+  };
+  include: any;
+}
+
+const db = {
+  gallery: {
+    update: async (args: UpdateArgs) => ({
+      id: args.where.id,
+      title: args.data.title || 'Example Gallery',
+      ...args.data
+    })
+  }
+};
 
 // Define request schema
 const UpdateGalleryRequestSchema = z.object({

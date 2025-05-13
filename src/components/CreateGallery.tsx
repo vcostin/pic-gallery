@@ -11,7 +11,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { useGalleryImages } from '@/lib/hooks';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import { GallerySortable, ViewMode } from '@/components/GallerySortable';
-import { GalleryImage } from '@/components/GalleryImageCards'; // Assuming this type is compatible or can be adapted
+import { FullImageInGallery } from '@/lib/types'; // Use the type from types.ts instead
 import { GalleryDetailsForm } from '@/components/GalleryDetailsForm';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 
@@ -148,18 +148,28 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
     setShowSelectImagesDialog(false);
     // The fetchImagesForGallery function needs to be adapted or passed if SelectImagesDialog needs it
     // For CreateGallery, availableImages are already passed as props.
-    // We need to map AvailableImageType to the structure expected by addImagesToGallery if it differs.
-    const fetchImagesForHook = async (): Promise<Array<{id: string; [key: string]: unknown}>> => {
-      // availableImages is already in scope, map it to the expected format.
-      // The hook expects an array of objects with at least an 'id' property.
-      return availableImages.filter(img => selectedImageIds.includes(img.id)).map(img => ({...img})); 
+    // Map to the expected BasicImageType structure from lib/types.ts
+    const fetchImagesForHook = async () => {
+      // Filter and map images to match the Image type from lib/types.ts
+      return availableImages
+        .filter(img => selectedImageIds.includes(img.id))
+        .map(img => ({
+          id: img.id,
+          title: img.title,
+          url: img.url,
+          description: img.description,
+          userId: '',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          tags: img.tags || []
+        }));
     };
 
     addImagesToGallery(selectedImageIds, fetchImagesForHook);
   }, [addImagesToGallery, availableImages]);
 
   // Handle image reordering from GallerySortable
-  const handleImagesReordered = useCallback((reorderedImages: GalleryImage[]) => {
+  const handleImagesReordered = useCallback((reorderedImages: FullImageInGallery[]) => {
     setImages(reorderedImages);
   }, [setImages]);
 
