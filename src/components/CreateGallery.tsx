@@ -7,7 +7,7 @@ import logger from '@/lib/logger';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 
-// Imports from EditGalleryPage
+// Import the legacy hook for CreateGallery component since it expects that interface
 import { useGalleryImages } from '@/lib/hooks';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import { GallerySortable, ViewMode } from '@/components/GallerySortable';

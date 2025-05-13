@@ -37,7 +37,7 @@ export const ImageSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string().nullable().optional(),
-  url: z.string().url(),
+  url: z.string(), // Accept any string for URL, including relative paths like /uploads/filename.jpg
   userId: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -62,7 +62,7 @@ export const GallerySchema = z.object({
   // Theming options
   themeColor: z.string().nullable().optional(),
   backgroundColor: z.string().nullable().optional(),
-  backgroundImageUrl: z.string().url().nullable().optional(),
+  backgroundImageUrl: z.string().nullable().optional(), // Accept relative URLs as well
   accentColor: z.string().nullable().optional(),
   fontFamily: z.string().nullable().optional(),
   displayMode: z.string().nullable().optional(),
@@ -104,7 +104,7 @@ export const CreateGallerySchema = z.object({
   // Theming options
   themeColor: z.string().optional().nullable(),
   backgroundColor: z.string().optional().nullable(),
-  backgroundImageUrl: z.string().url().optional().nullable(),
+  backgroundImageUrl: z.string().optional().nullable(), // Accept relative URLs as well
   accentColor: z.string().optional().nullable(),
   fontFamily: z.string().optional().nullable(),
   displayMode: z.string().optional().nullable(),
@@ -140,7 +140,7 @@ export const UpdateGallerySchema = CreateGallerySchema.extend({
 export const CreateImageSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  url: z.string().url(),
+  url: z.string(), // Accept any string for URL, including relative paths like /uploads/filename.jpg
   tags: z.array(z.string()).optional(),
 });
 

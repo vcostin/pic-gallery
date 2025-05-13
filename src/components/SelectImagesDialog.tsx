@@ -1,9 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { LoadingSpinner, ErrorMessage, EmptyState } from '@/components/StatusMessages';
-import { useApi } from '@/lib/hooks/useApi'; // Updated to use schema-validated API hook
+// Direct schema validation without the useApi hook
 import logger from '@/lib/logger';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -18,7 +18,7 @@ interface SelectImagesDialogProps {
   galleryId?: string;
 }
 
-const DEBOUNCE_DELAY = 500; // 500ms delay for debouncing
+const DEBOUNCE_DELAY = 300; // 300ms delay for debouncing - responsive yet not too frequent
 
 export function SelectImagesDialog({ 
   isOpen, 
@@ -27,78 +27,154 @@ export function SelectImagesDialog({
   existingImageIds = [] 
 }: SelectImagesDialogProps) {
   const [images, setImages] = useState<SelectableImage[]>([]);
+  const [inputValue, setInputValue] = useState(''); // Track the input value for immediate UI updates
   const [currentSearchQuery, setCurrentSearchQuery] = useState('');
   const [currentTagFilter, setCurrentTagFilter] = useState('');
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
+  // No need for a filter ref as we're using the current state values directly
   
-  // Use type-safe API hook with Zod schema
-  const { fetch: fetchImages, isLoading, error } = useApi(SelectableImageResponseSchema);
+  // Variables for API state tracking
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   
-  const loadImages = useCallback(async () => {
+  // Reference to track if this is the first render
+  const didFetchRef = useRef(false);
+  
+  // Function to fetch images
+  const fetchImages = useCallback(async () => {
     if (!isOpen) return;
+    
+    setIsLoading(true);
+    setError(null);
     
     try {
       // Build query parameters
       const params = new URLSearchParams();
       if (currentSearchQuery) {
-        params.append('search', currentSearchQuery);
+        params.append('searchQuery', currentSearchQuery);
       }
       if (currentTagFilter) {
         params.append('tag', currentTagFilter);
       }
       
-      // Fetch images with schema validation
-      const result = await fetchImages(`/api/images?${params.toString()}`);
+      console.log('Fetching images with URL:', `/api/images?${params.toString()}`);
       
-      // The fetchImages returns { success, data } where data is the validated response
-      if (result && result.success) {
-        setImages(result.data.data);
+      // Use native fetch
+      const response = await fetch(`/api/images?${params.toString()}`);
+      const responseData = await response.json();
+      
+      console.log('API response:', responseData);
+      
+      if (responseData.success) {
+        // Parse with zod schema for type safety
+        const validatedData = SelectableImageResponseSchema.parse(responseData.data);
+        console.log('Setting images from API result:', validatedData.data.length);
+        setImages(validatedData.data);
+      } else {
+        throw new Error(responseData.error || 'Failed to fetch images');
       }
     } catch (err) {
+      console.error('Error loading images:', err);
       logger.error('Error loading images:', err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setIsLoading(false);
     }
-  }, [isOpen, currentSearchQuery, currentTagFilter, fetchImages]);
-
-  // Initial load when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      loadImages();
-    }
-  }, [isOpen, loadImages]);
+  }, [isOpen, currentSearchQuery, currentTagFilter]);
   
-  // Reset selection when dialog closes
+  // Effect to fetch images when dialog opens
+  useEffect(() => {
+    if (isOpen && !didFetchRef.current) {
+      fetchImages();
+      didFetchRef.current = true;
+    }
+    
+    if (!isOpen) {
+      didFetchRef.current = false;
+    }
+  }, [isOpen, fetchImages]);
+  
+  // Effect for searching - only trigger when search or tag filter is explicitly changed
+  useEffect(() => {
+    // Only trigger a fetch when dialog is open and we've already done the initial fetch
+    if (isOpen && didFetchRef.current) {
+      // The fetchImages will be called directly when the currentSearchQuery or currentTagFilter changes
+      // The debounce is already handled in handleSearchInputChange before setting currentSearchQuery
+      fetchImages();
+    }
+  }, [currentSearchQuery, currentTagFilter, fetchImages, isOpen]);
+  
+  // Keep inputValue in sync with currentSearchQuery when it's changed elsewhere
+  useEffect(() => {
+    // This ensures the input displays the same value as what we're searching for
+    console.log('currentSearchQuery changed to:', currentSearchQuery, 'updating inputValue');
+    setInputValue(currentSearchQuery);
+  }, [currentSearchQuery]);
+  
+  // Reset selection and search state when dialog closes
   useEffect(() => {
     if (!isOpen) {
       setSelectedImages(new Set());
+      setInputValue('');
+      setCurrentSearchQuery('');
+      
+      // Clear any pending timeouts when closing
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+        setDebounceTimeout(null);
+      }
     }
-  }, [isOpen]);
+    
+    // Cleanup function to clear timeout when component unmounts
+    return () => {
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+    };
+  }, [isOpen, debounceTimeout]);
 
+  // The inputValue state is already declared above
+  
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
-    setCurrentSearchQuery(query);
     
-    // Debounce search to avoid excessive API calls
+    console.log('Input changed to:', query);
+    
+    // Update the input value immediately for a responsive UI
+    setInputValue(query);
+    
+    // Clear any existing timeout to implement debouncing
     if (debounceTimeout) {
+      console.log('Clearing previous timeout');
       clearTimeout(debounceTimeout);
     }
     
+    // Set a timeout to update the search query after the user stops typing
     const timeoutId = setTimeout(() => {
-      loadImages();
+      console.log('Debounce timeout completed, setting search query:', query);
+      setCurrentSearchQuery(query);
+      // When this state changes, the useEffect will trigger fetchImages
     }, DEBOUNCE_DELAY);
     
+    // Store the timeout ID so we can clear it if the user types again
     setDebounceTimeout(timeoutId);
   };
 
   const toggleTagFilter = (tag: string) => {
     const newFilter = currentTagFilter === tag ? '' : tag;
-    setCurrentTagFilter(newFilter);
     
-    // Reset search query when changing tag filter
+    // Reset search query and input value when changing tag filter
     setCurrentSearchQuery('');
+    setInputValue('');
     
-    // No need to debounce for tag filtering
-    setTimeout(() => loadImages(), 0);
+    // Clear any existing timeout
+    if (debounceTimeout) {
+      clearTimeout(debounceTimeout);
+    }
+    
+    // Set the tag filter - effect will trigger fetch
+    setCurrentTagFilter(newFilter);
   };
 
   const handleSelectImage = (imageId: string) => {
@@ -135,6 +211,11 @@ export function SelectImagesDialog({
   // Filter out images that are already in the gallery
   const availableImages = images.filter(img => !existingImageIds.includes(img.id));
 
+  // Debug logs
+  console.log('All fetched images:', images.length);
+  console.log('Existing image IDs:', existingImageIds);
+  console.log('Available images after filtering:', availableImages.length);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div 
@@ -155,7 +236,7 @@ export function SelectImagesDialog({
               type="text"
               placeholder="Search images..."
               className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white pl-10"
-              value={currentSearchQuery}
+              value={inputValue}
               onChange={handleSearchInputChange}
             />
             <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
