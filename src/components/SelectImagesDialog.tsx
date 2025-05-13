@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { ImageTags } from '@/components/ui/ImageTags';
 import { SelectableImageResponseSchema, SelectableImage } from '@/lib/utils/imageSelectionMappers';
+import { useApi } from '@/lib/hooks/useApi';
+import { z } from 'zod';
 
 interface SelectImagesDialogProps {
   isOpen: boolean;
@@ -33,50 +35,43 @@ export function SelectImagesDialog({
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
   // No need for a filter ref as we're using the current state values directly
   
-  // Variables for API state tracking
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  
   // Reference to track if this is the first render
   const didFetchRef = useRef(false);
+  
+  // Use the useApi hook for API state management and fetching
+  const { 
+    fetch: apiFetchImages, 
+    isLoading, 
+    error 
+  } = useApi(SelectableImageResponseSchema, {
+    onError: (err) => {
+      // Log the error to our logger service
+      logger.error('Error loading images:', err);
+    },
+    onSuccess: (responseData) => {
+      // When data is successfully fetched, update the images state
+      const typedResponse = responseData as z.infer<typeof SelectableImageResponseSchema>;
+      setImages(typedResponse.data);
+    }
+  });
   
   // Function to fetch images
   const fetchImages = useCallback(async () => {
     if (!isOpen) return;
     
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Build query parameters
-      const params = new URLSearchParams();
-      if (currentSearchQuery) {
-        params.append('searchQuery', currentSearchQuery);
-      }
-      if (currentTagFilter) {
-        params.append('tag', currentTagFilter);
-      }
-      
-      // Use native fetch
-      const response = await fetch(`/api/images?${params.toString()}`);
-      const responseData = await response.json();
-      
-      if (responseData.success) {
-        // Parse with zod schema for type safety
-        const validatedData = SelectableImageResponseSchema.parse(responseData.data);
-        setImages(validatedData.data);
-      } else {
-        throw new Error(responseData.error || 'Failed to fetch images');
-      }
-    } catch (err) {
-      // Log the error to console and logger service
-      logger.error('Error loading images:', err);
-      // Set error state for UI display
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setIsLoading(false);
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (currentSearchQuery) {
+      params.append('searchQuery', currentSearchQuery);
     }
-  }, [isOpen, currentSearchQuery, currentTagFilter]);
+    if (currentTagFilter) {
+      params.append('tag', currentTagFilter);
+    }
+    
+    // Use the API hook to fetch images
+    await apiFetchImages(`/api/images?${params.toString()}`);
+    // We don't need to handle the result here as it's done in the onSuccess callback
+  }, [isOpen, currentSearchQuery, currentTagFilter, apiFetchImages]);
   
   // Effect to fetch images when dialog opens
   useEffect(() => {
