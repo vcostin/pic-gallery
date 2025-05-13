@@ -55,23 +55,15 @@ export function SelectImagesDialog({
     }
   });
   
-  // Function to fetch images
+  // Initial fetch function - only used for the initial load when dialog opens
+  // No dependencies on searchQuery or tagFilter to avoid render loops
   const fetchImages = useCallback(async () => {
     if (!isOpen) return;
     
-    // Build query parameters
-    const params = new URLSearchParams();
-    if (currentSearchQuery) {
-      params.append('searchQuery', currentSearchQuery);
-    }
-    if (currentTagFilter) {
-      params.append('tag', currentTagFilter);
-    }
-    
-    // Use the API hook to fetch images
-    await apiFetchImages(`/api/images?${params.toString()}`);
+    // For initial fetch, we don't need query params
+    await apiFetchImages('/api/images');
     // We don't need to handle the result here as it's done in the onSuccess callback
-  }, [isOpen, currentSearchQuery, currentTagFilter, apiFetchImages]);
+  }, [isOpen, apiFetchImages]);
   
   // Effect to fetch images when dialog opens
   useEffect(() => {
@@ -89,13 +81,23 @@ export function SelectImagesDialog({
   useEffect(() => {
     // Only trigger a fetch when dialog is open and we've already done the initial fetch
     if (isOpen && didFetchRef.current) {
-      // The fetchImages will be called directly when the currentSearchQuery or currentTagFilter changes
-      // The debounce is already handled in handleSearchInputChange before setting currentSearchQuery
-      fetchImages();
+      // Build query parameters here to avoid fetchImages dependency on currentSearchQuery
+      const params = new URLSearchParams();
+      if (currentSearchQuery) {
+        params.append('searchQuery', currentSearchQuery);
+      }
+      if (currentTagFilter) {
+        params.append('tag', currentTagFilter);
+      }
+      
+      // Use the API hook directly to avoid the fetchImages dependency cycle
+      apiFetchImages(`/api/images?${params.toString()}`);
     }
-  }, [currentSearchQuery, currentTagFilter, fetchImages, isOpen]);
+  }, [currentSearchQuery, currentTagFilter, apiFetchImages, isOpen, didFetchRef]);
   
-  // Keep inputValue in sync with currentSearchQuery when it's changed elsewhere
+  // IMPORTANT: This effect syncs the UI display value with the actual search query
+  // This is safe because fetchImages/API call logic is in a separate effect
+  // and doesn't depend on inputValue, preventing infinite loops
   useEffect(() => {
     // This ensures the input displays the same value as what we're searching for
     setInputValue(currentSearchQuery);
