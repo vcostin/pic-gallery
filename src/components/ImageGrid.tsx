@@ -130,10 +130,15 @@ export function ImageGrid({ images }: ImageGridProps) {
     setEditingImage(image);
   }, []);
 
-  const handleImageUpdated = useCallback(() => {
+  const handleImageUpdated = useCallback((deletedImageId?: string) => {
     setEditingImage(null);
-    // Re-rendering will happen via router.refresh() in EditImageDialog
-  }, []);
+    
+    // If an image was deleted, immediately update the state to remove it
+    if (deletedImageId && imagesData) {
+      setImagesData(imagesData.filter(img => img.id !== deletedImageId));
+    }
+    // Router.refresh() will still be called for server data refresh
+  }, [imagesData, setImagesData]);
 
   const handleTagSelect = useCallback((tag: string) => {
     setSelectedTag(tag);

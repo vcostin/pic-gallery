@@ -1,17 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from './ConfirmDialog';
 import { LoadingSpinner, ErrorMessage } from './StatusMessages';
-import { useFetch, useSubmit } from '@/lib/hooks';
+import { useApi } from '@/lib/hooks/useApi';
+import { z } from 'zod';
+import { ImageUsageResponseSchema } from '@/lib/schemas/imageUsage';
 import logger from '@/lib/logger';
 
-interface Gallery {
-  id: string;
-  title: string;
-  isCover: boolean;
-}
+// Use types from the schema instead of redefinining
+import type { GalleryReference as Gallery } from '@/lib/schemas/imageUsage';
 
 interface DeleteImageConfirmDialogProps {
   imageId: string;
@@ -29,49 +28,134 @@ export function DeleteImageConfirmDialog({
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const router = useRouter();
   
-  const { fetchApi, isLoading: isCheckingUsage, error: checkError, setError } = useFetch();
+  // Create AbortController refs for cancelling API requests
+  const imageUsageControllerRef = useRef<AbortController | null>(null);
+  const deleteImageControllerRef = useRef<AbortController | null>(null);
   
-  const { 
-    handleSubmit: deleteHandler, 
-    isSubmitting: isDeleting, 
-    error: deleteError 
-  } = useSubmit(async () => {
-    await fetchApi(`/api/images/${imageId}`, {
-      method: 'DELETE',
-    });
-
-    router.refresh();
-    onDeleted();
-  });
-
-  // Create a version of handleDelete that doesn't require parameters
-  const handleDelete = () => deleteHandler({});
-
-  // Define checkGalleryUsage as useCallback to avoid recreation on each render
-  const checkGalleryUsage = useCallback(async () => {
-    setError(null);
-    setGalleries([]); // Reset galleries when checking usage
+  // Use schema-validated API hook for checking image usage
+  const usageApi = useApi(ImageUsageResponseSchema);
+  
+  // Use schema-validated API hook for delete operation with a simple success schema
+  const deleteApi = useApi(z.object({ success: z.boolean() }));
+  
+  // Create state for delete operation
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<Error | null>(null);
+  
+  // Create a function to handle the delete submission
+  const deleteHandler = async () => {
+    // Cancel any existing delete request
+    if (deleteImageControllerRef.current) {
+      deleteImageControllerRef.current.abort();
+    }
+    
+    // Set loading state
+    setIsDeleting(true);
+    setDeleteError(null);
+    
+    // Create a new AbortController
+    const abortController = new AbortController();
+    deleteImageControllerRef.current = abortController;
     
     try {
-      // Use a GET request to check if the image is used in galleries without actually deleting it
-      const response = await fetchApi<{data: {galleries: Gallery[]} }>(`/api/images/${imageId}/usage`);
+      const response = await fetch(`/api/images/${imageId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        signal: abortController.signal
+      });
       
-      if (response?.data?.galleries?.length > 0) {
-        setGalleries(response.data.galleries);
+      const data = await response.json();
+      
+      if (data.success) {
+        router.refresh();
+        // Make sure to call onDeleted callback to update parent state immediately
+        onDeleted();
       } else {
-        setGalleries([]);
+        throw new Error(data.error || 'Failed to delete image');
       }
     } catch (error) {
-      // Error handled by useFetch hook
-      logger.error('Error checking image usage:', error);
+      // Only set error if request wasn't aborted
+      if (!abortController.signal.aborted) {
+        const errorObj = error instanceof Error ? error : new Error(String(error));
+        setDeleteError(errorObj);
+        logger.error('Error deleting image:', errorObj);
+      }
+    } finally {
+      if (deleteImageControllerRef.current === abortController) {
+        deleteImageControllerRef.current = null;
+      }
+      setIsDeleting(false);
     }
-  }, [imageId, fetchApi, setError]);
+  };
+
+  // This function is now directly used as onConfirm in ConfirmDialog  // Create a stable function that doesn't change on each render
+  const checkGalleryUsage = useCallback(() => {
+    // Reset galleries first to avoid showing stale data
+    setGalleries([]);
+    
+    // Cancel any existing request
+    if (imageUsageControllerRef.current) {
+      imageUsageControllerRef.current.abort();
+    }
+    
+    // Create a new AbortController
+    const abortController = new AbortController();
+    imageUsageControllerRef.current = abortController;
+    
+    // Define the fetch function
+    const fetchUsageData = async () => {
+      try {
+        const response = await fetch(`/api/images/${imageId}/usage`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          signal: abortController.signal
+        });
+
+        const data = await response.json();
+        
+        // Only process if the request wasn't aborted
+        if (!abortController.signal.aborted && imageUsageControllerRef.current === abortController) {
+          if (data.success && data.data && data.data.galleries) {
+            setGalleries(data.data.galleries);
+          }
+        }
+      } catch (error) {
+        if (!abortController.signal.aborted) {
+          logger.error('Error checking image usage:', error);
+        }
+      } finally {
+        if (imageUsageControllerRef.current === abortController) {
+          imageUsageControllerRef.current = null;
+        }
+      }
+    };
+    
+    // Execute the fetch function
+    fetchUsageData();
+  }, [imageId]);
 
   // Fetch gallery usage information when the dialog opens
   useEffect(() => {
     if (isOpen) {
       checkGalleryUsage();
     }
+    
+    // Cleanup function to abort any in-flight requests when component unmounts or dialog closes
+    return () => {
+      if (imageUsageControllerRef.current) {
+        imageUsageControllerRef.current.abort();
+        imageUsageControllerRef.current = null;
+      }
+      
+      if (deleteImageControllerRef.current) {
+        deleteImageControllerRef.current.abort();
+        deleteImageControllerRef.current = null;
+      }
+    };
   }, [isOpen, checkGalleryUsage]);
 
   // Function to open gallery in a new tab without causing dialog to close
@@ -87,17 +171,17 @@ export function DeleteImageConfirmDialog({
     <ConfirmDialog
       isOpen={isOpen}
       onClose={onClose}
-      onConfirm={handleDelete}
+      onConfirm={deleteHandler}
       title="Delete Image"
       message={
         <div>
-          {isCheckingUsage ? (
+          {usageApi.isLoading ? (
             <div className="flex items-center justify-center py-4">
               <LoadingSpinner size="small" text="Checking if this image is used in galleries..." />
             </div>
-          ) : checkError ? (
+          ) : usageApi.error ? (
             <ErrorMessage 
-              error={checkError} 
+              error={usageApi.error} 
               retry={checkGalleryUsage}
               className="mb-4"
             />
@@ -129,20 +213,20 @@ export function DeleteImageConfirmDialog({
             <p>Are you sure you want to delete this image? This action cannot be undone.</p>
           )}
           
-          {deleteError && (
+          {(deleteError || deleteApi.error) && (
             <div className="mt-4">
-              <ErrorMessage error={deleteError} />
+              <ErrorMessage error={deleteError || deleteApi.error} />
             </div>
           )}
           
-          {isDeleting && (
+          {(isDeleting || deleteApi.isLoading) && (
             <div className="mt-4 flex items-center justify-center">
               <LoadingSpinner size="small" text="Deleting image..." />
             </div>
           )}
         </div>
       }
-      confirmButtonText={isDeleting ? "Deleting..." : "Delete"}
+      confirmButtonText={(isDeleting || deleteApi.isLoading) ? "Deleting..." : "Delete"}
       confirmButtonColor="red"
       cancelButtonText="Cancel"
     />

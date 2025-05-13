@@ -39,8 +39,14 @@ export const ImageSchema = z.object({
   description: z.string().nullable().optional(),
   url: z.string(), // Accept any string for URL, including relative paths like /uploads/filename.jpg
   userId: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  createdAt: z.preprocess(
+    (val) => (typeof val === 'string' ? new Date(val) : val),
+    z.date()
+  ),
+  updatedAt: z.preprocess(
+    (val) => (typeof val === 'string' ? new Date(val) : val),
+    z.date()
+  ),
   tags: z.array(TagSchema).optional(),
 });
 
@@ -56,8 +62,14 @@ export const GallerySchema = z.object({
   isPublic: z.boolean().default(false),
   userId: z.string(),
   coverImageId: z.string().nullable().optional(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  createdAt: z.preprocess(
+    (val) => (typeof val === 'string' ? new Date(val) : val),
+    z.date()
+  ),
+  updatedAt: z.preprocess(
+    (val) => (typeof val === 'string' ? new Date(val) : val),
+    z.date()
+  ),
   
   // Theming options
   themeColor: z.string().nullable().optional(),
@@ -80,7 +92,10 @@ export const ImageInGallerySchema = z.object({
   galleryId: z.string(),
   description: z.string().nullable().optional(),
   order: z.number().default(0),
-  createdAt: z.date(),
+  createdAt: z.preprocess(
+    (val) => (typeof val === 'string' ? new Date(val) : val),
+    z.date()
+  ),
   image: ImageSchema.optional(),
   gallery: GallerySchema.optional(),
 });

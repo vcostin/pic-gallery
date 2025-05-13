@@ -1,26 +1,19 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { DeleteImageConfirmDialog } from './DeleteImageConfirmDialog';
 import { ErrorMessage, SuccessMessage } from './StatusMessages';
-import { useFetch, useSubmit } from '@/lib/hooks';
 import { deepEqual } from '@/lib/deepEqual';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ImageSchema } from '@/lib/schemas';
+import logger from '@/lib/logger';
 
 interface Tag {
   id: string;
   name: string;
-}
-
-interface ImageData {
-  id: string;
-  title: string;
-  description: string | null;
-  url: string;
-  tags: Tag[];
 }
 
 interface EditImageDialogProps {
@@ -32,7 +25,7 @@ interface EditImageDialogProps {
     tags: { id: string; name: string }[];
   };
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (deletedImageId?: string) => void;
 }
 
 export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps) {
@@ -41,6 +34,8 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
   const [tags, setTags] = useState(image.tags?.map(t => t.name).join(', ') || '');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   
   // Store original values for comparison using useMemo to prevent unnecessary re-renders
@@ -62,48 +57,96 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
   }, [title, description, tags, originalData]);
   
   const router = useRouter();
-  const { fetchApi } = useFetch();
+  const abortControllerRef = useRef<AbortController | null>(null);
   
-  const { 
-    handleSubmit: submitUpdate, 
-    isSubmitting, 
-    error: updateError,
-    reset: resetUpdateState
-  } = useSubmit(async (e?: React.FormEvent) => {
+  // Clean up any pending requests when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, []);
+  
+  // Handle form submission
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
-    // Send the update request and capture the returned updated image
-    const updatedImage = await fetchApi<ImageData>(`/api/images/${image.id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        title,
-        description,
-        tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
-      }),
-    });
-
-    // Update the local state with the returned data
-    setTitle(updatedImage.title);
-    setDescription(updatedImage.description || '');
-    setTags(updatedImage.tags?.map((t: Tag) => t.name).join(', ') || '');
+    // Do nothing if already submitting or no changes
+    if (isSubmitting || !hasChanges) return;
     
-    // This will force Next.js to refresh the page data
-    router.refresh();
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
     
-    // Show success message
-    setSuccessMessage('Image updated successfully!');
+    // Set loading state
+    setIsSubmitting(true);
+    setError(null);
     
-    // Clear success message after 2 seconds and close
-    setTimeout(() => {
-      setSuccessMessage(null);
-      onClose();
-    }, 2000);
+    // Create new AbortController for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
     
-    return 'Image updated successfully!';
-  });
+    try {
+      const response = await fetch(`/api/images/${image.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: image.id, // Include the image ID to satisfy schema validation
+          title,
+          description,
+          tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
+        }),
+        signal: abortController.signal
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update image');
+      }
+      
+      if (data.success && data.data) {
+        // Type check the response data
+        const imageData = ImageSchema.parse(data.data);
+        
+        // Update the local state with the returned data
+        setTitle(imageData.title);
+        setDescription(imageData.description || '');
+        setTags(imageData.tags?.map(t => t.name).join(', ') || '');
+        
+        // This will force Next.js to refresh the page data
+        router.refresh();
+        
+        // Show success message
+        setSuccessMessage('Image updated successfully!');
+        
+        // Clear success message after 2 seconds and close
+        setTimeout(() => {
+          setSuccessMessage(null);
+          onClose();
+        }, 2000);
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        const errorObj = error instanceof Error ? error : new Error(String(error));
+        setError(errorObj);
+        logger.error('Error updating image:', error);
+      }
+    } finally {
+      // Only update state if this is still the current request
+      if (abortControllerRef.current === abortController) {
+        setIsSubmitting(false);
+        abortControllerRef.current = null;
+      }
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -125,10 +168,10 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
             )}
             
             {/* Show error message */}
-            {updateError && (
+            {error && (
               <ErrorMessage 
-                error={updateError} 
-                retry={() => resetUpdateState()}
+                error={error} 
+                retry={() => setError(null)}
                 className="mb-4"
               />
             )}
@@ -146,7 +189,7 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
               </div>
             </div>
             
-            <form onSubmit={submitUpdate} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Title</label>
                 <input
@@ -193,14 +236,14 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
             <div className="flex space-x-3">
               <Button
                 variant="secondary"
-                onClick={onClose}
+                onClick={() => onClose()}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
               <Button
                 variant="primary"
-                onClick={submitUpdate}
+                onClick={handleSubmit}
                 disabled={isSubmitting || !hasChanges}
                 isLoading={isSubmitting}
               >
@@ -215,7 +258,10 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
         imageId={image.id}
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
-        onDeleted={onClose}
+        onDeleted={() => {
+          // Pass the deleted image ID to update UI immediately
+          onClose(image.id);
+        }}
       />
     </>
   );

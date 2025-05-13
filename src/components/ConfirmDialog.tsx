@@ -62,9 +62,16 @@ export function ConfirmDialog({
           </Button>
           <Button
             variant={confirmButtonVariant}
-            onClick={() => {
-              onConfirm();
-              onClose();
+            onClick={async () => {
+              try {
+                // Wait for onConfirm to complete if it's an async function
+                await onConfirm();
+                // Only close the dialog after onConfirm completes successfully
+                onClose();
+              } catch (error) {
+                // If onConfirm throws an error, don't close the dialog
+                console.error('Error in confirm action:', error);
+              }
             }}
           >
             {confirmButtonText}
