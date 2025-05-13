@@ -43,18 +43,28 @@ export function mapToSelectableImages(images: z.infer<typeof ImageSchema>[]): Se
 /**
  * Schema for the response of selectable images API
  */
-export const SelectableImageResponseSchema = z.object({
-  data: z.array(SelectableImageSchema),
-  meta: z.object({
-    total: z.number(),
-    currentPage: z.number(),
-    lastPage: z.number(),
-    perPage: z.number(),
-    hasNextPage: z.boolean(),
-    hasPrevPage: z.boolean(),
-    nextPage: z.number().nullable(),
-    prevPage: z.number().nullable()
+// Schema for wrapped API response that includes success flag
+export const ApiResponseWrapperSchema = <T extends z.ZodTypeAny>(schema: T) => 
+  z.object({
+    success: z.boolean(),
+    data: schema
+  });
+
+// Schema for the paginated response structure
+export const SelectableImageResponseSchema = ApiResponseWrapperSchema(
+  z.object({
+    data: z.array(SelectableImageSchema),
+    meta: z.object({
+      total: z.number(),
+      currentPage: z.number(),
+      lastPage: z.number(),
+      perPage: z.number(),
+      hasNextPage: z.boolean(),
+      hasPrevPage: z.boolean(),
+      nextPage: z.number().nullable(),
+      prevPage: z.number().nullable()
+    })
   })
-});
+);
 
 export type SelectableImageResponse = z.infer<typeof SelectableImageResponseSchema>;

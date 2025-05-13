@@ -4,6 +4,15 @@
  * in the schema-migration-examples directory.
  * 
  * IMPORTANT: This is a partial implementation showing the key patterns.
+ * 
+ * NOTE (May 13, 2025): The actual SelectImagesDialog.tsx implementation has been
+ * refactored using a different approach than shown here. The current implementation:
+ * - Uses direct fetch with AbortController for proper request cancellation
+ * - Uses SelectableImageResponseSchema from imageSelectionMappers.ts for validation
+ * - Uses async/await pattern with try/catch for error handling
+ * 
+ * Both implementations demonstrate proper schema validation patterns, but this example
+ * shows the useApi hook approach which may be useful for other components.
  */
 'use client';
 

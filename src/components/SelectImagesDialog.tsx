@@ -8,8 +8,6 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { ImageTags } from '@/components/ui/ImageTags';
 import { SelectableImageResponseSchema, SelectableImage } from '@/lib/utils/imageSelectionMappers';
-import { useApi } from '@/lib/hooks/useApi';
-import { z } from 'zod';
 
 interface SelectImagesDialogProps {
   isOpen: boolean;
@@ -38,69 +36,100 @@ export function SelectImagesDialog({
   // Reference to track if this is the first render
   const didFetchRef = useRef(false);
   
-  // Use the useApi hook for API state management and fetching
-  const { 
-    fetch: apiFetchImages, 
-    isLoading, 
-    error 
-  } = useApi(SelectableImageResponseSchema, {
-    onError: (err) => {
-      // Log the error to our logger service
-      logger.error('Error loading images:', err);
-    },
-    onSuccess: (responseData) => {
-      // When data is successfully fetched, update the images state
-      const typedResponse = responseData as z.infer<typeof SelectableImageResponseSchema>;
-      setImages(typedResponse.data);
-    }
-  });
+  // State for loading UI and errors
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   
-  // Initial fetch function - only used for the initial load when dialog opens
-  // No dependencies on searchQuery or tagFilter to avoid render loops
-  const fetchImages = useCallback(async () => {
-    if (!isOpen) return;
+  // Last fetch controller - used to cancel ongoing requests when a new one is made
+  const lastRequestRef = useRef<AbortController | null>(null);
+  
+  // Fetch images from API with query and tag filters
+  const fetchImages = useCallback(async (query: string, tag: string) => {
+    // Clean up previous request if it exists
+    if (lastRequestRef.current) {
+      lastRequestRef.current.abort();
+    }
     
-    // For initial fetch, we don't need query params
-    await apiFetchImages('/api/images');
-    // We don't need to handle the result here as it's done in the onSuccess callback
-  }, [isOpen, apiFetchImages]);
+    // Create a new abort controller for this request
+    const controller = new AbortController();
+    lastRequestRef.current = controller;
+    
+    // Show loading state
+    setIsLoading(true);
+    setError(null);
+    
+    // Build URL with query params
+    const params = new URLSearchParams();
+    if (query) params.append('searchQuery', query);
+    if (tag) params.append('tag', tag);
+    const url = `/api/images${params.toString() ? `?${params.toString()}` : ''}`;
+    
+    // Log in development
+    if (process.env.NODE_ENV === 'development') {
+      logger.log(`Fetching images: query="${query}", tag="${tag}"`);
+    }
+    
+    try {
+      // Make the API request with abort signal
+      const response = await fetch(url, { signal: controller.signal });
+      
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      
+      const data = await response.json();
+      
+      // Validate the response with schema 
+      const validData = SelectableImageResponseSchema.parse(data);
+      
+      // Update state with the validated data
+      setImages(validData.data.data);
+      setIsLoading(false);
+    } 
+    catch (err: unknown) {
+      // Skip setting error if request was aborted (need type assertion for unknown)
+      if (err instanceof Error && err.name === 'AbortError') return;
+      
+      logger.error('Error loading images:', err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+      setIsLoading(false);
+    }
+  }, []);
   
   // Effect to fetch images when dialog opens
   useEffect(() => {
     if (isOpen && !didFetchRef.current) {
-      fetchImages();
+      fetchImages('', '');
       didFetchRef.current = true;
     }
     
     if (!isOpen) {
       didFetchRef.current = false;
     }
+    
+    return () => {
+      // Clean up any ongoing request when component unmounts or dialog closes
+      if (lastRequestRef.current) {
+        lastRequestRef.current.abort();
+      }
+    };
   }, [isOpen, fetchImages]);
   
-  // Effect for searching - only trigger when search or tag filter is explicitly changed
+  // Effect for search and tag filters
   useEffect(() => {
-    // Only trigger a fetch when dialog is open and we've already done the initial fetch
-    if (isOpen && didFetchRef.current) {
-      // Build query parameters here to avoid fetchImages dependency on currentSearchQuery
-      const params = new URLSearchParams();
-      if (currentSearchQuery) {
-        params.append('searchQuery', currentSearchQuery);
-      }
-      if (currentTagFilter) {
-        params.append('tag', currentTagFilter);
-      }
-      
-      // Use the API hook directly to avoid the fetchImages dependency cycle
-      apiFetchImages(`/api/images?${params.toString()}`);
-    }
-  }, [currentSearchQuery, currentTagFilter, apiFetchImages, isOpen, didFetchRef]);
+    if (!isOpen || !didFetchRef.current) return;
+    
+    // Fetch with current filters
+    fetchImages(currentSearchQuery, currentTagFilter);
+  }, [currentSearchQuery, currentTagFilter, isOpen, fetchImages]);
   
-  // IMPORTANT: This effect syncs the UI display value with the actual search query
-  // This is safe because fetchImages/API call logic is in a separate effect
-  // and doesn't depend on inputValue, preventing infinite loops
+  // This effect syncs the UI display value with the actual search query
+  // We're using a ref to track if this change is from a user typing or programmatic update
+  // to prevent potential loops
+  const isUserTypingRef = useRef(false);
   useEffect(() => {
-    // This ensures the input displays the same value as what we're searching for
-    setInputValue(currentSearchQuery);
+    if (!isUserTypingRef.current) {
+      setInputValue(currentSearchQuery);
+    }
+    isUserTypingRef.current = false;
   }, [currentSearchQuery]);
   
   // Reset selection and search state when dialog closes
@@ -129,6 +158,9 @@ export function SelectImagesDialog({
   
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
+    
+    // Set flag to indicate this change is from user typing
+    isUserTypingRef.current = true;
     
     // Update the input value immediately for a responsive UI
     setInputValue(query);
@@ -160,7 +192,7 @@ export function SelectImagesDialog({
       clearTimeout(debounceTimeout);
     }
     
-    // Set the tag filter - effect will trigger fetch
+    // Set the tag filter - effect will trigger fetchImages directly
     setCurrentTagFilter(newFilter);
   };
 
@@ -258,7 +290,7 @@ export function SelectImagesDialog({
         <div className="flex-1 overflow-y-auto p-6 min-h-[300px]">
           {isLoading ? (
             <div className="h-full flex items-center justify-center">
-              <LoadingSpinner size="large" />
+              <LoadingSpinner size="large" text="Loading images..." />
             </div>
           ) : error ? (
             <ErrorMessage error={error} />

@@ -165,7 +165,8 @@ We've created several examples to help with the migration:
    - See `docs/schema-migration-examples/zod-form-validation.tsx`
 
 3. **Components using schema-derived types**:
-   - See `docs/schema-migration-examples/SelectImagesDialogRefactored.tsx`
+   - See `docs/schema-migration-examples/SelectImagesDialogRefactored.tsx` (example using useApi hook approach)
+   - `SelectImagesDialog.tsx` (implements direct fetch with AbortController)
    - `ThemedGalleryView.tsx` (already migrated)
 
 4. **Type mapping utilities**:

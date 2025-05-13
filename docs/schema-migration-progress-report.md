@@ -26,7 +26,7 @@
    - Stronger validation at runtime through schema checks
 
 2. **API Integration**:
-   - `SelectImagesDialog` now uses `useApi` with schema validation
+   - `SelectImagesDialog` now uses schema validation with AbortController for request management
    - Components properly handle typed API responses
 
 3. **Developer Experience**:
