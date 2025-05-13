@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { LoadingSpinner, ErrorMessage, EmptyState } from '@/components/StatusMessages';
-// Direct schema validation without the useApi hook
 import logger from '@/lib/logger';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -58,25 +57,21 @@ export function SelectImagesDialog({
         params.append('tag', currentTagFilter);
       }
       
-      console.log('Fetching images with URL:', `/api/images?${params.toString()}`);
-      
       // Use native fetch
       const response = await fetch(`/api/images?${params.toString()}`);
       const responseData = await response.json();
       
-      console.log('API response:', responseData);
-      
       if (responseData.success) {
         // Parse with zod schema for type safety
         const validatedData = SelectableImageResponseSchema.parse(responseData.data);
-        console.log('Setting images from API result:', validatedData.data.length);
         setImages(validatedData.data);
       } else {
         throw new Error(responseData.error || 'Failed to fetch images');
       }
     } catch (err) {
-      console.error('Error loading images:', err);
+      // Log the error to console and logger service
       logger.error('Error loading images:', err);
+      // Set error state for UI display
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setIsLoading(false);
@@ -108,7 +103,6 @@ export function SelectImagesDialog({
   // Keep inputValue in sync with currentSearchQuery when it's changed elsewhere
   useEffect(() => {
     // This ensures the input displays the same value as what we're searching for
-    console.log('currentSearchQuery changed to:', currentSearchQuery, 'updating inputValue');
     setInputValue(currentSearchQuery);
   }, [currentSearchQuery]);
   
@@ -139,20 +133,16 @@ export function SelectImagesDialog({
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     
-    console.log('Input changed to:', query);
-    
     // Update the input value immediately for a responsive UI
     setInputValue(query);
     
     // Clear any existing timeout to implement debouncing
     if (debounceTimeout) {
-      console.log('Clearing previous timeout');
       clearTimeout(debounceTimeout);
     }
     
     // Set a timeout to update the search query after the user stops typing
     const timeoutId = setTimeout(() => {
-      console.log('Debounce timeout completed, setting search query:', query);
       setCurrentSearchQuery(query);
       // When this state changes, the useEffect will trigger fetchImages
     }, DEBOUNCE_DELAY);
@@ -210,11 +200,6 @@ export function SelectImagesDialog({
   
   // Filter out images that are already in the gallery
   const availableImages = images.filter(img => !existingImageIds.includes(img.id));
-
-  // Debug logs
-  console.log('All fetched images:', images.length);
-  console.log('Existing image IDs:', existingImageIds);
-  console.log('Available images after filtering:', availableImages.length);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">

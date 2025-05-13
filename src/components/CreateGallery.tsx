@@ -7,11 +7,10 @@ import logger from '@/lib/logger';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 
-// Import the legacy hook for CreateGallery component since it expects that interface
 import { useGalleryImages } from '@/lib/hooks';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import { GallerySortable, ViewMode } from '@/components/GallerySortable';
-import { FullImageInGallery } from '@/lib/types'; // Use the type from types.ts instead
+import { FullImageInGallery } from '@/lib/types';
 import { GalleryDetailsForm } from '@/components/GalleryDetailsForm';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 
