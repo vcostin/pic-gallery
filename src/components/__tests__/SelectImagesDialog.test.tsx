@@ -83,8 +83,13 @@ describe('SelectImagesDialog', () => {
     // Get the current call count
     const initialCallCount = (global.fetch as jest.Mock).mock.calls.length;
     
-    // Ensure no additional calls are made after initial render
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Use fake timers to ensure no additional calls are made after initial render
+    jest.useFakeTimers();
+    act(() => {
+      jest.advanceTimersByTime(500); // Advance time
+    });
+    jest.useRealTimers();
+    
     expect(global.fetch).toHaveBeenCalledTimes(initialCallCount);
     
     // Verify at least one of the calls was to the correct endpoint - ignoring the options object

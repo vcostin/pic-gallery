@@ -1,62 +1,118 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation'; // Import useSearchParams and useRouter
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ImageGrid } from "@/components/ImageGrid";
-import { useFetch } from '@/lib/hooks'; // Assuming useFetch can be used on client
-import { Image as ImageType, PaginatedResponse } from '@/lib/types'; // Rename Image to ImageType to avoid conflict
+import { z } from 'zod';
+import { PaginatedImagesResponseSchema } from '@/lib/schemas';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner, ErrorMessage, EmptyState } from '@/components/StatusMessages';
+
+// Define type for Image based on PaginatedImagesResponseSchema
+type ImageType = z.infer<typeof PaginatedImagesResponseSchema>['data']['data'][number];
 
 const DEBOUNCE_DELAY = 500; // 500ms debounce delay
 
 export default function ImagesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // Create AbortController ref for API requests
+  const controllerRef = useRef<AbortController | null>(null);
 
+  // State
   const [searchQuery, setSearchQuery] = useState(searchParams.get('searchQuery') || '');
   const [tag, setTag] = useState(searchParams.get('tag') || '');
   const [images, setImages] = useState<ImageType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState<{ currentPage: number; lastPage: number; total: number } | null>(null);
+  const [pagination, setPagination] = useState<{ 
+    currentPage: number; 
+    lastPage: number; 
+    total: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  } | null>(null);
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  const { fetchApi } = useFetch();
+  // Cleanup function to abort any in-flight requests when component unmounts
+  useEffect(() => {
+    return () => {
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+        controllerRef.current = null;
+      }
+      
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+    };
+  }, [debounceTimeout]);
 
   const fetchImages = useCallback(async (page = 1, currentSearch = searchQuery, currentTag = tag) => {
     setIsLoading(true);
     setError(null);
+    
+    // Cancel any existing request
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+    }
+    
+    // Create a new AbortController
+    const abortController = new AbortController();
+    controllerRef.current = abortController;
+    
     try {
       const query = new URLSearchParams();
       if (currentSearch) query.set('searchQuery', currentSearch);
       if (currentTag) query.set('tag', currentTag);
       query.set('page', page.toString());
-      // Add limit if you have it, e.g., query.set('limit', '20');
 
-      // Updated to handle wrapped API response
-      const response = await fetchApi<{ data: PaginatedResponse<ImageType> }>(`/api/images?${query.toString()}`);
-      setImages(response.data.data);
-      setPagination(response.data.meta);
+      const response = await fetch(`/api/images?${query.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        signal: abortController.signal
+      });
       
-      const newParams = new URLSearchParams(window.location.search);
-      if (currentSearch) newParams.set('searchQuery', currentSearch); else newParams.delete('searchQuery');
-      if (currentTag) newParams.set('tag', currentTag); else newParams.delete('tag');
-      if (page > 1) newParams.set('page', page.toString()); else newParams.delete('page');
-      // Only push new state if params actually changed to avoid unnecessary history entries
-      if (newParams.toString() !== searchParams.toString()) {
-        router.replace(`/images?${newParams.toString()}`, { scroll: false });
+      const data = await response.json();
+      
+      // Only process if the request wasn't aborted
+      if (!abortController.signal.aborted) {
+        // Validate response with schema
+        const validatedData = PaginatedImagesResponseSchema.parse(data);
+        
+        setImages(validatedData.data.data);
+        setPagination(validatedData.data.meta);
+        
+        const newParams = new URLSearchParams(window.location.search);
+        if (currentSearch) newParams.set('searchQuery', currentSearch); else newParams.delete('searchQuery');
+        if (currentTag) newParams.set('tag', currentTag); else newParams.delete('tag');
+        if (page > 1) newParams.set('page', page.toString()); else newParams.delete('page');
+        
+        // Only push new state if params actually changed to avoid unnecessary history entries
+        if (newParams.toString() !== searchParams.toString()) {
+          router.replace(`/images?${newParams.toString()}`, { scroll: false });
+        }
       }
-
-    } catch (e: unknown) { // Changed e: any to e: unknown
-      setError(e instanceof Error ? e.message : "Failed to fetch images."); // Type check for e
-      setImages([]);
-      setPagination(null);
+    } catch (err) {
+      // Only set error if request wasn't aborted
+      if (!abortController.signal.aborted) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to fetch images.";
+        setError(errorMessage);
+        setImages([]);
+        setPagination(null);
+        console.error('Error fetching images:', err);
+      }
     } finally {
-      setIsLoading(false);
+      if (controllerRef.current === abortController) {
+        controllerRef.current = null;
+        setIsLoading(false);
+      }
     }
-  }, [fetchApi, router, searchParams, searchQuery, tag]); // Added searchQuery and tag here, though they are passed as args too
+  }, [router, searchParams, searchQuery, tag]);
 
   // Effect for initial load and when URL searchParams change (e.g., browser back/forward)
   useEffect(() => {
@@ -65,11 +121,11 @@ export default function ImagesPage() {
     const tagFromUrl = searchParams.get('tag') || '';
 
     // Update state if URL params differ from local state, then fetch
-    // This handles cases where user navigates directly with query params or uses back/forward
     if (searchFromUrl !== searchQuery || tagFromUrl !== tag) {
-        setSearchQuery(searchFromUrl);
-        setTag(tagFromUrl);
+      setSearchQuery(searchFromUrl);
+      setTag(tagFromUrl);
     }
+    
     fetchImages(pageFromUrl, searchFromUrl, tagFromUrl);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]); // Only trigger on direct searchParams changes from URL
@@ -79,10 +135,12 @@ export default function ImagesPage() {
     if (debounceTimeout) {
       clearTimeout(debounceTimeout);
     }
+    
     const timeoutId = setTimeout(() => {
       // Fetch with current state values, reset to page 1 for new filters
       fetchImages(1, searchQuery, tag);
     }, DEBOUNCE_DELAY);
+    
     setDebounceTimeout(timeoutId);
 
     return () => {
@@ -97,22 +155,21 @@ export default function ImagesPage() {
     fetchImages(newPage, searchQuery, tag);
   };
 
-  // Removed handleFilter as it's no longer needed
-
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8" data-testid="images-page">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">My Images</h1>
         <Link 
           href="/images/upload" 
           className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
+          data-testid="upload-image-link"
         >
           Upload New Image
         </Link>
       </div>
 
       <div className="mb-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"> {/* Changed to md:grid-cols-2 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div>
             <label htmlFor="searchQuery" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Search by Title/Description
@@ -122,9 +179,9 @@ export default function ImagesPage() {
               id="searchQuery"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              // Removed onKeyDown
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               placeholder="e.g., Sunset, Mountains"
+              data-testid="search-input"
             />
           </div>
           <div>
@@ -136,43 +193,49 @@ export default function ImagesPage() {
               id="tag"
               value={tag}
               onChange={(e) => setTag(e.target.value)}
-              // Removed onKeyDown
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               placeholder="e.g., nature, portrait"
+              data-testid="tag-input"
             />
           </div>
-          {/* Apply Filters Button Removed */}
         </div>
       </div>
 
-      {isLoading && <LoadingSpinner text="Fetching images..." />}
-      {error && <ErrorMessage error={error} retry={() => fetchImages(1, searchQuery, tag)} />}
+      {isLoading && <LoadingSpinner text="Fetching images..." data-testid="loading-spinner" />}
+      {error && <ErrorMessage error={error} retry={() => fetchImages(1, searchQuery, tag)} data-testid="error-message" />}
       {!isLoading && !error && images.length === 0 && (
-        <EmptyState title="No Images Found" description="Try adjusting your filters or upload new images." />
+        <div data-testid="empty-state">
+          <EmptyState title="No Images Found" description="Try adjusting your filters or upload new images." />
+        </div>
       )}
       {!isLoading && !error && images.length > 0 && (
         <>
-          <ImageGrid images={images.map(img => ({
-            id: img.id,
-            title: img.title,
-            url: img.url,
-            description: img.description || null, // Ensure description is string | null not undefined
-            tags: img.tags || []
-          }))} />
+          <ImageGrid 
+            images={images.map(img => ({
+              id: img.id,
+              title: img.title,
+              url: img.url,
+              description: img.description || null,
+              tags: img.tags || []
+            }))} 
+            data-testid="image-grid"
+          />
           {pagination && pagination.lastPage > 1 && (
-            <div className="mt-8 flex justify-center items-center space-x-2">
+            <div className="mt-8 flex justify-center items-center space-x-2" data-testid="pagination">
               <Button 
                 onClick={() => handlePageChange(pagination.currentPage - 1)} 
-                disabled={pagination.currentPage <= 1 || isLoading}
+                disabled={!pagination.hasPrevPage || isLoading}
                 variant="outline"
+                data-testid="prev-page-button"
               >
                 Previous
               </Button>
-              <span>Page {pagination.currentPage} of {pagination.lastPage} (Total: {pagination.total})</span>
+              <span data-testid="page-info">Page {pagination.currentPage} of {pagination.lastPage} (Total: {pagination.total})</span>
               <Button 
                 onClick={() => handlePageChange(pagination.currentPage + 1)} 
-                disabled={pagination.currentPage >= pagination.lastPage || isLoading}
+                disabled={!pagination.hasNextPage || isLoading}
                 variant="outline"
+                data-testid="next-page-button"
               >
                 Next
               </Button>
