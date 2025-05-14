@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { UploadImage } from "@/components/UploadImage";
+import { UploadImageWithService } from "@/components/UploadImageWithService";
 import { authOptions } from "@/lib/auth";
 
 export default async function UploadImagePage() {
@@ -22,7 +22,7 @@ export default async function UploadImagePage() {
           Back to Images
         </Link>
       </div>
-      <UploadImage />
+      <UploadImageWithService />
     </div>
   );
 }

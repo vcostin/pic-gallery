@@ -2,53 +2,72 @@
 
 import React from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
+import { UseFormRegister, FieldErrors, Controller, Control } from 'react-hook-form';
+import { z } from 'zod';
+import { CreateGallerySchema } from '@/lib/schemas';
 
+// Define the form data type from the schema
+export type GalleryFormData = z.infer<typeof CreateGallerySchema>;
+
+// Props that accept react-hook-form register and errors
 interface GalleryDetailsFormProps {
-  title: string;
-  setTitle: (title: string) => void;
-  description: string;
-  setDescription: (description: string) => void;
-  isPublic: boolean;
-  setIsPublic: (isPublic: boolean) => void;
+  register: UseFormRegister<GalleryFormData>;
+  errors: FieldErrors<GalleryFormData>;
+  control: Control<GalleryFormData>;
+  
+  // Optional legacy props for backward compatibility
+  title?: string;
+  setTitle?: (title: string) => void;
+  description?: string;
+  setDescription?: (description: string) => void;
+  isPublic?: boolean;
+  setIsPublic?: (isPublic: boolean) => void;
   // Theming options
   themeColor?: string | null;
-  setThemeColor: (themeColor: string) => void;
+  setThemeColor?: (themeColor: string) => void;
   backgroundColor?: string | null;
-  setBackgroundColor: (backgroundColor: string) => void;
+  setBackgroundColor?: (backgroundColor: string) => void;
   backgroundImageUrl?: string | null;
-  setBackgroundImageUrl: (backgroundImageUrl: string) => void;
+  setBackgroundImageUrl?: (backgroundImageUrl: string) => void;
   accentColor?: string | null;
-  setAccentColor: (accentColor: string) => void;
+  setAccentColor?: (accentColor: string) => void;
   fontFamily?: string | null;
-  setFontFamily: (fontFamily: string) => void;
+  setFontFamily?: (fontFamily: string) => void;
   displayMode?: string | null;
-  setDisplayMode: (displayMode: string) => void;
+  setDisplayMode?: (displayMode: string) => void;
   layoutType?: string | null;
-  setLayoutType: (layoutType: string) => void;
+  setLayoutType?: (layoutType: string) => void;
+  
+  // Flag to determine if we're using the new form api or the old one
+  useReactHookForm?: boolean;
 }
 
 export function GalleryDetailsForm({
-  title,
-  setTitle,
-  description,
-  setDescription,
-  isPublic,
-  setIsPublic,
-  // Theming options
-  themeColor,
-  setThemeColor,
-  backgroundColor,
-  setBackgroundColor,
-  backgroundImageUrl,
-  setBackgroundImageUrl,
-  accentColor,
-  setAccentColor,
-  fontFamily,
-  setFontFamily,
-  displayMode,
-  setDisplayMode,
-  layoutType,
-  setLayoutType
+  register,
+  errors,
+  control,
+  useReactHookForm = false,
+  // Legacy props
+  title = '',
+  setTitle = () => {},
+  description = '',
+  setDescription = () => {},
+  isPublic = false,
+  setIsPublic = () => {},
+  themeColor = '',
+  setThemeColor = () => {},
+  backgroundColor = '',
+  setBackgroundColor = () => {},
+  backgroundImageUrl = '',
+  setBackgroundImageUrl = () => {},
+  accentColor = '',
+  setAccentColor = () => {},
+  fontFamily = '',
+  setFontFamily = () => {},
+  displayMode = '',
+  setDisplayMode = () => {},
+  layoutType = '',
+  setLayoutType = () => {}
 }: GalleryDetailsFormProps) {
   return (
     <Card>

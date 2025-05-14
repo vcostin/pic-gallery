@@ -8,6 +8,8 @@ import { z } from 'zod';
 import { PaginatedImagesResponseSchema } from '@/lib/schemas';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner, ErrorMessage, EmptyState } from '@/components/StatusMessages';
+import { ImageService, type PaginatedImages } from '@/lib/services/imageService';
+import logger from '@/lib/logger';
 
 // Define type for Image based on PaginatedImagesResponseSchema
 type ImageType = z.infer<typeof PaginatedImagesResponseSchema>['data']['data'][number];
@@ -64,28 +66,17 @@ export default function ImagesPage() {
     controllerRef.current = abortController;
     
     try {
-      const query = new URLSearchParams();
-      if (currentSearch) query.set('searchQuery', currentSearch);
-      if (currentTag) query.set('tag', currentTag);
-      query.set('page', page.toString());
-
-      const response = await fetch(`/api/images?${query.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        signal: abortController.signal
-      });
-      
-      const data = await response.json();
+      // Use ImageService to fetch images
+      const paginatedImages = await ImageService.getImages({
+        page,
+        searchQuery: currentSearch,
+        tag: currentTag
+      }, abortController.signal);
       
       // Only process if the request wasn't aborted
       if (!abortController.signal.aborted) {
-        // Validate response with schema
-        const validatedData = PaginatedImagesResponseSchema.parse(data);
-        
-        setImages(validatedData.data.data);
-        setPagination(validatedData.data.meta);
+        setImages(paginatedImages.data);
+        setPagination(paginatedImages.meta);
         
         const newParams = new URLSearchParams(window.location.search);
         if (currentSearch) newParams.set('searchQuery', currentSearch); else newParams.delete('searchQuery');
@@ -99,12 +90,12 @@ export default function ImagesPage() {
       }
     } catch (err) {
       // Only set error if request wasn't aborted
-      if (!abortController.signal.aborted) {
+      if (!(err instanceof DOMException && err.name === 'AbortError')) {
         const errorMessage = err instanceof Error ? err.message : "Failed to fetch images.";
         setError(errorMessage);
         setImages([]);
         setPagination(null);
-        console.error('Error fetching images:', err);
+        logger.error('Error fetching images:', err);
       }
     } finally {
       if (controllerRef.current === abortController) {

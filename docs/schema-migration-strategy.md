@@ -25,15 +25,16 @@ This document outlines our strategy for migrating to Zod schema-derived types th
 
 - ✅ Update gallery-related API routes
 - ✅ Update image-related API routes
-- [ ] Update user-related API routes
-- [ ] Update authentication-related API routes
+- ✅ Update user-related API routes
+- ✅ Update authentication-related API routes
 
-### Phase 3: Service Layer (In Progress)
+### Phase 3: Service Layer (Completed)
 
 - ✅ Create `galleryService.ts` with schema validation
 - ✅ Create `imageService.ts` with schema validation
 - ✅ Create `userService.ts` with schema validation
 - ✅ Add unit tests for services
+- ✅ Integrate services into key components
 
 ### Phase 4: Components (In Progress)
 
@@ -47,7 +48,11 @@ This document outlines our strategy for migrating to Zod schema-derived types th
 - ✅ Create `EditImageDialogWithZod.tsx` using schema-validation and ImageService
 - ✅ Create `ProfileFormWithZod.tsx` using schema-validation and UserService
 - ✅ Create reusable schema-compatible UI components (TagsInput, Badge)
-- [ ] Update remaining image-related components
+- ✅ Replace `EditImageDialog` with `EditImageDialogWithZod` in ImageGrid
+- ✅ Replace `UploadImage` with `UploadImageWithService` in upload page
+- ✅ Refactor `ImagesPage` to use ImageService for data fetching
+- ✅ Integrate `ProfileFormWithZod` into profile page
+- [ ] Update remaining gallery-related components
 
 ## Migration Guide for Developers
 

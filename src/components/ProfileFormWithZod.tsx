@@ -14,7 +14,10 @@ import logger from '@/lib/logger';
 // Define profile update schema
 const profileSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  image: z.string().url('Must be a valid URL').optional().nullable(),
+  image: z.union([
+    z.string().url('Must be a valid URL'),
+    z.string().max(0) // Empty string is valid
+  ]).optional().nullable(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -157,30 +160,28 @@ export function ProfileFormWithZod({ user }: ProfileFormZodProps) {
                 {errors.name.message}
               </p>
             )}
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium mb-1" htmlFor="image">
-              Profile Image URL
-            </label>
-            <input
-              {...register('image')}
-              id="image"
-              data-testid="image-input"
-              type="url"
-              className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-              placeholder="https://example.com/your-image.jpg"
-              aria-invalid={errors.image ? 'true' : 'false'}
-            />
-            {errors.image && (
-              <p className="text-red-500 text-sm mt-1" data-testid="image-error">
-                {errors.image.message}
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground mt-1">
-              Enter a URL to an image. Leave empty to use your default profile image.
-            </p>
-          </div>
+          </div>              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="image">
+                  Profile Image URL
+                </label>
+                <input
+                  {...register('image')}
+                  id="image"
+                  data-testid="image-input"
+                  type="url"
+                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                  placeholder="https://example.com/your-image.jpg"
+                  aria-invalid={errors.image ? 'true' : 'false'}
+                />
+                {errors.image && (
+                  <p className="text-red-500 text-sm mt-1" data-testid="image-error">
+                    {errors.image.message || 'Invalid URL format'}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter a URL to an image. Leave empty to use your default profile image.
+                </p>
+              </div>
         </form>
       </CardContent>
       

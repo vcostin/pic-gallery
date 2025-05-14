@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useMemo, useState, useEffect, useCallback, memo } from 'react';
-import { EditImageDialog } from './EditImageDialog';
+import { EditImageDialogWithZod } from './EditImageDialogWithZod';
 import { EmptyState, SkeletonLoader } from './StatusMessages';
 import { useAsync } from '@/lib/hooks';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -204,7 +204,7 @@ export function ImageGrid({ images }: ImageGridProps) {
         )}
 
         {editingImage && (
-          <EditImageDialog
+          <EditImageDialogWithZod
             image={editingImage}
             isOpen={true}
             onClose={handleImageUpdated}

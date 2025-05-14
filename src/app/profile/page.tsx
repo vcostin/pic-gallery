@@ -1,12 +1,13 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { ProfileForm } from "@/components/ProfileForm";
+import { ProfileFormWithZod } from "@/components/ProfileFormWithZod";
 import { UserStats } from "@/components/UserStats";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { UserRole } from "@/lib/types";
+import { UserSchema } from "@/lib/schemas";
 
 // Extend PrismaUser interface to include the role and _count fields
 interface PrismaUser {
@@ -60,12 +61,13 @@ export default async function ProfilePage() {
         <div className="lg:col-span-2">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <h1 className="text-3xl font-bold mb-6">My Profile</h1>
-            <ProfileForm 
-              initialData={{
+            <ProfileFormWithZod 
+              user={{
                 id: user.id,
                 name: user.name || "",
                 email: user.email || "",
                 image: user.image || "",
+                role: user.role
               }} 
             />
           </div>
