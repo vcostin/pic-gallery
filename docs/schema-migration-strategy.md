@@ -31,7 +31,7 @@ This document outlines our strategy for migrating to Zod schema-derived types th
 ### Phase 3: Service Layer (In Progress)
 
 - ✅ Create `galleryService.ts` with schema validation
-- [ ] Create `imageService.ts` with schema validation
+- ✅ Create `imageService.ts` with schema validation
 - [ ] Create `userService.ts` with schema validation
 
 ### Phase 4: Components (In Progress)
@@ -40,7 +40,9 @@ This document outlines our strategy for migrating to Zod schema-derived types th
 - ✅ Update `GalleryView.tsx` to use schema-derived types
 - ✅ Update `GalleryGrid.tsx` to use schema-defined types
 - ✅ Update `SelectImagesDialog.tsx` to use schema-validated API
-- [ ] Update `CreateGallery.tsx` to use schema-validated forms
+- ✅ Create `CreateGalleryWithZod.tsx` using schema-validated forms
+- ✅ Create `GalleryDetailsFormWithZod.tsx` with react-hook-form integration
+- ✅ Create `UploadImageWithService.tsx` using ImageService
 - [ ] Update remaining image-related components
 - [ ] Update user profile components
 

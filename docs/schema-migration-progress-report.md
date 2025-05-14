@@ -36,14 +36,17 @@
 ## Next Steps
 
 1. **Further Component Migration**:
-   - Update `CreateGallery.tsx` to use schema-validated forms
+   - ✅ Created `CreateGalleryWithZod.tsx` using schema-validated forms (parallel implementation)
+   - ✅ Created `UploadImageWithService.tsx` using service layer (parallel implementation)
+   - Gradually replace or refactor existing components to use the new patterns
    - Migrate remaining image-related components
 
 2. **Service Layer**:
-   - Implement `imageService.ts` with schema validation
+   - ✅ Implemented `imageService.ts` with schema validation
    - Ensure consistent use of services across components
 
 3. **Form Validation**:
+   - ✅ Created `GalleryDetailsFormWithZod.tsx` with react-hook-form and Zod integration
    - Add form schemas for all data entry points
    - Integrate schema validation with form submissions
 
