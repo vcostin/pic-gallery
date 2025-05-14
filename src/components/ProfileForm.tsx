@@ -1,10 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useUploadThing } from '@/lib/uploadthing';
-import { useSubmit } from '@/lib/hooks';
+import { z } from 'zod';
+import { UserResponseSchema } from '@/lib/schemas';
+
+// Define schema for profile updates
+const UpdateProfileSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    id: z.string(),
+    name: z.string().nullable().optional(),
+    email: z.string().email().nullable().optional(),
+    image: z.string().url().nullable().optional(),
+  })
+});
 
 interface ProfileFormProps {
   initialData: {
@@ -21,18 +33,47 @@ export function ProfileForm({ initialData, readOnly = false }: ProfileFormProps)
   const [email, setEmail] = useState(initialData.email);
   const [image, setImage] = useState(initialData.image);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  
+  // State for form submission
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Create AbortController ref for API requests
+  const controllerRef = useRef<AbortController | null>(null);
+  
   const router = useRouter();
   
   // For image upload
   const { startUpload, isUploading } = useUploadThing('imageUploader');
+
+  // Cleanup function to abort any in-flight requests when component unmounts
+  useEffect(() => {
+    return () => {
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+        controllerRef.current = null;
+      }
+    };
+  }, []);
   
-  // For profile update
-  const {
-    handleSubmit,
-    isSubmitting,
-    error: submitError,
-    reset: resetSubmitState
-  } = useSubmit(async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Reset states
+    setIsSubmitting(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    // Cancel any existing request
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+    }
+
+    // Create a new AbortController
+    const abortController = new AbortController();
+    controllerRef.current = abortController;
+    
     try {
       // First upload the image if there is one
       let imageUrl = image;
@@ -52,22 +93,45 @@ export function ProfileForm({ initialData, readOnly = false }: ProfileFormProps)
           email,
           image: imageUrl,
         }),
+        signal: abortController.signal
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update profile');
-      }
-
-      // Refresh the page to show updated data
-      router.refresh();
+      const data = await response.json();
       
-      return "Profile updated successfully!";
+      // Only process if the request wasn't aborted
+      if (!abortController.signal.aborted) {
+        if (data.success) {
+          // Validate the response data
+          const validatedData = UpdateProfileSchema.parse(data);
+          setSuccessMessage("Profile updated successfully!");
+          router.refresh();
+        } else {
+          throw new Error(data.error || 'Failed to update profile');
+        }
+      }
     } catch (err) {
-      console.error('Error updating profile:', err);
-      throw err;
+      // Only set error if request wasn't aborted
+      if (!abortController.signal.aborted) {
+        const errorObj = err instanceof Error ? err : new Error(String(err));
+        setError(errorObj);
+        console.error('Error updating profile:', errorObj);
+      }
+    } finally {
+      if (controllerRef.current === abortController) {
+        controllerRef.current = null;
+        setIsSubmitting(false);
+      }
     }
-  });
+  };
+
+  const handleReset = () => {
+    setName(initialData.name);
+    setEmail(initialData.email);
+    setImage(initialData.image);
+    setImageFile(null);
+    setError(null);
+    setSuccessMessage(null);
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -117,15 +181,19 @@ export function ProfileForm({ initialData, readOnly = false }: ProfileFormProps)
 
   return (
     <form 
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleSubmit(null);
-      }}
+      onSubmit={handleSubmit}
       className="space-y-6"
+      role="form"
     >
-      {submitError && (
+      {error && (
         <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-4 rounded-md mb-4">
-          {submitError.message}
+          {error.message}
+        </div>
+      )}
+      
+      {successMessage && (
+        <div className="bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 p-4 rounded-md mb-4">
+          {successMessage}
         </div>
       )}
 
@@ -173,6 +241,7 @@ export function ProfileForm({ initialData, readOnly = false }: ProfileFormProps)
           onChange={(e) => setName(e.target.value)}
           className="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700"
           required
+          data-testid="name-input"
         />
       </div>
 
@@ -187,20 +256,16 @@ export function ProfileForm({ initialData, readOnly = false }: ProfileFormProps)
           onChange={(e) => setEmail(e.target.value)}
           className="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700"
           required
+          data-testid="email-input"
         />
       </div>
 
       <div className="flex justify-end space-x-3">
         <button
           type="button"
-          onClick={() => {
-            setName(initialData.name);
-            setEmail(initialData.email);
-            setImage(initialData.image);
-            setImageFile(null);
-            resetSubmitState();
-          }}
+          onClick={handleReset}
           className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          data-testid="reset-button"
         >
           Reset
         </button>
@@ -208,6 +273,7 @@ export function ProfileForm({ initialData, readOnly = false }: ProfileFormProps)
           type="submit"
           disabled={isSubmitting || isUploading}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition disabled:opacity-50"
+          data-testid="submit-button"
         >
           {isSubmitting || isUploading ? 'Saving...' : 'Save Changes'}
         </button>
