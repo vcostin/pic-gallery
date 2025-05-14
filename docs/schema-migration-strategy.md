@@ -32,7 +32,8 @@ This document outlines our strategy for migrating to Zod schema-derived types th
 
 - ✅ Create `galleryService.ts` with schema validation
 - ✅ Create `imageService.ts` with schema validation
-- [ ] Create `userService.ts` with schema validation
+- ✅ Create `userService.ts` with schema validation
+- ✅ Add unit tests for services
 
 ### Phase 4: Components (In Progress)
 

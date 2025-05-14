@@ -227,3 +227,6 @@ export const UserResponseSchema = createApiSuccessSchema(UserSchema);
 export const PaginatedImagesResponseSchema = createApiSuccessSchema(
   createPaginatedResponseSchema(ImageSchema)
 );
+export const PaginatedUsersResponseSchema = createApiSuccessSchema(
+  createPaginatedResponseSchema(UserSchema)
+);
