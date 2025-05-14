@@ -44,9 +44,8 @@ describe('EditImageDialogWithZod', () => {
     const tagsInput = screen.getByPlaceholderText('Enter tags separated by commas');
     expect(tagsInput).toBeInTheDocument();
     
-    // Check for tag chips
-    const tagChips = screen.getAllByRole('button', { name: /Remove tag/ });
-    expect(tagChips).toHaveLength(2);
+    // Check for tags values (they are in a text input now)
+    expect(tagsInput).toHaveValue('test, image');
   });
   
   it('does not render when isOpen is false', () => {
