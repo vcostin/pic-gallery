@@ -38,6 +38,9 @@
 1. **Further Component Migration**:
    - ✅ Created `CreateGalleryWithZod.tsx` using schema-validated forms (parallel implementation)
    - ✅ Created `UploadImageWithService.tsx` using service layer (parallel implementation)
+   - ✅ Created `EditImageDialogWithZod.tsx` using ImageService and react-hook-form
+   - ✅ Created `ProfileFormWithZod.tsx` using UserService and Zod validation
+   - ✅ Added reusable `TagsInput` component with schema validation
    - Gradually replace or refactor existing components to use the new patterns
    - Migrate remaining image-related components
 
@@ -45,12 +48,13 @@
    - ✅ Implemented `imageService.ts` with schema validation
    - ✅ Implemented `userService.ts` with schema validation
    - ✅ Added comprehensive unit tests for services
-   - Ensure consistent use of services across components
+   - ✅ Integrated services with form components
+   - Ensure consistent use of services across all components
 
 3. **Form Validation**:
    - ✅ Created `GalleryDetailsFormWithZod.tsx` with react-hook-form and Zod integration
-   - Add form schemas for all data entry points
-   - Integrate schema validation with form submissions
+   - ✅ Added form schemas for image editing and user profiles
+   - ✅ Integrated schema validation with form submissions
 
 ## Conclusion
 

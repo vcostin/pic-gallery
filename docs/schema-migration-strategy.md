@@ -44,8 +44,10 @@ This document outlines our strategy for migrating to Zod schema-derived types th
 - ✅ Create `CreateGalleryWithZod.tsx` using schema-validated forms
 - ✅ Create `GalleryDetailsFormWithZod.tsx` with react-hook-form integration
 - ✅ Create `UploadImageWithService.tsx` using ImageService
+- ✅ Create `EditImageDialogWithZod.tsx` using schema-validation and ImageService
+- ✅ Create `ProfileFormWithZod.tsx` using schema-validation and UserService
+- ✅ Create reusable schema-compatible UI components (TagsInput, Badge)
 - [ ] Update remaining image-related components
-- [ ] Update user profile components
 
 ## Migration Guide for Developers
 
