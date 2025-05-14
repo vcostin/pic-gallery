@@ -10,9 +10,6 @@ import { ImageSchema } from '@/lib/schemas';
 import logger from '@/lib/logger';
 import { z } from 'zod';
 
-// Define image and response types
-type ImageResponse = z.infer<typeof ImageSchema>;
-
 // Define upload response type
 const UploadResponseSchema = z.object({
   success: z.boolean(),

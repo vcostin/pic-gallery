@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useUploadThing } from '@/lib/uploadthing';
 import { z } from 'zod';
-import { UserResponseSchema } from '@/lib/schemas';
 
 // Define schema for profile updates
 const UpdateProfileSchema = z.object({
@@ -101,8 +100,8 @@ export function ProfileForm({ initialData, readOnly = false }: ProfileFormProps)
       // Only process if the request wasn't aborted
       if (!abortController.signal.aborted) {
         if (data.success) {
-          // Validate the response data
-          const validatedData = UpdateProfileSchema.parse(data);
+          // Validate the response data against our schema
+          UpdateProfileSchema.parse(data); // Validate but we don't need to use the result
           setSuccessMessage("Profile updated successfully!");
           router.refresh();
         } else {
