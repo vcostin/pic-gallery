@@ -15,8 +15,6 @@ import { FullImageInGallery } from '@/lib/schemas';
 // Using the legacy version of GalleryDetailsForm that doesn't require react-hook-form
 import { GalleryDetailsForm } from '@/components/GalleryDetailsForm';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { UseFormRegister, FieldErrors, Control } from 'react-hook-form';
-import { GalleryFormData } from '@/components/GalleryDetailsForm';
 
 // The component no longer needs AvailableImageType, availableImages, or CreateGalleryProps
 // since useEnhancedGalleryImages handles fetching images internally
@@ -139,10 +137,21 @@ export function CreateGallery(): React.ReactElement {
     setShowSelectImagesDialog(false);
     
     if (selectedImageIds.length > 0) {
+      logger.log('CreateGallery - Adding images:', selectedImageIds);
       // Enhanced hook only needs the image IDs - it handles fetching images internally
-      addImagesToGallery(selectedImageIds);
+      addImagesToGallery(selectedImageIds)
+        .then(result => {
+          if (!result && process.env.NODE_ENV === 'development') {
+            logger.log('CreateGallery - Images added to local state (no gallery ID yet)');
+          }
+        })
+        .catch(error => {
+          setError(`Failed to add images: ${error.message}`);
+        });
+    } else {
+      logger.warn('CreateGallery - No image IDs received from SelectImagesDialog');
     }
-  }, [addImagesToGallery]);
+  }, [addImagesToGallery, setError]);
 
   // Handle image reordering from GallerySortable
   const handleImagesReordered = useCallback((reorderedImages: FullImageInGallery[]) => {
@@ -198,10 +207,10 @@ export function CreateGallery(): React.ReactElement {
             setDisplayMode={setDisplayMode}
             layoutType={layoutType}
             setLayoutType={setLayoutType}
-            // Add empty react-hook-form props since we're using legacy mode
-            register={function() { return { name: '' }; } as unknown as UseFormRegister<GalleryFormData>}
-            errors={{} as FieldErrors<GalleryFormData>}
-            control={{} as Control<GalleryFormData>}
+            // Using legacy mode, so we need to provide dummy react-hook-form props
+            register={() => ({ name: '' })}
+            errors={{}}
+            control={{}}
             useReactHookForm={false}
           />
 

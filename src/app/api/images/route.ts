@@ -17,6 +17,7 @@ const getImagesQuerySchema = z.object({
   searchQuery: z.string().optional(), // Added for general search
   sortBy: z.enum(['createdAt', 'title', 'updatedAt']).optional().default('createdAt'),
   sortDir: z.enum(['asc', 'desc']).optional().default('desc'),
+  ids: z.string().optional(), // Support for comma-separated IDs
 });
 
 /**
@@ -64,16 +65,35 @@ export const GET = withApiHandler(async (req) => {
     searchQuery: searchParams.get("searchQuery") || undefined,
     sortBy: searchParams.get("sortBy") || undefined,
     sortDir: searchParams.get("sortDir") || undefined,
+    ids: searchParams.get("ids") || undefined,
   });
+  
+  if (process.env.NODE_ENV === 'development') {
+    logger.log('GET /api/images query params:', queryParams);
+  }
   const where: Prisma.ImageWhereInput = { userId: session.user.id };
+  
+  // Filter by tag if provided
   if (queryParams.tag) {
     where.tags = { some: { name: queryParams.tag } };
   }
+  
+  // Filter by search query if provided
   if (queryParams.searchQuery) {
     where.OR = [
       { title: { contains: queryParams.searchQuery, mode: 'insensitive' } },
       { description: { contains: queryParams.searchQuery, mode: 'insensitive' } },
     ];
+  }
+  
+  // Filter by IDs if provided (comma-separated list)
+  if (queryParams.ids) {
+    const imageIds = queryParams.ids.split(',').filter(id => id.trim() !== '');
+    if (imageIds.length > 0) {
+      where.id = { in: imageIds };
+      // When filtering by specific IDs, we can skip pagination limits
+      queryParams.limit = imageIds.length; 
+    }
   }
   const total = await prisma.image.count({ where });
   const images = await prisma.image.findMany({

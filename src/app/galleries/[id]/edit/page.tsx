@@ -179,14 +179,51 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     setShowRemoveImageDialog(true);
   }, []);
   
-  const confirmRemoveImage = useCallback(() => {
-    if (imageToRemove) {
-      // Remove the image locally
-      setImages(prevImages => prevImages.filter(img => img.id !== imageToRemove));
+  const confirmRemoveImage = useCallback(async () => {
+    if (!galleryId || !imageToRemove) {
+      setShowRemoveImageDialog(false);
+      setImageToRemove(null);
+      return;
     }
-    setShowRemoveImageDialog(false);
-    setImageToRemove(null);
-  }, [imageToRemove]);
+    
+    try {
+      setIsLoading(true);
+      
+      // Import the GalleryService for accessing the removeImage method
+      const { GalleryService } = await import('@/lib/services/galleryService');
+      
+      // Use GalleryService.removeImage to update the gallery on the server
+      const updatedGallery = await GalleryService.removeImage(galleryId, imageToRemove);
+      
+      // Update the local state with the response from the server
+      setImages(updatedGallery.images);
+      
+      // If the cover image was removed, update the cover image ID
+      if (updatedGallery.coverImageId !== coverImageId) {
+        setCoverImageId(updatedGallery.coverImageId || '');
+      }
+      
+      // Update the original gallery data to reflect these changes
+      setOriginalGalleryData(updatedGallery);
+      setGalleryData(updatedGallery);
+      
+      // Set a success message
+      setToastMessage('Image removed from gallery');
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+    } catch (err) {
+      logger.error("Error removing image:", err);
+      
+      // Show error toast
+      setToastMessage(`Error removing image: ${err instanceof Error ? err.message : String(err)}`);
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+    } finally {
+      setIsLoading(false);
+      setShowRemoveImageDialog(false);
+      setImageToRemove(null);
+    }
+  }, [imageToRemove, coverImageId, galleryId]);
   
   const cancelRemoveImage = useCallback(() => {
     setShowRemoveImageDialog(false);

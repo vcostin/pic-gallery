@@ -211,7 +211,14 @@ export function SelectImagesDialog({
   const handleConfirmSelection = () => {
     const selectedImageIds = Array.from(selectedImages);
     if (selectedImageIds.length > 0) {
+      // Debug logging for development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('SelectImagesDialog - Selected IDs to add:', selectedImageIds);
+      }
+      // Call the callback with selected image IDs
       onImagesSelected(selectedImageIds);
+    } else {
+      logger.warn('No images selected in SelectImagesDialog');
     }
     onClose();
   };

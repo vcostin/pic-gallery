@@ -9,6 +9,7 @@ A modern image gallery application built with Next.js that allows users to manag
 - **Gallery Management**: Create and organize galleries with multiple images
 - **Gallery Covers**: Set cover images for galleries to highlight your best photos
 - **Image Ordering**: Arrange images in your galleries in any order you prefer
+- **Image Management**: Easily add and remove images from galleries
 - **Privacy Controls**: Set galleries as public or private
 - **Interactive UI**: 
   - Responsive image grid layouts
