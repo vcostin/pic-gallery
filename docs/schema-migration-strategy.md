@@ -52,6 +52,7 @@ This document outlines our strategy for migrating to Zod schema-derived types th
 - ✅ Replace `UploadImage` with `UploadImageWithService` in upload page
 - ✅ Refactor `ImagesPage` to use ImageService for data fetching
 - ✅ Integrate `ProfileFormWithZod` into profile page
+- ✅ Create `TagsManagementWithZod.tsx` for schema-validated tag management
 - [ ] Update remaining gallery-related components
 
 ## Migration Guide for Developers

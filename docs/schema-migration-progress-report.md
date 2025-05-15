@@ -45,6 +45,7 @@
    - ✅ Replaced `UploadImage` with `UploadImageWithService` in upload page
    - ✅ Refactored `ImagesPage` to use ImageService for data fetching
    - ✅ Integrated `ProfileFormWithZod` into profile page
+   - ✅ Created `TagsManagementWithZod` component with schema validation
    - ✅ Migrated key image-related components
    - Continue replacing remaining components
 
