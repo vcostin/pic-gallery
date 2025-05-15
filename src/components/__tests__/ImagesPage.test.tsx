@@ -1,6 +1,7 @@
 import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 import ImagesPage from "@/app/images/page";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ImageService } from "@/lib/services/imageService";
 import * as schemas from "@/lib/schemas";
 import { z } from "zod";
 
@@ -8,6 +9,13 @@ import { z } from "zod";
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
   useSearchParams: jest.fn(),
+}));
+
+// Mock ImageService
+jest.mock("@/lib/services/imageService", () => ({
+  ImageService: {
+    getImages: jest.fn(),
+  },
 }));
 
 jest.mock("@/components/ImageGrid", () => ({

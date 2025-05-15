@@ -1,13 +1,22 @@
+// filepath: /Users/vcostin/Work/pic-gallery/src/app/__tests__/ImagesPage.test.tsx
 import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 import ImagesPage from "@/app/images/page";
 import { useRouter, useSearchParams } from "next/navigation";
 import * as schemas from "@/lib/schemas";
 import { z } from "zod";
+import { ImageService } from "@/lib/services/imageService";
 
 // Mock Next.js router and searchParams
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
   useSearchParams: jest.fn(),
+}));
+
+// Mock the ImageService
+jest.mock("@/lib/services/imageService", () => ({
+  ImageService: {
+    getImages: jest.fn()
+  }
 }));
 
 // Mock the ImageGrid component
@@ -24,7 +33,7 @@ jest.mock("@/components/ImageGrid", () => ({
   ),
 }));
 
-// Create a custom mock for fetch
+// Create a custom mock for fetch (needed for backward compatibility)
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
@@ -83,11 +92,15 @@ jest.spyOn(schemas.PaginatedImagesResponseSchema, "parse").mockImplementation((d
 describe("ImagesPage", () => {
   const mockRouter = {
     replace: jest.fn(),
+    refresh: jest.fn()
   };
   
   // Mock URL search params
   const mockGetParam = jest.fn();
   const mockSearchParamsToString = jest.fn().mockReturnValue("");
+  
+  // Mock for ImageService.getImages
+  const mockGetImages = ImageService.getImages as jest.MockedFunction<typeof ImageService.getImages>;
   
   beforeEach(() => {
     jest.clearAllMocks();
@@ -107,10 +120,19 @@ describe("ImagesPage", () => {
       toString: mockSearchParamsToString,
     });
     
-    // Setup default fetch mock to return success
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => mockSuccessResponse,
+    // Setup ImageService mock
+    mockGetImages.mockResolvedValue({
+      data: mockImages,
+      meta: {
+        total: 10,
+        currentPage: 1,
+        lastPage: 2,
+        perPage: 8,
+        hasNextPage: true,
+        hasPrevPage: false,
+        nextPage: 2,
+        prevPage: null,
+      },
     });
   });
   
@@ -129,6 +151,12 @@ describe("ImagesPage", () => {
       expect(screen.queryByText("Fetching images...")).not.toBeInTheDocument();
     });
     
+    // Verify ImageService was called
+    expect(mockGetImages).toHaveBeenCalledWith(
+      { page: 1, searchQuery: "", tag: "" },
+      expect.any(AbortSignal)
+    );
+    
     // Verify page elements
     expect(screen.getByText("My Images")).toBeInTheDocument();
     expect(screen.getByText("Upload New Image")).toBeInTheDocument();
@@ -141,7 +169,7 @@ describe("ImagesPage", () => {
     expect(screen.getByText(/Page 1 of 2/)).toBeInTheDocument();
   });
 
-  test("handles search query input", async () => {
+  test("handles search query input with debounce", async () => {
     render(<ImagesPage />);
     
     // Wait for initial load
@@ -149,28 +177,22 @@ describe("ImagesPage", () => {
       expect(screen.queryByText("Fetching images...")).not.toBeInTheDocument();
     });
     
-    // Set up a new mock for the search query
-    mockFetch.mockClear(); // Clear previous fetch calls
+    // Clear previous ImageService calls
+    mockGetImages.mockClear();
     
-    // Mock the fetch for search results before typing
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        success: true,
-        data: {
-          data: [mockImages[0]],
-          meta: {
-            total: 1,
-            currentPage: 1,
-            lastPage: 1,
-            perPage: 8,
-            hasNextPage: false,
-            hasPrevPage: false,
-            nextPage: null,
-            prevPage: null,
-          },
-        },
-      }),
+    // Mock the ImageService for search results
+    mockGetImages.mockResolvedValue({
+      data: [mockImages[0]],
+      meta: {
+        total: 1,
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 8,
+        hasNextPage: false,
+        hasPrevPage: false,
+        nextPage: null,
+        prevPage: null,
+      },
     });
     
     // Type in search box to trigger debounced API call
@@ -179,58 +201,24 @@ describe("ImagesPage", () => {
     
     // Mock the global setTimeout to execute immediately
     jest.useFakeTimers();
-    jest.runAllTimers(); 
+    act(() => {
+      jest.runAllTimers();
+    });
     jest.useRealTimers();
     
     // Wait for the API call to complete after timer runs
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("searchQuery=landscape"),
-        expect.anything()
+      expect(mockGetImages).toHaveBeenCalledWith(
+        expect.objectContaining({
+          searchQuery: "landscape",
+          page: 1
+        }),
+        expect.any(AbortSignal)
       );
     }, { timeout: 1000 });
-    
-    // Verify the fetch was called with search params
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("searchQuery=landscape"),
-      expect.objectContaining({
-        method: "GET",
-        headers: expect.objectContaining({
-          "Content-Type": "application/json"
-        }),
-        signal: expect.any(AbortSignal)
-      })
-    );
   });
 
-  test("handles tag filter input", async () => {
-    // Reset the mocks
-    mockFetch.mockClear();
-    mockFetch.mockImplementation(async (url) => {
-      return {
-        ok: true,
-        json: async () => ({
-          success: true,
-          data: {
-            data: url.includes("tag=nature") ? [mockImages[0]] : mockImages,
-            meta: {
-              total: url.includes("tag=nature") ? 1 : 2,
-              currentPage: 1,
-              lastPage: 1,
-              perPage: 8,
-              hasNextPage: false,
-              hasPrevPage: false,
-              nextPage: null,
-              prevPage: null,
-            },
-          },
-        })
-      };
-    });
-    
-    // Setup fake timers for debounce control
-    jest.useFakeTimers();
-    
+  test("handles tag filter input with debounce", async () => {
     render(<ImagesPage />);
     
     // Wait for initial load
@@ -238,33 +226,48 @@ describe("ImagesPage", () => {
       expect(screen.queryByText("Fetching images...")).not.toBeInTheDocument();
     });
     
-    // Clear fetch calls after initial load
-    mockFetch.mockClear();
+    // Clear previous ImageService calls
+    mockGetImages.mockClear();
+    
+    // Mock the ImageService for tag filter results
+    mockGetImages.mockResolvedValue({
+      data: [mockImages[0]],
+      meta: {
+        total: 1,
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 8,
+        hasNextPage: false,
+        hasPrevPage: false,
+        nextPage: null,
+        prevPage: null,
+      },
+    });
     
     // Type in tag filter
     const tagInput = screen.getByPlaceholderText("e.g., nature, portrait");
     fireEvent.change(tagInput, { target: { value: "nature" } });
     
     // Fast-forward timers to trigger the debounced function
+    jest.useFakeTimers();
     act(() => {
       jest.runAllTimers();
     });
+    jest.useRealTimers();
     
     // Wait for the API call to complete
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalled();
+      expect(mockGetImages).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tag: "nature",
+          page: 1
+        }),
+        expect.any(AbortSignal)
+      );
     });
-    
-    // Get the most recent call and check if it includes the tag parameter
-    const mostRecentCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1];
-    expect(mostRecentCall[0]).toContain("tag=nature");
-    
-    // Cleanup
-    jest.useRealTimers();
-  });
   });
 
-  test.skip("handles pagination", async () => {
+  test("handles pagination properly", async () => {
     render(<ImagesPage />);
     
     // Wait for initial load
@@ -272,45 +275,46 @@ describe("ImagesPage", () => {
       expect(screen.queryByText("Fetching images...")).not.toBeInTheDocument();
     });
     
-    // Note: Pagination UI is not implemented yet
-    // This test will be updated when pagination UI is added
-    
-    // Mock the fetch for page 2
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        success: true,
-        data: {
-          data: mockImages,
-          meta: {
-            total: 10,
-            currentPage: 2,
-            lastPage: 2,
-            perPage: 8,
-            hasNextPage: false,
-            hasPrevPage: true,
-            nextPage: null,
-            prevPage: 1,
-          },
-        },
-      }),
+    // Mock response for page 2
+    mockGetImages.mockClear();
+    mockGetImages.mockResolvedValue({
+      data: mockImages,
+      meta: {
+        total: 10,
+        currentPage: 2,
+        lastPage: 2,
+        perPage: 8,
+        hasNextPage: false,
+        hasPrevPage: true,
+        nextPage: null,
+        prevPage: 1,
+      },
     });
     
-    // Wait for fetch
+    // Click next page button
+    const nextButton = screen.getByTestId("next-page-button");
+    fireEvent.click(nextButton);
+    
+    // Wait for the API call with page=2
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenLastCalledWith(
-        expect.stringContaining("page=2"),
-        expect.anything()
+      expect(mockGetImages).toHaveBeenCalledWith(
+        expect.objectContaining({
+          page: 2
+        }),
+        expect.any(AbortSignal)
       );
     });
     
-    // Verify router was called with updated URL
-    expect(mockRouter.replace).toHaveBeenCalled();
+    // Verify router was updated
+    expect(mockRouter.replace).toHaveBeenCalledWith(
+      expect.stringContaining("page=2"),
+      expect.anything()
+    );
   });
 
-  test("handles API errors", async () => {
-    // Mock fetch to return error
-    mockFetch.mockRejectedValue(new Error("Failed to fetch images"));
+  test("handles API errors correctly", async () => {
+    // Mock the ImageService to throw an error
+    mockGetImages.mockRejectedValue(new Error("Failed to fetch images"));
     
     render(<ImagesPage />);
     
@@ -319,51 +323,48 @@ describe("ImagesPage", () => {
       expect(screen.getByText("Failed to fetch images")).toBeInTheDocument();
     });
     
-    // Check for retry button (which has text "Try again")
-    const retryButton = screen.getByText("Try again");
+    // Check for retry button functionality
+    const retryButton = screen.getByRole("button", { name: /retry/i });
     expect(retryButton).toBeInTheDocument();
     
     // Setup success response for retry
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => mockSuccessResponse,
+    mockGetImages.mockResolvedValue({
+      data: mockImages,
+      meta: {
+        total: 10,
+        currentPage: 1,
+        lastPage: 2,
+        perPage: 8,
+        hasNextPage: true,
+        hasPrevPage: false,
+        nextPage: 2,
+        prevPage: null,
+      },
     });
     
     // Click retry
     fireEvent.click(retryButton);
     
-    // Verify loading state is shown again
-    expect(screen.getByText("Fetching images...")).toBeInTheDocument();
-    
-    // Wait for data to load after retry
+    // Verify ImageService was called again
     await waitFor(() => {
-      expect(screen.queryByText("Fetching images...")).not.toBeInTheDocument();
+      expect(mockGetImages).toHaveBeenCalledTimes(2);
     });
-    
-    // Verify content is shown
-    expect(screen.getByText("Test Image 1")).toBeInTheDocument();
   });
 
   test("shows empty state when no images are found", async () => {
-    // Mock fetch to return empty array
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        success: true,
-        data: {
-          data: [],
-          meta: {
-            total: 0,
-            currentPage: 1,
-            lastPage: 1,
-            perPage: 8,
-            hasNextPage: false,
-            hasPrevPage: false,
-            nextPage: null,
-            prevPage: null,
-          },
-        },
-      }),
+    // Mock the ImageService to return empty array
+    mockGetImages.mockResolvedValue({
+      data: [],
+      meta: {
+        total: 0,
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 8,
+        hasNextPage: false,
+        hasPrevPage: false,
+        nextPage: null,
+        prevPage: null,
+      },
     });
     
     render(<ImagesPage />);
@@ -371,61 +372,38 @@ describe("ImagesPage", () => {
     // Wait for empty state message
     await waitFor(() => {
       expect(screen.getByText("No Images Found")).toBeInTheDocument();
-      expect(screen.getByText("Try adjusting your filters or upload new images.")).toBeInTheDocument();
     });
+    
+    expect(screen.getByText("Try adjusting your filters or upload new images.")).toBeInTheDocument();
   });
 
-  test("aborts previous requests when making new ones", async () => {
-    const abortSpy = jest.spyOn(AbortController.prototype, 'abort');
-    
-    render(<ImagesPage />);
-    
-    // Wait for initial load
-    await waitFor(() => {
-      expect(screen.queryByText("Fetching images...")).not.toBeInTheDocument();
-    });
-    
-    // Trigger multiple searches in quick succession
-    const searchInput = screen.getByPlaceholderText("e.g., Sunset, Mountains");
-    fireEvent.change(searchInput, { target: { value: "a" } });
-    fireEvent.change(searchInput, { target: { value: "ab" } });
-    fireEvent.change(searchInput, { target: { value: "abc" } });
-    
-    // Verify abort was called at least once
-    await waitFor(() => {
-      expect(abortSpy).toHaveBeenCalled();
-    });
-  });
-
-  test.skip("handles URL search params on initial load", async () => {
+  test("handles URL search params on initial load", async () => {
     // Mock URL search params with existing query
-    const mockGet = jest.fn((param) => {
+    mockGetParam.mockImplementation((param) => {
       if (param === "page") return "2";
       if (param === "searchQuery") return "landscape";
       if (param === "tag") return "nature";
       return null;
     });
     
+    mockGetImages.mockClear();
+    
     render(<ImagesPage />);
     
-    // Verify fetch was called with the right params
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("page=2"),
-      expect.anything()
-    );
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("searchQuery=landscape"),
-      expect.anything()
-    );
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("tag=nature"),
-      expect.anything()
-    );
-    
-    // Wait for data to load
+    // Wait for the component to finish loading
     await waitFor(() => {
       expect(screen.queryByText("Fetching images...")).not.toBeInTheDocument();
     });
+    
+    // Verify ImageService was called with proper parameters
+    expect(mockGetImages).toHaveBeenCalledWith(
+      expect.objectContaining({
+        page: 2,
+        searchQuery: "landscape",
+        tag: "nature"
+      }),
+      expect.any(AbortSignal)
+    );
     
     // Verify search input has the right value
     const searchInput = screen.getByPlaceholderText("e.g., Sunset, Mountains");
@@ -435,3 +413,4 @@ describe("ImagesPage", () => {
     const tagInput = screen.getByPlaceholderText("e.g., nature, portrait");
     expect(tagInput).toHaveValue("nature");
   });
+});

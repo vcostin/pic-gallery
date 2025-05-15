@@ -75,8 +75,15 @@ export default function ImagesPage() {
       
       // Only process if the request wasn't aborted
       if (!abortController.signal.aborted) {
+        // paginatedImages contains { data: Image[], meta: PaginationInfo }
         setImages(paginatedImages.data);
-        setPagination(paginatedImages.meta);
+        setPagination({
+          currentPage: paginatedImages.meta.currentPage,
+          lastPage: paginatedImages.meta.lastPage,
+          total: paginatedImages.meta.total,
+          hasNextPage: paginatedImages.meta.hasNextPage,
+          hasPrevPage: paginatedImages.meta.hasPrevPage
+        });
         
         const newParams = new URLSearchParams(window.location.search);
         if (currentSearch) newParams.set('searchQuery', currentSearch); else newParams.delete('searchQuery');
@@ -194,12 +201,12 @@ export default function ImagesPage() {
 
       {isLoading && <LoadingSpinner text="Fetching images..." data-testid="loading-spinner" />}
       {error && <ErrorMessage error={error} retry={() => fetchImages(1, searchQuery, tag)} data-testid="error-message" />}
-      {!isLoading && !error && images.length === 0 && (
+      {!isLoading && !error && images && images.length === 0 && (
         <div data-testid="empty-state">
           <EmptyState title="No Images Found" description="Try adjusting your filters or upload new images." />
         </div>
       )}
-      {!isLoading && !error && images.length > 0 && (
+      {!isLoading && !error && images && images.length > 0 && (
         <>
           <ImageGrid 
             images={images.map(img => ({
