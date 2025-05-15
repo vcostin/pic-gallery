@@ -230,3 +230,53 @@ export const PaginatedImagesResponseSchema = createApiSuccessSchema(
 export const PaginatedUsersResponseSchema = createApiSuccessSchema(
   createPaginatedResponseSchema(UserSchema)
 );
+
+/**
+ * Flexible schema for images API that can handle inconsistent response formats:
+ * 1. Direct array of images: [Image1, Image2, ...]
+ * 2. Object with data and meta: { data: Image[], meta: {...} }
+ * 3. Standard API response: { success: true, data: { data: Image[], meta: {...} } }
+ */
+/**
+ * Flexible schema for images API that can handle inconsistent response formats:
+ * 1. Direct array of images: [Image1, Image2, ...]
+ * 2. Object with data and meta: { data: Image[], meta: {...} }
+ * 3. Standard API response: { success: true, data: { data: Image[], meta: {...} } }
+ * 
+ * This schema uses preprocessing to normalize different API response formats into our
+ * standard format before validation.
+ */
+export const FlexibleImagesResponseSchema = z.preprocess((value) => {
+  // Handle direct array format
+  if (Array.isArray(value)) {
+    return {
+      success: true,
+      data: {
+        data: value,
+        meta: {
+          total: value.length,
+          currentPage: 1,
+          lastPage: 1,
+          perPage: Math.max(1, value.length), // Ensure perPage is at least 1, even for empty arrays
+          hasNextPage: false,
+          hasPrevPage: false,
+          nextPage: null,
+          prevPage: null
+        }
+      }
+    };
+  }
+  
+  // Handle object with data and meta but no success field
+  if (typeof value === 'object' && value !== null && 
+      'data' in value && Array.isArray(value.data) && 
+      'meta' in value && !('success' in value)) {
+    return {
+      success: true,
+      data: value
+    };
+  }
+  
+  // Already in standard format
+  return value;
+}, PaginatedImagesResponseSchema);

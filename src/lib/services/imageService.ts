@@ -1,6 +1,12 @@
 /**
  * Image service for interacting with the image API
  * Using Zod schemas for validation
+ * 
+ * All API endpoints return a standardized response format:
+ * { success: true, data: T } where T is the actual data
+ * 
+ * This service validates responses using appropriate schemas and returns just the data
+ * portion to simplify usage in components.
  */
 import { z } from 'zod';
 import { fetchApi } from '../apiUtils';
@@ -8,7 +14,9 @@ import {
   ImageSchema,
   CreateImageSchema, 
   UpdateImageSchema,
-  PaginatedImagesResponseSchema
+  PaginatedImagesResponseSchema,
+  ImageResponseSchema,
+  FlexibleImagesResponseSchema
 } from '../schemas';
 
 // Type definitions derived from schemas
@@ -23,6 +31,13 @@ const UploadResponseSchema = z.object({
   data: z.object({
     url: z.string()
   })
+});
+
+// User images response schema - ensures the API response
+// format { success: true, data: Image[] } is properly validated
+const UserImagesResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.array(ImageSchema)
 });
 
 export type UploadResponse = z.infer<typeof UploadResponseSchema>;
@@ -49,14 +64,26 @@ export const ImageService = {
 
     const url = `/api/images${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     
-    return fetchApi(url, { signal }, PaginatedImagesResponseSchema).then(response => response.data);
+    /**
+     * Use fetchApi with FlexibleImagesResponseSchema to handle different response formats:
+     * 1. Array format directly [Image1, Image2, ...] 
+     * 2. Object format with data/meta: { data: [], meta: {...} }
+     * 3. Standard response format: { success: true, data: { data: [], meta: {...} } }
+     * 
+     * The schema's preprocessing normalizes these formats before validation,
+     * ensuring we maintain proper schema validation while handling the API's 
+     * inconsistent response formats.
+     */
+    const response = await fetchApi(url, { signal }, FlexibleImagesResponseSchema);
+    return response.data;
   },
 
   /**
    * Get an image by ID
    */
   async getImage(id: string, signal?: AbortSignal): Promise<Image> {
-    return fetchApi(`/api/images/${id}`, { signal }, ImageSchema);
+    // Use ImageResponseSchema (which is a createApiSuccessSchema(ImageSchema))
+    return fetchApi(`/api/images/${id}`, { signal }, ImageResponseSchema).then(response => response.data);
   },
 
   /**
@@ -102,11 +129,12 @@ export const ImageService = {
     // Validate input data
     CreateImageSchema.parse(imageData);
 
+    // Use ImageResponseSchema to validate the standard API response format
     return fetchApi('/api/images', {
       method: 'POST',
       body: JSON.stringify(imageData),
       signal
-    }, ImageSchema);
+    }, ImageResponseSchema).then(response => response.data);
   },
 
   /**
@@ -116,11 +144,12 @@ export const ImageService = {
     // Validate input data
     UpdateImageSchema.parse({ ...imageData, id });
     
+    // Use ImageResponseSchema to validate the standard API response format
     return fetchApi(`/api/images/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(imageData),
       signal
-    }, ImageSchema);
+    }, ImageResponseSchema).then(response => response.data);
   },
 
   /**
@@ -137,6 +166,7 @@ export const ImageService = {
    * Get images for a specific user
    */
   async getUserImages(userId: string, signal?: AbortSignal): Promise<Image[]> {
-    return fetchApi(`/api/users/${userId}/images`, { signal }, z.array(ImageSchema));
+    const response = await fetchApi(`/api/users/${userId}/images`, { signal }, UserImagesResponseSchema);
+    return response.data;
   }
 };

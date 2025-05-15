@@ -45,13 +45,25 @@ describe('ImageService', () => {
     // Default mock implementation for fetchApi
     mockFetchApi.mockImplementation(async (url: string) => {
       if (url.startsWith('/api/images?') || url === '/api/images') {
-        return mockPaginatedImages;
+        return {
+          success: true,
+          data: mockPaginatedImages
+        };
       } else if (url === '/api/images/image1') {
-        return mockImage;
+        return {
+          success: true,
+          data: mockImage
+        };
       } else if (url.startsWith('/api/users/')) {
-        return [mockImage];
+        return {
+          success: true,
+          data: [mockImage]
+        };
       }
-      return mockImage;
+      return {
+        success: true,
+        data: mockImage
+      };
     });
 
     // Default mock implementation for fetch
@@ -70,22 +82,61 @@ describe('ImageService', () => {
     jest.clearAllMocks();
   });
 
-  it('should get images with pagination', async () => {
-    // Override mockFetchApi for this test
+  describe('getImages with flexible schema', () => {
+    it('should handle standard success response format', async () => {
+      // Mock fetchApi for standard format response: { success: true, data: { data: [], meta: {} } }
+      mockFetchApi.mockResolvedValueOnce({
+        success: true,
+        data: mockPaginatedImages
+      });
+      
+      const result = await ImageService.getImages();
+      
+      expect(mockFetchApi).toHaveBeenCalledWith('/api/images', { signal: undefined }, expect.any(Object));
+      expect(result).toBeDefined();
+      expect(result.data).toHaveLength(1);
+      expect(result.meta.total).toBe(1);
+    });
+    
+    it('should handle direct array response format', async () => {
+      // Mock fetchApi as if API returned direct array
+      // The FlexibleImagesResponseSchema should handle this transformation
+      mockFetchApi.mockImplementationOnce((url, options, schema) => {
+        // Call the schema with a direct array to test preprocessing
+        const processed = schema.parse([mockImage]);
+        return Promise.resolve(processed);
+      });
+      
+      const result = await ImageService.getImages();
+      
+      expect(result).toBeDefined();
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]).toEqual(mockImage);
+      expect(result.meta.total).toBe(1);
+    });
+    
+    it('should handle data/meta response format without success field', async () => {
+      // Mock fetchApi as if API returned { data: [], meta: {} } without success field
+      mockFetchApi.mockImplementationOnce((url, options, schema) => {
+        // Call the schema with data/meta object to test preprocessing
+        const processed = schema.parse(mockPaginatedImages);
+        return Promise.resolve(processed);
+      });
+      
+      const result = await ImageService.getImages();
+      
+      expect(result).toBeDefined();
+      expect(result.data).toHaveLength(1);
+      expect(result.meta).toEqual(mockPaginatedImages.meta);
+    });
+  });
+  
+  it('should get images with search parameters', async () => {
     mockFetchApi.mockResolvedValueOnce({
       success: true,
       data: mockPaginatedImages
     });
     
-    const result = await ImageService.getImages();
-    
-    expect(mockFetchApi).toHaveBeenCalledWith('/api/images', { signal: undefined }, expect.any(Object));
-    expect(result).toBeDefined();
-    expect(result.data).toHaveLength(1);
-    expect(result.meta.total).toBe(1);
-  });
-  
-  it('should get images with search parameters', async () => {
     await ImageService.getImages({
       searchQuery: 'test',
       tag: 'nature', 
@@ -353,6 +404,12 @@ describe('ImageService', () => {
     it('should pass AbortSignal to fetch requests', async () => {
       const controller = new AbortController();
       const signal = controller.signal;
+      
+      // For getImages we now use fetchApi with our flexible schema
+      mockFetchApi.mockResolvedValueOnce({
+        success: true,
+        data: mockPaginatedImages
+      });
       
       await ImageService.getImages({}, signal);
       expect(mockFetchApi).toHaveBeenCalledWith(
