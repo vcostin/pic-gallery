@@ -255,20 +255,54 @@ export function useGalleryImages(
         const reorderedItems = arrayMove(items, oldIndex, newIndex);
         
         // Update order values to match new positions
-        return reorderedItems.map((item, index) => ({
+        const updatedItems = reorderedItems.map((item, index) => ({
           ...item,
           order: index
         }));
+        
+        // Update the state
+        const result = updatedItems;
+        
+        // Update image order in the database using the existing gallery update functionality
+        if (galleryId) {
+          try {
+            // We need to get the gallery to construct a proper update payload with required fields
+            GalleryService.getGallery(galleryId).then(galleryData => {
+              // Prepare the payload with required fields from the schema
+              const orderUpdatePayload = {
+                id: galleryId,
+                title: galleryData.title,           // Required field
+                isPublic: galleryData.isPublic,     // Required field
+                // Include optional fields as needed, handling null values correctly
+                description: galleryData.description || undefined, // Convert null to undefined
+                // Include our updated image orders
+                images: updatedItems.map(img => ({
+                  id: img.id,
+                  order: img.order,
+                  description: img.description || undefined // Convert null to undefined
+                }))
+              };
+              
+              // Use the existing service method to update the gallery
+              return GalleryService.updateGallery(galleryId, orderUpdatePayload);
+            })
+              .catch(error => {
+                logger.error("Failed to update image order in the database:", error);
+              });
+          } catch (err) {
+            logger.error("Error preparing order update:", err);
+          }
+        }
+        
+        return result;
       });
-      
-      // TODO: Add API call to update image order in the database
       
       return true; // Return true to indicate changes were made
     }
     
     setActiveId(null);
     return false; // Return false to indicate no changes were made
-  }, []);
+  }, [galleryId]);
   
   // Handle drag cancel
   const handleDragCancel = useCallback(() => {
@@ -294,7 +328,7 @@ export function useGalleryImages(
       // Fall back to the passed images to avoid breaking the UI
       setImages(newImages);
     }
-  }, []);
+  }, []); // No dependencies needed here
   
   // Fetch gallery data when galleryId changes
   useEffect(() => {
