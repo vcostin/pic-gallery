@@ -3,14 +3,10 @@
  */
 import { useState, useCallback, useEffect } from 'react';
 import { GalleryService } from '../services/galleryService';
-import { ImageInGallerySchema } from '../schemas';
-import { z } from 'zod';
+import { FullGallery, FullImageInGallery } from '../schemas';
 import { arrayMove } from '@dnd-kit/sortable';
 import { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import logger from '@/lib/logger';
-
-// Type alias for the full gallery with images
-type FullGallery = Awaited<ReturnType<typeof GalleryService.getGallery>>;
 
 /**
  * Enhanced hook for managing gallery images with UI functionality
@@ -18,12 +14,12 @@ type FullGallery = Awaited<ReturnType<typeof GalleryService.getGallery>>;
  */
 export function useEnhancedGalleryImages(
   galleryId: string | undefined, 
-  initialImages: z.infer<typeof ImageInGallerySchema>[] = []
+  initialImages: FullImageInGallery[] = []
 ) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [gallery, setGallery] = useState<FullGallery | null>(null);
-  const [images, setImages] = useState<z.infer<typeof ImageInGallerySchema>[]>(initialImages);
+  const [images, setImages] = useState<FullImageInGallery[]>(initialImages);
   
   // UI state
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -190,10 +186,15 @@ export function useEnhancedGalleryImages(
   }, []);
   
   // Update gallery images (from API or parent component)
-  const updateImages = useCallback((newImages: z.infer<typeof ImageInGallerySchema>[]) => {
+  const updateImages = useCallback((newImages: FullImageInGallery[]) => {
     try {
+      // Filter out any images where image is undefined
+      const validImages = newImages.filter((img): img is FullImageInGallery => 
+        img.image !== undefined
+      );
+      
       // Validate that all images have appropriate order values
-      const validatedImages = newImages.map((img, index) => {
+      const validatedImages = validImages.map((img, index) => {
         // If order is missing or invalid, set it based on position
         if (typeof img.order !== 'number' || !Number.isInteger(img.order) || img.order < 0) {
           logger.warn(`Image with ID ${img.id} has invalid order value: ${img.order}, setting to ${index}`);
@@ -206,7 +207,7 @@ export function useEnhancedGalleryImages(
     } catch (err) {
       logger.error("Error updating images:", err);
       // Fall back to the passed images to avoid breaking the UI
-      setImages(newImages);
+      setImages(newImages.filter(img => img.image !== undefined) as FullImageInGallery[]);
     }
   }, []);
   
@@ -217,7 +218,7 @@ export function useEnhancedGalleryImages(
       GalleryService.getGallery(galleryId)
         .then(data => {
           setGallery(data);
-          setImages(data.images);
+          setImages(data.images.filter(img => img.image !== undefined));
         })
         .catch(err => {
           const errorObj = err instanceof Error ? err : new Error(String(err));

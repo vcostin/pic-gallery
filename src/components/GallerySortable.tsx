@@ -22,8 +22,8 @@ import {
 import { arrayMove } from '@dnd-kit/sortable';
 
 import { CompactGalleryCard, GridGalleryCard, DragOverlayCard } from './GalleryImageCards';
-import { FullImageInGallery } from '@/lib/types';
 import { EmptyState } from './StatusMessages';
+import { FullImageInGallery } from '@/lib/schemas';
 
 // Define view mode type
 export type ViewMode = 'compact' | 'grid';
@@ -180,7 +180,7 @@ export function GallerySortable({
         duration: 300,
         easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
       }}>
-        {activeImage ? <DragOverlayCard image={activeImage as FullImageInGallery} /> : null}
+        {activeImage ? <DragOverlayCard image={activeImage} /> : null}
       </DragOverlay>
     </DndContext>
   );

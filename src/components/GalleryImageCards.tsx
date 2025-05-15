@@ -4,11 +4,11 @@ import React from 'react';
 import Image from 'next/image';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FullImageInGallery } from '@/lib/types'; // Import FullImageInGallery
+import { FullImageInGallery } from '@/lib/schemas'; // Import from schemas.ts instead of types.ts
 import { Tag as PrismaTag } from '@prisma/client'; // Import PrismaTag
 
 export interface GalleryCardProps {
-  galleryImage: FullImageInGallery; // Changed to FullImageInGallery
+  galleryImage: FullImageInGallery;
   isCover: boolean;
   onDescriptionChange: (id: string, description: string) => void;
   setCoverImage: (id: string) => void;

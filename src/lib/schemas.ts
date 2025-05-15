@@ -103,6 +103,35 @@ export const ImageInGallerySchema = z.object({
 export type ImageInGallery = z.infer<typeof ImageInGallerySchema>;
 
 /**
+ * FullImageInGallery Schema with complete image and tags data
+ */
+export const FullImageInGallerySchema = ImageInGallerySchema.extend({
+  image: ImageSchema.extend({
+    tags: z.array(z.object({
+      id: z.string(),
+      name: z.string()
+    }))
+  })
+});
+
+export type FullImageInGallery = z.infer<typeof FullImageInGallerySchema>;
+
+/**
+ * FullGallery Schema with complete related data
+ */
+export const FullGallerySchema = GallerySchema.extend({
+  images: z.array(FullImageInGallerySchema),
+  user: z.object({
+    id: z.string(),
+    name: z.string().nullable(),
+    image: z.string().nullable()
+  }),
+  coverImage: ImageSchema.nullable().optional()
+});
+
+export type FullGallery = z.infer<typeof FullGallerySchema>;
+
+/**
  * API Request Schemas
  */
 
@@ -222,6 +251,7 @@ export const createPaginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema
 
 // Helper to create typed API success response schemas
 export const GalleryResponseSchema = createApiSuccessSchema(GallerySchema);
+export const FullGalleryResponseSchema = createApiSuccessSchema(FullGallerySchema);
 export const ImageResponseSchema = createApiSuccessSchema(ImageSchema);
 export const UserResponseSchema = createApiSuccessSchema(UserSchema);
 export const PaginatedImagesResponseSchema = createApiSuccessSchema(

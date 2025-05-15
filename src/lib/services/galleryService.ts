@@ -9,37 +9,14 @@ import {
   CreateGallerySchema,
   UpdateGallerySchema,
   ImageSchema,
+  FullGallerySchema,
   createPaginatedResponseSchema
 } from '../schemas';
 
-// Extended Gallery schema that includes related data
-const FullGallerySchema = GallerySchema.extend({
-  images: z.array(z.object({
-    id: z.string(),
-    imageId: z.string(),
-    galleryId: z.string(),
-    description: z.string().nullable(),
-    order: z.number(),
-    createdAt: z.date(),
-    image: ImageSchema.extend({
-      tags: z.array(z.object({
-        id: z.string(),
-        name: z.string()
-      }))
-    })
-  })),
-  user: z.object({
-    id: z.string(),
-    name: z.string().nullable(),
-    image: z.string().nullable()
-  }),
-  coverImage: ImageSchema.nullable().optional()
-});
-
 // Types derived from schemas
-type FullGallery = z.infer<typeof FullGallerySchema>;
 type GalleryCreationData = z.infer<typeof CreateGallerySchema>;
 type GalleryUpdateData = z.infer<typeof UpdateGallerySchema>;
+type FullGallery = z.infer<typeof FullGallerySchema>;
 // Schema for paginated gallery responses
 createPaginatedResponseSchema(GallerySchema);
 

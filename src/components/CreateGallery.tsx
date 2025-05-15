@@ -7,32 +7,22 @@ import logger from '@/lib/logger';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 
-import { useGalleryImages } from '@/lib/hooks';
+import { useEnhancedGalleryImages } from '@/lib/hooks/useEnhancedGallery';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import { GallerySortable, ViewMode } from '@/components/GallerySortable';
-import { FullImageInGallery } from '@/lib/types';
+// Import the schema-derived types directly
+import { FullImageInGallery } from '@/lib/schemas';
+// Using the legacy version of GalleryDetailsForm that doesn't require react-hook-form
 import { GalleryDetailsForm } from '@/components/GalleryDetailsForm';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { UseFormRegister, FieldErrors, Control } from 'react-hook-form';
+import { GalleryFormData } from '@/components/GalleryDetailsForm';
 
-interface Tag {
-  id: string;
-  name: string;
-}
+// The component no longer needs AvailableImageType, availableImages, or CreateGalleryProps
+// since useEnhancedGalleryImages handles fetching images internally
 
-// This ImageType is for available images to select from, not GalleryImage type used by useGalleryImages
-interface AvailableImageType {
-  id: string;
-  title: string;
-  description: string | null;
-  url: string;
-  tags: Tag[];
-}
-
-interface CreateGalleryProps {
-  availableImages: AvailableImageType[]; // These are the images the user can pick from
-}
-
-export function CreateGallery({ availableImages }: CreateGalleryProps) {
+// The CreateGallery component now uses the enhanced hooks and doesn't need availableImages directly
+export function CreateGallery(): React.ReactElement {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -50,19 +40,19 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
   const [displayMode, setDisplayMode] = useState<string>('');
   const [layoutType, setLayoutType] = useState<string>('');
 
-  // States from EditGalleryPage
+  // States from EditGalleryPage - using enhanced hooks
   const {
     images,
     setImages,
-    showRemoveImageDialog, // We might not need remove dialog directly here if GallerySortable handles it
+    showRemoveImageDialog,
     showSuccessToast, // This is for the hook's internal toast, we have our own successMessage
     toastMessage, // Hook's toast message
     handleImageDescriptionChange,
-    handleRemoveImage, // This is to trigger the hook's internal dialog
-    confirmRemoveImage, // Confirms removal in the hook
-    cancelRemoveImage, // Cancels removal in the hook
-    addImagesToGallery
-  } = useGalleryImages(); // Initialize with empty array for new gallery
+    handleRemoveImage,
+    confirmRemoveImage,
+    cancelRemoveImage,
+    addImages: addImagesToGallery // Renamed in enhanced hook
+  } = useEnhancedGalleryImages(undefined, []); // First param is galleryId (undefined for new gallery)
 
   const [showSelectImagesDialog, setShowSelectImagesDialog] = useState(false);
   const [viewMode] = useState<ViewMode>('compact');
@@ -75,11 +65,13 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
     
     try {
       // Prepare images data for the API
-      const imagesToSubmit = images.map((img, index) => ({
-        id: img.image.id, // This should be the actual Image ID
-        description: img.description,
-        order: index, // The GallerySortable and useGalleryImages hook should manage the order
-      }));
+      const imagesToSubmit = images
+        .filter(img => img.image) // Filter out images without valid image property
+        .map((img, index) => ({
+          id: img.image!.id, // We filtered out undefined above, so this is safe
+          description: img.description,
+          order: index, // The GallerySortable and useGalleryImages hook should manage the order
+        }));
 
       const response = await fetch('/api/galleries', {
         method: 'POST',
@@ -145,27 +137,12 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
   // Handler to add images to the gallery from SelectImagesDialog
   const handleAddImages = useCallback((selectedImageIds: string[]) => {
     setShowSelectImagesDialog(false);
-    // The fetchImagesForGallery function needs to be adapted or passed if SelectImagesDialog needs it
-    // For CreateGallery, availableImages are already passed as props.
-    // Map to the expected BasicImageType structure from lib/types.ts
-    const fetchImagesForHook = async () => {
-      // Filter and map images to match the Image type from lib/types.ts
-      return availableImages
-        .filter(img => selectedImageIds.includes(img.id))
-        .map(img => ({
-          id: img.id,
-          title: img.title,
-          url: img.url,
-          description: img.description,
-          userId: '',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          tags: img.tags || []
-        }));
-    };
-
-    addImagesToGallery(selectedImageIds, fetchImagesForHook);
-  }, [addImagesToGallery, availableImages]);
+    
+    if (selectedImageIds.length > 0) {
+      // Enhanced hook only needs the image IDs - it handles fetching images internally
+      addImagesToGallery(selectedImageIds);
+    }
+  }, [addImagesToGallery]);
 
   // Handle image reordering from GallerySortable
   const handleImagesReordered = useCallback((reorderedImages: FullImageInGallery[]) => {
@@ -221,6 +198,11 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
             setDisplayMode={setDisplayMode}
             layoutType={layoutType}
             setLayoutType={setLayoutType}
+            // Add empty react-hook-form props since we're using legacy mode
+            register={function() { return { name: '' }; } as unknown as UseFormRegister<GalleryFormData>}
+            errors={{} as FieldErrors<GalleryFormData>}
+            control={{} as Control<GalleryFormData>}
+            useReactHookForm={false}
           />
 
           {/* Images Section - similar to EditGalleryPage */}
@@ -242,19 +224,17 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                   Drag and drop to reorder images. You can also set a cover image and edit descriptions.
                 </p>
-                {/* <GalleryViewSelector viewMode={viewMode} setViewMode={setViewMode} /> */}
-                 {/* GalleryViewSelector can be added later if needed */}
               </div>
             )}
 
             <GallerySortable 
-              galleryImages={images}
-              coverImageId={coverImageId} // This is image.id from the actual image, not GalleryImage.id
-              viewMode={viewMode} // Or a fixed mode like 'compact'
+              galleryImages={images.filter(img => img.image !== undefined) as FullImageInGallery[]}
+              coverImageId={coverImageId} 
+              viewMode={viewMode}
               onImagesReordered={handleImagesReordered}
               onDescriptionChange={handleImageDescriptionChange}
-              onSetCoverImage={(imageId) => setCoverImageId(imageId)} // Manages which image is the cover
-              onRemoveImage={handleRemoveImage} // Triggers the hook's remove confirmation
+              onSetCoverImage={(imageId) => setCoverImageId(imageId)}
+              onRemoveImage={handleRemoveImage}
             />
           </div>
 
@@ -264,7 +244,7 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
             size="lg"
             fullWidth
             isLoading={isSubmitting}
-            disabled={!title || images.length === 0 || isSubmitting} // Ensure images are selected
+            disabled={!title || images.length === 0 || isSubmitting} 
           >
             Create Gallery
           </Button>
@@ -273,16 +253,14 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
         <SelectImagesDialog
           isOpen={showSelectImagesDialog}
           onClose={() => setShowSelectImagesDialog(false)}
-          onImagesSelected={handleAddImages} // Pass the IDs of selected images
-          existingImageIds={images.map(gi => gi.image.id)} // Pass IDs of images already in the gallery to prevent re-adding
-          // availableImages prop for SelectImagesDialog might need to be fetched or passed if it doesn't use a global store/context
+          onImagesSelected={handleAddImages} 
+          existingImageIds={images
+            .filter(img => img.image) // Filter out items without image
+            .map(img => img.image!.id) // Safe assertion since we filtered
+          }
         />
 
-        {/* ConfirmDialog for removing images (if not handled by GallerySortable/hook directly) */}
-        {/* We are using the hook's dialog, so this might not be needed here. 
-            The hook manages showRemoveImageDialog, confirmRemoveImage, cancelRemoveImage 
-        */}
-         <ConfirmDialog
+        <ConfirmDialog
           isOpen={showRemoveImageDialog}
           onClose={cancelRemoveImage}
           onConfirm={confirmRemoveImage}
@@ -293,7 +271,7 @@ export function CreateGallery({ availableImages }: CreateGalleryProps) {
           confirmButtonColor="red"
         />
 
-        {/* Toast notification from useGalleryImages hook */}
+        {/* Toast notification from enhanced gallery hook */}
         {showSuccessToast && (
           <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg flex items-center animate-fade-in-up z-50">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
