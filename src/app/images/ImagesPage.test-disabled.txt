@@ -1,5 +1,0 @@
-// The ImagesPage tests have been disabled as part of the schema migration refactoring.
-// We've moved from direct API calls to using ImageService with type-safe responses.
-// New tests will be created that properly test the ImageService integration.
-
-// See the updated test file in src/components/__tests__/ImagesPageWithService.test.tsx
