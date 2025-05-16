@@ -8,7 +8,6 @@ import {
   GallerySchema,
   CreateGallerySchema,
   UpdateGallerySchema,
-  ImageSchema,
   FullGallerySchema,
   createPaginatedResponseSchema
 } from '../schemas';
@@ -76,19 +75,5 @@ export const GalleryService = {
       method: 'POST',
       body: JSON.stringify({ imageIds })
     }, FullGallerySchema);
-  },
-
-  /**
-   * Remove an image from a gallery
-   */
-  async removeImage(galleryId: string, imageInGalleryId: string): Promise<void> {
-    const response = await fetch(`/api/galleries/${galleryId}/images/${imageInGalleryId}`, {
-      method: 'DELETE'
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      throw new Error(`Failed to remove image from gallery: ${response.status} ${response.statusText} - ${errorText}`);
-    }
   }
 };

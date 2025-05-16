@@ -148,7 +148,7 @@ export function useEnhancedGalleryImages(
     }
   }, [galleryId, images.length]);
 
-  // Remove image from gallery through API
+  // Remove image from gallery (handles only local state)
   const removeImage = useCallback(async (imageInGalleryId: string) => {
     if (!galleryId) return;
     
@@ -156,8 +156,6 @@ export function useEnhancedGalleryImages(
     setError(null);
     
     try {
-      await GalleryService.removeImage(galleryId, imageInGalleryId);
-      
       // Update local state to remove the image
       setGallery(prev => {
         if (!prev) return null;
@@ -168,6 +166,12 @@ export function useEnhancedGalleryImages(
       });
       
       setImages(prev => prev.filter(img => img.id !== imageInGalleryId));
+      
+      // Show success toast
+      setToastMessage('Image removed from gallery');
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+      
       return true;
     } catch (err) {
       const errorObj = err instanceof Error ? err : new Error(String(err));

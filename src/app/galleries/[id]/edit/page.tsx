@@ -7,12 +7,15 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import { ErrorMessage, LoadingSpinner, SuccessMessage } from '@/components/StatusMessages';
-import { useAsync, useSubmit, useGalleryImages, useFetch } from '@/lib/hooks';
+import { useSubmit, useFetch } from '@/lib/hooks';
+import { useApi } from '@/lib/hooks/useApi';
+import { useEnhancedGalleryImages } from '@/lib/hooks/useEnhancedGallery';
 import { deepEqual } from '@/lib/deepEqual';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { use } from 'react';
 import logger from '@/lib/logger';
-import { PaginatedResponse, FullGallery, ImageType as ApiImageType } from '@/lib/types'; 
+// Removed unused imports from @/lib/types
+import { FullGallerySchema, FullGallery, FullImageInGallery } from '@/lib/schemas'; 
 
 // Import newly created components
 import { GalleryDetailsForm } from '@/components/GalleryDetailsForm';
@@ -28,7 +31,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const { 
     images, 
     setImages, 
-    addImagesToGallery, 
+    addImages, 
     handleRemoveImage, 
     handleImageDescriptionChange, 
     showRemoveImageDialog, 
@@ -36,9 +39,9 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     cancelRemoveImage,     
     showSuccessToast,      
     toastMessage           
-  } = useGalleryImages();
+  } = useEnhancedGalleryImages(galleryId);
 
-  const { run: fetchGalleryAsync, isLoading: galleryIsLoading, error: galleryError, data: galleryData, setData: setGalleryData } = useAsync<FullGallery>();
+  const { fetch: fetchGalleryAsync, isLoading: galleryIsLoading, error: galleryError, data: galleryData } = useApi(FullGallerySchema);
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false); 
@@ -98,59 +101,62 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     });
     setOriginalGalleryData(response.data);
     setImages(response.data.images);
-    setGalleryData(response.data); 
+    // No need to set gallery data manually, the hook handles it 
     return response.message || "Gallery updated successfully";
   };
   
   const { handleSubmit: submitGalleryUpdate, isSubmitting, error: submitErrorEncountered, reset: resetSubmitState } = useSubmit(performGalleryUpdate);
 
-  useEffect(() => {
-    const loadInitialGallery = async () => {
-      try {
-        const response = await fetchApi<{ data: FullGallery }>(`/api/galleries/${galleryId}`);
-        const data = response.data;
-        setTitle(data.title);
-        setDescription(data.description || '');
-        setIsPublic(data.isPublic);
-        setCoverImageId(data.coverImageId || '');
-        setImages(data.images); 
-        setThemeColor(data.themeColor || undefined);
-        setBackgroundColor(data.backgroundColor || undefined);
-        setBackgroundImageUrl(data.backgroundImageUrl || undefined);
-        setAccentColor(data.accentColor || undefined);
-        setFontFamily(data.fontFamily || undefined);
-        setDisplayMode(data.displayMode || undefined);
-        setLayoutType(data.layoutType || undefined);
-        
-        const fullLoadedData = {
-          ...data,
-          title: data.title,
-          description: data.description || '',
-          isPublic: data.isPublic,
-          coverImageId: data.coverImageId || '',
-          images: data.images, 
-          themeColor: data.themeColor || null, 
-          backgroundColor: data.backgroundColor || null,
-          backgroundImageUrl: data.backgroundImageUrl || null,
-          accentColor: data.accentColor || null,
-          fontFamily: data.fontFamily || null,
-          displayMode: data.displayMode || null,
-          layoutType: data.layoutType || null,
-        };
-        setOriginalGalleryData(fullLoadedData);
-        setGalleryData(fullLoadedData); 
-        return data;
-      } catch (error) {
-        logger.error('Error fetching gallery:', error);
-        throw error; 
-      }
-    };
+  // Define a stable callback function for handling gallery data
+  // This prevents unnecessary re-renders and potential dependency issues
+  const handleGalleryData = useCallback((data: FullGallery) => {
+    setTitle(data.title);
+    setDescription(data.description || '');
+    setIsPublic(data.isPublic);
+    setCoverImageId(data.coverImageId || '');
+    setImages(data.images); 
+    setThemeColor(data.themeColor || undefined);
+    setBackgroundColor(data.backgroundColor || undefined);
+    setBackgroundImageUrl(data.backgroundImageUrl || undefined);
+    setAccentColor(data.accentColor || undefined);
+    setFontFamily(data.fontFamily || undefined);
+    setDisplayMode(data.displayMode || undefined);
+    setLayoutType(data.layoutType || undefined);
     
-    fetchGalleryAsync(loadInitialGallery()).catch(() => {
-      // Error is handled by useAsync and useFetch hooks, no need to handle 'err' parameter if unused
-    });
+    const fullLoadedData = {
+      ...data,
+      title: data.title,
+      description: data.description || '',
+      isPublic: data.isPublic,
+      coverImageId: data.coverImageId || '',
+      images: data.images, 
+      themeColor: data.themeColor || null, 
+      backgroundColor: data.backgroundColor || null,
+      backgroundImageUrl: data.backgroundImageUrl || null,
+      accentColor: data.accentColor || null,
+      fontFamily: data.fontFamily || null,
+      displayMode: data.displayMode || null,
+      layoutType: data.layoutType || null,
+    };
+    setOriginalGalleryData(fullLoadedData);
+  // State setters from useState are stable and don't need to be dependencies
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  }, [galleryId, fetchApi, fetchGalleryAsync, setImages, setGalleryData]);
+  useEffect(() => {
+    // Fetch gallery data when galleryId changes
+    // Changed to use fetchGalleryAsync as a URL-based fetcher
+    fetchGalleryAsync(`/api/galleries/${galleryId}`).then(result => {
+      if (result.success && result.data) {
+        handleGalleryData(result.data);
+      }
+    }).catch(() => {
+      // Error is handled by useApi and useFetch hooks, no need to handle 'err' parameter if unused
+    });
+    
+    // Only galleryId should trigger a re-fetch
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [galleryId]);
 
   useEffect(() => {
     if (!originalGalleryData) return;
@@ -233,19 +239,9 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
 
   const handleAddImages = useCallback((imageIds: string[]) => {
     setShowSelectImagesDialog(false);
-    const fetchImagesForGallery = async (): Promise<ApiImageType[]> => { 
-      const response = await fetchApi<{ data: PaginatedResponse<ApiImageType> }>('/api/images?limit=100&page=1');
-      if (response && typeof response === 'object' && response.data && Array.isArray(response.data.data)) {
-        return response.data.data; 
-      }
-      logger.error(
-        'fetchImagesForGallery: Unexpected response from fetchApi for /api/images. Expected PaginatedResponse within a data object.',
-        response
-      );
-      throw new Error('Failed to fetch images due to unexpected API response format.');
-    };
-    addImagesToGallery(imageIds, fetchImagesForGallery);
-  }, [fetchApi, addImagesToGallery]);
+    // addImages from useEnhancedGalleryImages already handles fetching images internally
+    addImages(imageIds);
+  }, [addImages]);
 
   const handleDeleteGallery = async () => {
     setIsDeleting(true);
@@ -279,7 +275,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       <div className="container mx-auto px-4 py-8">
         <ErrorMessage 
           error={initialLoadErrorTypeSafe} // Use the type-safe version
-          retry={() => fetchGalleryAsync(fetchApi<{ data: FullGallery }>(`/api/galleries/${galleryId}`).then(res => res.data))} 
+          retry={() => fetchGalleryAsync(`/api/galleries/${galleryId}`)} 
           className="mb-4"
         />
         <button

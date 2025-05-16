@@ -25,7 +25,7 @@ const customJestConfig = {
   
   // Handle specific node_modules that use ESM
   transformIgnorePatterns: [
-    'node_modules/(?!(@dnd-kit|uuid)/)'
+    'node_modules/(?!(@dnd-kit|uuid|@auth/prisma-adapter)/)'
   ],
   
   // Coverage configuration
