@@ -148,7 +148,7 @@ export function useEnhancedGalleryImages(
     }
   }, [galleryId, images.length]);
 
-  // Remove image from gallery through API using the gallery update endpoint
+  // Remove image from gallery through API
   const removeImage = useCallback(async (imageInGalleryId: string) => {
     if (!galleryId) return;
     
@@ -156,30 +156,22 @@ export function useEnhancedGalleryImages(
     setError(null);
     
     try {
-      // Use the enhanced removeImage that updates the entire gallery
-      const updatedGallery = await GalleryService.removeImage(galleryId, imageInGalleryId);
+      await GalleryService.removeImage(galleryId, imageInGalleryId);
       
-      // Update local state with the full updated gallery returned from the API
-      setGallery(updatedGallery);
+      // Update local state to remove the image
+      setGallery(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          images: prev.images.filter(img => img.id !== imageInGalleryId)
+        };
+      });
       
-      // Update images state with the updated gallery images
-      setImages(updatedGallery.images);
-      
-      // Show success toast
-      setToastMessage('Image removed from gallery');
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
-      
+      setImages(prev => prev.filter(img => img.id !== imageInGalleryId));
       return true;
     } catch (err) {
       const errorObj = err instanceof Error ? err : new Error(String(err));
       setError(errorObj);
-      
-      // Show error toast
-      setToastMessage(`Error removing image: ${errorObj.message}`);
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
-      
       return false;
     } finally {
       setLoading(false);

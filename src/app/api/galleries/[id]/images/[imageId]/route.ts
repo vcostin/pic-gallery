@@ -7,10 +7,6 @@ import { apiSuccess, apiError, apiUnauthorized, apiNotFound } from "@/lib/apiRes
 /**
  * DELETE /api/galleries/[id]/images/[imageId]
  * Removes an image from a gallery
- * 
- * @deprecated This endpoint is now deprecated. Use the gallery update endpoint instead:
- * PATCH /api/galleries/[id] with filtered images array. This provides better atomicity
- * and ensures consistent handling of gallery data.
  */
 export async function DELETE(
   req: Request,
@@ -19,12 +15,6 @@ export async function DELETE(
   try {
     // Await params to solve the Next.js dynamic route parameters issue
     const { id, imageId } = await params;
-    
-    // Log a deprecation warning
-    logger.warn(
-      "DEPRECATED API USAGE: DELETE /api/galleries/[id]/images/[imageId] is deprecated and will be removed. " +
-      "Use PATCH /api/galleries/[id] with filtered images array instead."
-    );
     
     const session = await getServerSession(authOptions);
     if (!session?.user.id) {
