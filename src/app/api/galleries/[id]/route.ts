@@ -277,7 +277,7 @@ export async function PATCH(
       data: dataToUpdate, 
     });
 
-    // Handle image updates, additions, and reordering using validated data
+    // Handle image updates, additions, reordering, and removals using validated data
     if (imagesDataFromValidation) {
       const imageUpdates: Prisma.Prisma__ImageInGalleryClient<ImageInGallery, never>[] = [];
       const newImageLinks: Prisma.ImageInGalleryCreateManyInput[] = [];
@@ -286,6 +286,24 @@ export async function PATCH(
         : -1;
       
       const tempImageMap = new Map<string, { imageId: string, description: string | null | undefined, order: number }>();
+      
+      // Create a set of IDs from the payload for quick lookup
+      const updatedImageIds = new Set(imagesDataFromValidation
+        .filter(imgData => !imgData.id.startsWith('temp-'))
+        .map(imgData => imgData.id)
+      );
+      
+      // Find images to remove (images in database but not in the payload)
+      const imagesToRemove = gallery.images.filter(img => !updatedImageIds.has(img.id));
+      
+      // Add deletion operations to the transaction
+      const imageRemovals = imagesToRemove.map(img => 
+        prisma.imageInGallery.delete({ where: { id: img.id } })
+      );
+      
+      if (imageRemovals.length > 0) {
+        logger.log(`Removing ${imageRemovals.length} images from gallery ${id}`);
+      }
 
       for (const imgData of imagesDataFromValidation) {
         if (imgData.id.startsWith('temp-') && imgData.imageId) {
@@ -334,12 +352,13 @@ export async function PATCH(
         });
       }
 
-      if (imageUpdates.length > 0 || newImageLinks.length > 0) {
+      if (imageUpdates.length > 0 || newImageLinks.length > 0 || imageRemovals.length > 0) {
         await prisma.$transaction([
           ...imageUpdates,
+          ...imageRemovals, // Include image removal operations
           ...(newImageLinks.length > 0 ? [prisma.imageInGallery.createMany({ data: newImageLinks })] : []),
         ]);
-        logger.log(`Updated ${imageUpdates.length} images and created ${newImageLinks.length} new image links.`);
+        logger.log(`Updated ${imageUpdates.length} images, removed ${imageRemovals.length} images, and created ${newImageLinks.length} new image links.`);
       }
     }
 
