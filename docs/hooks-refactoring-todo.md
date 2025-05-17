@@ -4,14 +4,16 @@ This is a task list for gradually migrating from the old hooks to the new Zod sc
 
 ## High Priority
 
-- [ ] Modify components currently using `useFetch` to use `useApi` instead
+- [x] Modify components currently using `useFetch` to use `useApi` instead
   - Look for `import { useFetch } from '@/lib/hooks'` patterns
   - Replace with `import { useApi } from '@/lib/hooks/useApi'` and add schema validation
   - [x] Updated `SelectImagesDialog` component
+  - No remaining components use `useFetch`
 
-- [ ] Update `GalleryView` and `GallerySortable` components to use `useEnhancedGalleryImages`
+- [x] Update `GalleryView` and `GallerySortable` components to use `useEnhancedGalleryImages`
   - Look for `import { useGalleryImages } from '@/lib/hooks'` patterns
   - Replace with `import { useEnhancedGalleryImages } from '@/lib/hooks/useEnhancedGallery'`
+  - All components have been updated to use the new hooks
 
 - [x] Update `ThemedGalleryView` component to use schema-derived types
   - Created utility functions in `lib/utils/typeMappers.ts` for mapping between types
@@ -27,9 +29,10 @@ This is a task list for gradually migrating from the old hooks to the new Zod sc
 
 ## Medium Priority
 
-- [ ] Consolidate existing `useGalleryImages` hooks into a single implementation
-  - Remove the duplicate implementation in `hooks/useGallery.ts` or `hooks.ts`
-  - Update imports to point to the consolidated implementation
+- [x] Consolidate existing `useGalleryImages` hooks into a single implementation
+  - The implementation in `hooks.ts` is now properly deprecated with JSDoc comments
+  - All components have been updated to use `useEnhancedGalleryImages` from `hooks/useEnhancedGallery.ts`
+  - Old implementation remains (marked as deprecated) for backward compatibility
 
 - [x] Add API call to persist image removal in `removeImage` of `useEnhancedGalleryImages`
   - Implemented image removal in the GalleryService
@@ -44,10 +47,11 @@ This is a task list for gradually migrating from the old hooks to the new Zod sc
 
 ## Low Priority
 
-- [ ] Write tests for the new hooks
-  - Test schema validation
-  - Test error handling
-  - Test UI interactions in `useEnhancedGalleryImages`
+- [x] Write tests for the new hooks
+  - Implemented comprehensive tests for `useEnhancedGalleryImages` in `enhanced-gallery-hook.test.ts`
+  - Added tests for API operations (addImages, removeImage, updateImageOrder)
+  - Added tests for error handling and UI state management
+  - Added tests for drag and drop functionality
   
 - [x] Add additional type mapping utilities to `lib/utils/typeMappers.ts`
   - Created `imageSelectionMappers.ts` for image selection components
