@@ -1,92 +1,130 @@
-# Zod Components Migration Tasks
+# Zod Form Components Migration Tasks
 
-This document provides a detailed task list for migrating from regular components to their Zod-schema validated versions.
+## GalleryDetailsForm Migration
 
-## Form Components
+### Analysis & Preparation
+- [ ] Compare `GalleryDetailsForm` and `GalleryDetailsFormWithZod` implementations
+- [ ] Document differences in props, validation, and behavior
+- [ ] Ensure `GalleryDetailsFormWithZod` has complete functionality
+- [ ] Add tests for special cases in `GalleryDetailsFormWithZod`
 
-### GalleryDetailsForm → GalleryDetailsFormWithZod
+### Component Consolidation
+- [ ] Update `GalleryDetailsFormWithZod` to support all use cases
+- [ ] Add backward compatibility layer to `GalleryDetailsForm.tsx`
+- [ ] Create deprecation warning for legacy component
 
-- [ ] Compare implementations of both components
-  - [ ] Identify prop differences
-  - [ ] Catalog validation differences
-- [ ] Find all usages of GalleryDetailsForm
-  - [ ] Count locations where component is imported
-  - [ ] Check if there are any special prop combinations
-- [ ] Create an adapter function if needed for backward compatibility
-- [ ] Update all imports in consuming components
-- [ ] Write tests for the migration
-- [ ] Remove the original component once all usages are migrated
-- [ ] Rename GalleryDetailsFormWithZod to GalleryDetailsForm
+### Consumer Updates
+- [ ] Update `/app/galleries/[id]/edit/page.tsx` to use Zod version
+- [ ] Verify form validation works as expected
+- [ ] Test submission and error handling
 
-### ProfileForm → ProfileFormWithZod
-
-- [ ] Compare implementations of both components
-  - [ ] Identify prop differences
-  - [ ] Catalog validation differences
-- [ ] Find all usages of ProfileForm
-  - [ ] Count locations where component is imported
-  - [ ] Check if there are any special prop combinations
-- [ ] Create an adapter function if needed for backward compatibility
-- [ ] Update all imports in consuming components
-- [ ] Write tests for the migration
-- [ ] Remove the original component once all usages are migrated
-- [ ] Rename ProfileFormWithZod to ProfileForm
-
-## Dialog Components
-
-### EditImageDialog → EditImageDialogWithZod
-
-- [ ] Compare implementations of both components
-  - [ ] Identify prop differences
-  - [ ] Catalog validation differences
-- [ ] Find all usages of EditImageDialog
-  - [ ] Count locations where component is imported
-  - [ ] Check if there are any special prop combinations
-- [ ] Create an adapter function if needed for backward compatibility
-- [ ] Update all imports in consuming components
-- [ ] Write tests for the migration
-- [ ] Remove the original component once all usages are migrated
-- [ ] Rename EditImageDialogWithZod to EditImageDialog
-
-## Full Page Components
-
-### CreateGallery → CreateGalleryWithZod
-
-- [ ] Compare implementations of both components
-  - [ ] Identify prop differences
-  - [ ] Catalog state management differences
-- [ ] Find all usages of CreateGallery
-  - [ ] Check import locations
-  - [ ] Audit any direct references in routes
-- [ ] Create tests for the migration
-- [ ] Update all imports and router configurations
-- [ ] Remove the original component once all usages are migrated
-- [ ] Rename CreateGalleryWithZod to CreateGallery
-
-### TagsManagement → TagsManagementWithZod
-
-- [ ] Compare implementations of both components
-  - [ ] Identify prop differences
-  - [ ] Catalog state management differences
-- [ ] Find all usages of TagsManagement
-  - [ ] Check import locations
-  - [ ] Audit any direct references in routes
-- [ ] Create tests for the migration
-- [ ] Update all imports and router configurations
-- [ ] Remove the original component once all usages are migrated
-- [ ] Rename TagsManagementWithZod to TagsManagement
-
-## Verification
-
-- [ ] Create end-to-end tests for key user flows
-- [ ] Verify all form validations work as expected
-- [ ] Check that error messages are displayed correctly
-- [ ] Ensure accessibility is maintained or improved
-- [ ] Test mobile responsiveness of all migrated components
-
-## Documentation
-
+### Cleanup
+- [ ] Remove unused props and compatibility code
+- [ ] Update imports in all consuming components
 - [ ] Update component documentation
-- [ ] Create examples of using the new consolidated components
-- [ ] Update any developer guides that reference these components
-- [ ] Add notes about the migration to the project README
+
+## CreateGallery Migration
+
+### Analysis & Preparation
+- [ ] Compare `CreateGallery` and `CreateGalleryWithZod` implementations
+- [ ] Document differences in props, validation, and behavior
+- [ ] Ensure `CreateGalleryWithZod` has complete functionality
+- [ ] Add tests for special cases in `CreateGalleryWithZod`
+
+### Component Consolidation
+- [ ] Update `CreateGalleryWithZod` to support all use cases
+- [ ] Add backward compatibility layer to `CreateGallery.tsx`
+- [ ] Create deprecation warning for legacy component
+
+### Consumer Updates
+- [ ] Identify all pages using `CreateGallery`
+- [ ] Update consumers to use `CreateGalleryWithZod`
+- [ ] Test gallery creation flow end-to-end
+
+### Cleanup
+- [ ] Remove unused props and compatibility code
+- [ ] Update imports in all consuming components
+- [ ] Update component documentation
+
+## EditImageDialog Migration
+
+### Analysis & Preparation
+- [ ] Compare `EditImageDialog` and `EditImageDialogWithZod` implementations
+- [ ] Document differences in props, validation, and behavior
+- [ ] Ensure `EditImageDialogWithZod` has complete functionality
+- [ ] Add tests for special cases in `EditImageDialogWithZod`
+
+### Component Consolidation
+- [ ] Update `EditImageDialogWithZod` to support all use cases
+- [ ] Add backward compatibility layer to `EditImageDialog.tsx`
+- [ ] Create deprecation warning for legacy component
+
+### Consumer Updates
+- [ ] Identify all components using `EditImageDialog`
+- [ ] Update consumers to use `EditImageDialogWithZod`
+- [ ] Test image editing workflow
+
+### Cleanup
+- [ ] Remove unused props and compatibility code
+- [ ] Update imports in all consuming components
+- [ ] Update component documentation
+
+## ProfileForm Migration
+
+### Analysis & Preparation
+- [ ] Compare `ProfileForm` and `ProfileFormWithZod` implementations
+- [ ] Document differences in props, validation, and behavior
+- [ ] Ensure `ProfileFormWithZod` has complete functionality
+- [ ] Add tests for special cases in `ProfileFormWithZod`
+
+### Component Consolidation
+- [ ] Update `ProfileFormWithZod` to support all use cases
+- [ ] Add backward compatibility layer to `ProfileForm.tsx`
+- [ ] Create deprecation warning for legacy component
+
+### Consumer Updates
+- [ ] Identify all pages using `ProfileForm`
+- [ ] Update consumers to use `ProfileFormWithZod`
+- [ ] Test profile editing flow end-to-end
+
+### Cleanup
+- [ ] Remove unused props and compatibility code
+- [ ] Update imports in all consuming components
+- [ ] Update component documentation
+
+## TagsManagement Migration
+
+### Analysis & Preparation
+- [ ] Compare `TagsManagement` and `TagsManagementWithZod` implementations
+- [ ] Document differences in props, validation, and behavior
+- [ ] Ensure `TagsManagementWithZod` has complete functionality
+- [ ] Add tests for special cases in `TagsManagementWithZod`
+
+### Component Consolidation
+- [ ] Update `TagsManagementWithZod` to support all use cases
+- [ ] Add backward compatibility layer to `TagsManagement.tsx`
+- [ ] Create deprecation warning for legacy component
+
+### Consumer Updates
+- [ ] Identify all components using `TagsManagement`
+- [ ] Update consumers to use `TagsManagementWithZod`
+- [ ] Test tags management functionality
+
+### Cleanup
+- [ ] Remove unused props and compatibility code
+- [ ] Update imports in all consuming components
+- [ ] Update component documentation
+
+## General Tasks
+
+### Documentation & Standards
+- [ ] Document the standard approach for form components with Zod
+- [ ] Create template for new form components
+- [ ] Update developer guide with examples
+- [ ] Add section on form validation to onboarding docs
+
+### Final Verification
+- [ ] Test all migrated forms with various inputs
+- [ ] Verify error handling and validation messages
+- [ ] Check accessibility of form components
+- [ ] Ensure mobile responsiveness is maintained

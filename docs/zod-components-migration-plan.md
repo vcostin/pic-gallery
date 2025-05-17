@@ -1,95 +1,118 @@
-# Zod Components Migration Plan
+# Zod Form Components Migration Plan
 
-## Background
+## Overview
 
-Our codebase currently has duplicate components with regular and "WithZod" versions:
+This document outlines the plan for migrating all form components in the application to use Zod schemas for validation. Currently, we have parallel implementations of several components, with the originals using traditional form handling and the "WithZod" versions using React Hook Form with Zod validation.
 
-- `GalleryDetailsForm.tsx` and `GalleryDetailsFormWithZod.tsx`
-- `CreateGallery.tsx` and `CreateGalleryWithZod.tsx`
-- `EditImageDialog.tsx` and `EditImageDialogWithZod.tsx`
-- `ProfileForm.tsx` and `ProfileFormWithZod.tsx`
-- `TagsManagement.tsx` and `TagsManagementWithZod.tsx`
+## Benefits of Migration
 
-This duplication is part of our ongoing migration to use schema-derived types and form validation with Zod. We need a strategy to consolidate these components and complete our migration.
+1. **Consistent Validation**: Same validation logic across frontend and backend
+2. **Type Safety**: TypeScript types automatically derived from validation schemas
+3. **Better Error Messages**: Zod provides detailed, structured validation errors
+4. **Reduced Duplication**: Single source of truth for form validation rules
+5. **Improved Developer Experience**: Auto-completion and type checking for form fields
 
-## Key Differences Between Versions
+## Current State
 
-1. **Form Handling**:
-   - Regular versions use manual form state management with separate state variables
-   - "WithZod" versions use `react-hook-form` with `zodResolver` for schema validation
+We have identified the following component pairs that need consolidation:
 
-2. **Type Safety**:
-   - Regular versions rely on manually defined interfaces
-   - "WithZod" versions use schema-derived types from Zod
+| Original Component | Zod-based Version | Status |
+|-------------------|-------------------|--------|
+| `GalleryDetailsForm.tsx` | `GalleryDetailsFormWithZod.tsx` | Both in active use |
+| `CreateGallery.tsx` | `CreateGalleryWithZod.tsx` | Both in active use |
+| `EditImageDialog.tsx` | `EditImageDialogWithZod.tsx` | Both in active use |
+| `ProfileForm.tsx` | `ProfileFormWithZod.tsx` | Both in active use |
+| `TagsManagement.tsx` | `TagsManagementWithZod.tsx` | Both in active use |
 
-3. **Validation**:
-   - Regular versions have manual validation or minimal validation
-   - "WithZod" versions benefit from automatic schema-based validation
+Several pages are still using the original versions:
+- `/app/galleries/[id]/edit/page.tsx` uses `GalleryDetailsForm`
+- Some pages might be using both versions in different contexts
 
 ## Migration Strategy
 
-### Phase 1: Assessment (Current)
+### Phase 1: Preparation (Current)
 
-- [x] Identify all component pairs with regular and "WithZod" versions
-- [x] Understand differences in implementation and dependencies
-- [x] Check which components are being actively used in the application
+1. **Analyze Components**:
+   - Document differences between each pair of components
+   - Identify any unique functionality in original versions that needs to be preserved
+   - Check for dependencies and imported components
 
-### Phase 2: Preparation
+2. **Create Test Coverage**:
+   - Ensure Zod-based versions have sufficient test coverage
+   - Add tests for any edge cases or special behaviors
 
-- [ ] Create a test plan for affected components
-- [ ] Ensure all "WithZod" components have adequate test coverage
-- [ ] Review all usages of regular components
+### Phase 2: Component Consolidation
 
-### Phase 3: Migration (Per Component)
+1. **Rename Components**:
+   - Remove the "WithZod" suffix from Zod-based components
+   - Add deprecation notices to original versions
 
-1. **Identify Integration Points**:
-   - Find all places where the regular component is imported
-   - Understand the props and behavior expected by consuming components
+2. **Update Exports**:
+   - Create a migration path that doesnt break existing imports
+   - Example approach:
+   ```typescript
+   // In GalleryDetailsForm.tsx
+   import { GalleryDetailsFormWithZod } from './GalleryDetailsFormWithZod';
+   
+   /**
+    * @deprecated Use the Zod-validated version instead.
+    * This will be removed in a future release.
+    */
+   export function GalleryDetailsForm(props) {
+     console.warn('GalleryDetailsForm is deprecated. Use the updated version instead.');
+     // Either render the new component or keep legacy implementation
+     return <GalleryDetailsFormWithZod {...props} />;
+   }
+   
+   // Re-export the new implementation
+   export * from './GalleryDetailsFormWithZod';
+   ```
 
-2. **Update Imports**:
-   - Replace imports for regular components with their "WithZod" equivalents
-   - Test these changes to ensure functionality is maintained
+### Phase 3: Consumer Updates
 
-3. **Update Component Usage**:
-   - Modify consumers to accommodate any prop changes between versions
-   - Ensure form handling is consistent with Zod-based validation
+1. **Update Page Components**:
+   - Modify all pages using the original components to use the Zod versions
+   - Focus on one component family at a time
+   - Start with simpler components before complex ones
 
-4. **Backward Compatibility (if needed)**:
-   - For widely used components, consider adding temporary compatibility layers
+2. **Validation Handling**:
+   - Ensure all form submissions use the Zod schemas for validation
 
 ### Phase 4: Cleanup
 
-- [ ] Rename "WithZod" components to their regular names (e.g., `GalleryDetailsFormWithZod.tsx` → `GalleryDetailsForm.tsx`)
-- [ ] Remove old component versions
-- [ ] Update documentation to reflect the new component structure
-- [ ] Update any remaining references in code or examples
+1. **Remove Deprecation Wrappers**:
+   - Once all consumers have been updated, remove the wrappers
+   - Update import paths where needed
 
-## Migration Order
+2. **Delete Original Components**:
+   - Remove the original non-Zod implementations
+   - Update any remaining references
 
-1. Form Components
-   - GalleryDetailsForm → GalleryDetailsFormWithZod
-   - ProfileForm → ProfileFormWithZod
+### Phase 5: Documentation
 
-2. Dialog Components
-   - EditImageDialog → EditImageDialogWithZod
+1. **Update Docs**:
+   - Document the new standardized approach
+   - Create examples for future component development
 
-3. Full Page Components
-   - CreateGallery → CreateGalleryWithZod
-   - TagsManagement → TagsManagementWithZod
+## Migration Timeline
 
-## Benefits
+| Phase | Components | Target Completion |
+|-------|------------|------------------|
+| Phase 1 | All components | May 20, 2025 |
+| Phase 2 | GalleryDetailsForm, CreateGallery | May 25, 2025 |
+| Phase 2 | EditImageDialog, ProfileForm | May 30, 2025 |
+| Phase 2 | TagsManagement | June 5, 2025 |
+| Phase 3 | All page components | June 15, 2025 |
+| Phase 4 | Cleanup | June 30, 2025 |
+| Phase 5 | Documentation | July 5, 2025 |
 
-1. **Consistency**: All components will use the same pattern for form validation
-2. **Type Safety**: Improved TypeScript integration with schema-derived types
-3. **Maintainability**: Reduced code duplication and standardized patterns
-4. **Reliability**: Improved validation across the application
+## Component Migration Priority
 
-## Timeline
+1. GalleryDetailsForm & CreateGallery (High priority, heavily used)
+2. EditImageDialog (Medium priority)
+3. ProfileForm (Medium priority)
+4. TagsManagement (Lower priority)
 
-- Component evaluation: 1 week
-- Migration of form components: 1 week
-- Migration of dialog components: 1 week
-- Migration of full page components: 2 weeks
-- Testing and cleanup: 1 week
+## Tracking Progress
 
-Total estimated time: 6 weeks
+Well track progress in `zod-components-migration-tasks.md` with detailed tasks and completion status per component.
