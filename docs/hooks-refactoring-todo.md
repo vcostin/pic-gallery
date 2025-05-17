@@ -31,8 +31,14 @@ This is a task list for gradually migrating from the old hooks to the new Zod sc
   - Remove the duplicate implementation in `hooks/useGallery.ts` or `hooks.ts`
   - Update imports to point to the consolidated implementation
 
-- [ ] Add API call to update image order in the database in `handleDragEnd` of `useEnhancedGalleryImages`
-  - Need to implement order updating in the GalleryService
+- [x] Add API call to persist image removal in `removeImage` of `useEnhancedGalleryImages`
+  - Implemented image removal in the GalleryService
+  - Fixed issue with removed images reappearing after saving
+
+- [x] Add API call to update image order in the database in `handleDragEnd` of `useEnhancedGalleryImages`
+  - Implemented `updateImageOrder` method in the GalleryService
+  - Enhanced `handleDragEnd` in `useEnhancedGalleryImages` to persist order changes
+  - Added loading state, error handling, and toast notifications for reordering operations
 
 - [ ] Update any form submissions to use schema validation (either with `useApi` or a form library)
 
@@ -58,3 +64,11 @@ This is a task list for gradually migrating from the old hooks to the new Zod sc
 - [x] Deprecate legacy hooks with JSDoc comments
 - [x] Add barrel file in `hooks/index.ts` for organized exports
 - [x] Create a migration guide with examples
+- [x] Refactor `GalleryGrid` and `ImageGrid` to use React's native `useState` instead of deprecated `useAsync`
+- [x] Update `removeImage` in `useEnhancedGalleryImages` to call the API service to persist removal
+- [x] Add `removeImage` method to `GalleryService` to properly persist image removals
+- [x] Add tests for successful and failed image removal operations
+- [x] Add tests for image reordering functionality
+  - Added test cases for successful image reordering via API
+  - Added test cases for handling errors during image reordering
+  - Mocked `updateImageOrder` method in tests
