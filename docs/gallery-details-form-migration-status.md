@@ -13,7 +13,6 @@ The GalleryDetailsForm component has been migrated to use Zod for form validatio
   - `/src/components/GalleryDetailsForm.tsx`
   - `/src/components/GalleryDetailsFormBridge.tsx`
   - `/src/components/GalleryDetailsFormWithZod.tsx`
-  - `/src/components/GalleryDetailsFormWithZod.tsx.bak`
   - `/src/components/GalleryDetailsFormBridge.tsx.new`
 
 - ✅ Component files created in the feature-based directory:
