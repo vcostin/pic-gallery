@@ -217,6 +217,11 @@ jest.mock('@/components/ConfirmDialog', () => ({
 describe('CreateGallery', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
+  });
+  
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('renders correctly', () => {
@@ -240,10 +245,9 @@ describe('CreateGallery', () => {
     expect(addImagesButton).toBeInTheDocument();
     
     // Simulate clicking the button - wrap in act() to handle state updates
-    await act(async () => {
+    act(() => {
       fireEvent.click(addImagesButton);
-      // Small timeout to allow state updates to complete
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.advanceTimersByTime(0);
     });
     
     // In a real test, the dialog would open and we would interact with it
@@ -259,32 +263,32 @@ describe('CreateGallery', () => {
     
     // Fill in the title field
     const titleInput = screen.getByTestId('title-input');
-    await act(async () => {
+    act(() => {
       fireEvent.change(titleInput, { target: { value: 'Test Gallery' } });
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.advanceTimersByTime(0);
     });
     
     // Fill in the description field
     const descriptionInput = screen.getByTestId('description-input');
-    await act(async () => {
+    act(() => {
       fireEvent.change(descriptionInput, { target: { value: 'Test Description' } });
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.advanceTimersByTime(0);
     });
     
     // Set published to true
     const isPublishedInput = screen.getByTestId('is-published-input');
-    await act(async () => {
+    act(() => {
       fireEvent.click(isPublishedInput);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.advanceTimersByTime(0);
     });
     
     // Submit the form - in a mock component we're just testing that we can interact with the form
     // We can't actually test form submission functionality since it's not connected to real logic
     const submitButton = screen.getByTestId('submit-button');
     expect(submitButton).toBeInTheDocument();
-    await act(async () => {
+    act(() => {
       fireEvent.click(submitButton);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.advanceTimersByTime(0);
     });
   });
 
@@ -293,9 +297,9 @@ describe('CreateGallery', () => {
     
     // This is a mock test, so we can only verify the form elements exist
     const titleInput = screen.getByTestId('title-input');
-    await act(async () => {
+    act(() => {
       fireEvent.change(titleInput, { target: { value: 'Test Gallery' } });
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.advanceTimersByTime(0);
     });
     
     // Check that the submit button exists
@@ -314,9 +318,9 @@ describe('CreateGallery', () => {
     const addImagesButton = screen.getByTestId('add-images-button');
     expect(addImagesButton).toBeInTheDocument();
     
-    await act(async () => {
+    act(() => {
       fireEvent.click(addImagesButton);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      jest.advanceTimersByTime(0);
     });
     
     // In a real implementation, we would add images and then test removing them

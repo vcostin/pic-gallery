@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useEnhancedGalleryImages } from './lib/hooks/useEnhancedGallery';
 import { GalleryService } from './lib/services/galleryService';
 import { FullGallery, FullImageInGallery } from './lib/schemas';
@@ -63,6 +63,7 @@ describe('useEnhancedGalleryImages', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
     
     // Setup default mock implementations
     (GalleryService.getGallery as jest.Mock).mockResolvedValue(mockGallery);
@@ -88,19 +89,31 @@ describe('useEnhancedGalleryImages', () => {
       })
     });
   });
+  
+  afterEach(() => {
+    jest.useRealTimers();
+  });
 
   test('should load gallery data when galleryId is provided', async () => {
+    // Create a mock for the API promise resolution
+    const mockGetGalleryPromise = Promise.resolve(mockGallery);
+    (GalleryService.getGallery as jest.Mock).mockReturnValue(mockGetGalleryPromise);
+
     const { result } = renderHook(() => 
       useEnhancedGalleryImages(mockGalleryId)
     );
     
+    // Initially loading should be true
     expect(result.current.loading).toBe(true);
     
-    // Use waitFor instead of waitForNextUpdate
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+    // Wait for the promise to resolve and state to update
+    await act(async () => {
+      await mockGetGalleryPromise;
+      jest.runAllTimers();
     });
     
+    // After promise resolves, loading should be false
+    expect(result.current.loading).toBe(false);
     expect(GalleryService.getGallery).toHaveBeenCalledWith(mockGalleryId);
     expect(result.current.gallery).toEqual(mockGallery);
     expect(result.current.images).toEqual(mockGallery.images);
@@ -123,6 +136,10 @@ describe('useEnhancedGalleryImages', () => {
   });
 
   test('should handle removing an image from gallery', async () => {
+    // Create a mock for the API promise resolution
+    const mockRemoveImagePromise = Promise.resolve(mockGallery);
+    (GalleryService.removeImage as jest.Mock).mockReturnValue(mockRemoveImagePromise);
+    
     const { result } = renderHook(() => 
       useEnhancedGalleryImages(mockGalleryId, mockImages)
     );
@@ -135,16 +152,15 @@ describe('useEnhancedGalleryImages', () => {
     expect(result.current.showRemoveImageDialog).toBe(true);
     expect(result.current.imageToRemove).toBe('img1-in-gallery');
     
-    // Confirm removal
-    act(() => {
+    // Confirm removal and wait for the promise to resolve
+    await act(async () => {
       result.current.confirmRemoveImage();
+      await mockRemoveImagePromise;
+      jest.runAllTimers(); // Run timers to handle toast timeout
     });
     
-    // Use waitFor instead of waitForNextUpdate
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-    
+    // After the promise resolves, loading should be false
+    expect(result.current.loading).toBe(false);
     expect(GalleryService.removeImage).toHaveBeenCalledWith(mockGalleryId, 'img1-in-gallery');
     expect(result.current.showRemoveImageDialog).toBe(false);
     expect(result.current.imageToRemove).toBe(null);
@@ -203,13 +219,24 @@ describe('useEnhancedGalleryImages', () => {
       await result.current.addImages(['img3']);
     });
     
-    // Use waitFor instead of waitForNextUpdate
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+    // Verify fetch was called with correct URL
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/images?ids=img3'));
+    
+    // First verify loading is false (happens in finally block)
+    expect(result.current.loading).toBe(false);
+    
+    // Verify images were added
+    expect(result.current.images.length).toBe(1);
+    
+    // Verify toast is shown (happens right before setTimeout is called)
+    expect(result.current.showSuccessToast).toBe(true);
+    
+    // Now advance timers to simulate the toast disappearing after 3 seconds
+    act(() => {
+      jest.advanceTimersByTime(3000);
     });
     
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/images?ids=img3'));
-    expect(result.current.images.length).toBe(1);
-    expect(result.current.showSuccessToast).toBe(true);
+    // Toast should be hidden after timer completes
+    expect(result.current.showSuccessToast).toBe(false);
   });
 });
