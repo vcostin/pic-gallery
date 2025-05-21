@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { SelectImagesDialog } from '../SelectImagesDialog';
+import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import '@testing-library/jest-dom';
 
 // Mock fetch globally

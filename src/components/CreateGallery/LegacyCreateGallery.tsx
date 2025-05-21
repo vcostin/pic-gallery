@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CreateGalleryBridge } from './CreateGalleryBridge';
+import { CreateGallery } from './CreateGallery';
 import logger from '@/lib/logger';
 
 /**
@@ -29,5 +29,6 @@ interface CreateGalleryProps {
  */
 export function CreateGallery({ availableImages }: CreateGalleryProps): React.ReactElement {
   logger.log('Using legacy CreateGallery component - please switch to the new CreateGallery implementation');
-  return <CreateGalleryBridge availableImages={availableImages} />;
+  // We're now using the main CreateGallery component directly instead of through a bridge
+  return <CreateGallery />;
 }

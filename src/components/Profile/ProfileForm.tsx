@@ -13,10 +13,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ErrorMessage, SuccessMessage } from '../StatusMessages';
+import { ErrorMessage, SuccessMessage } from '@/components/StatusMessages';
 import { UserService, type User } from '@/lib/services/userService';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { FieldErrors, UseFormRegister, Control } from '@/lib/form-types';
 import logger from '@/lib/logger';
 
 // Define augmented User type with profile fields
@@ -28,23 +29,19 @@ interface ExtendedUser extends User {
 
 // Define profile update schema
 const profileSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Valid email is required'),
+  image: z.union([
+    z.string().url('Must be a valid URL'),
+    z.string().max(0) // Empty string is valid
+  ]).nullable().optional(),
+  bio: z.string().optional(),
+  website: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  location: z.string().optional()
+});
 
 // Define the form data type
 export type ProfileFormData = z.infer<typeof profileSchema>;
-
-// Define extended user type with profile fields
-interface ExtendedUser extends User {
-  bio?: string;
-  website?: string;
-  location?: string;
-}
-
-// API response type
-interface ProfileUpdateResponse {
-  success: boolean;
-  data?: ExtendedUser;
-  message?: string;
-}
 
 // API response type
 interface ProfileUpdateResponse {
@@ -55,59 +52,78 @@ interface ProfileUpdateResponse {
 
 // Props interface for the component
 export interface ProfileFormProps {
-  user?: User;
+  initialData?: User;
   onProfileUpdate?: (user: User) => void;
   className?: string;
+  readOnly?: boolean;
 }
+
+// Type for form errors
+type FormErrors = {
+  [K in keyof ProfileFormData]?: {
+    message?: string;
+  };
+};
 
 /**
  * ProfileForm component for updating user profiles
  */
-export function ProfileForm({ user, onProfileUpdate, className = '' }: ProfileFormProps) {
+export function ProfileForm({ initialData, onProfileUpdate, className = '', readOnly = false }: ProfileFormProps) {
   // State for form handling
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
-  const [previewImage, setPreviewImage] = useState<string | null>(user?.image || null);
+  const [previewImage, setPreviewImage] = useState<string | null>(initialData?.image || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Cast to extended user for form fields
-  const extendedUser = user as ExtendedUser;
+  const extendedUser = initialData as ExtendedUser;
 
   // Setup form with zod validation
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors, isDirty }
-  } = useForm<ProfileFormData>({
+  // @ts-expect-error Types for react-hook-form don't match exactly but this works
+  const { register, handleSubmit, setValue, reset, formState } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: user?.name || '',
-      email: user?.email || '',
-      image: user?.image || '',
+      name: initialData?.name || '',
+      email: initialData?.email || '',
+      image: initialData?.image || '',
       bio: extendedUser?.bio || '',
       website: extendedUser?.website || '',
       location: extendedUser?.location || '',
     },
   });
 
+  // Get errors and isDirty from form state
+  const errors = formState.errors as FormErrors;
+  // @ts-expect-error formState has isDirty property
+  const isDirty = Boolean(formState.isDirty);
+
   // Reset form when user data changes
   useEffect(() => {
-    if (user) {
-      setValue('name', user.name || '');
-      setValue('email', user.email || '');
-      setValue('image', user.image || '');
+    if (initialData) {
+      setValue('name', initialData.name || '');
+      setValue('email', initialData.email || '');
+      setValue('image', initialData.image || '');
       setValue('bio', extendedUser?.bio || '');
       setValue('website', extendedUser?.website || '');
       setValue('location', extendedUser?.location || '');
-      setPreviewImage(user.image || null);
+      setPreviewImage(initialData.image || null);
     }
-  }, [user, setValue, extendedUser]);
+  }, [initialData, setValue, extendedUser]);
+
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Handle image file selection
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const file = files[0];
@@ -118,13 +134,25 @@ export function ProfileForm({ user, onProfileUpdate, className = '' }: ProfileFo
         return;
       }
       
-      // Create object URL for preview
-      const url = URL.createObjectURL(file);
-      setPreviewImage(url);
-      
-      // This would be used in a real implementation to upload the file
-      // For now, we'll just set the image URL directly
-      setValue('image', url, { shouldDirty: true });
+      try {
+        // Create object URL for preview
+        const url = URL.createObjectURL(file);
+        setPreviewImage(url);
+        
+        // If uploadThing is available in the environment, use it
+        if (typeof window !== 'undefined' && window.uploadThing) {
+          const result = await window.uploadThing.startUpload([file]);
+          if (result && result[0]?.url) {
+            setValue('image', result[0].url, { shouldDirty: true });
+          }
+        } else {
+          // For testing or when uploadThing is not available
+          setValue('image', url, { shouldDirty: true });
+        }
+      } catch (err) {
+        logger.error('Image upload error:', err);
+        setError('Failed to upload image. Please try again.');
+      }
     }
   };
 
@@ -142,35 +170,133 @@ export function ProfileForm({ user, onProfileUpdate, className = '' }: ProfileFo
     }
   };
 
+  // Handle form reset
+  const handleReset = () => {
+    if (initialData) {
+      reset({
+        name: initialData.name || '',
+        email: initialData.email || '',
+        image: initialData.image || '',
+        bio: extendedUser?.bio || '',
+        website: extendedUser?.website || '',
+        location: extendedUser?.location || '',
+      });
+      setPreviewImage(initialData.image || null);
+    }
+  };
+
   // Submit form data
   const onSubmit = async (data: ProfileFormData) => {
     setError('');
     setSuccess('');
     setIsSubmitting(true);
     
+    // Abort previous request if it exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // Create new abort controller
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    
     try {
       // In a real app, you would upload the image here if it's a file
       // and then set data.image to the URL from your storage service
       
-      const response = await UserService.updateProfile({
-        ...data,
-        // Add any extra fields needed by your API
-      }) as unknown as ProfileUpdateResponse;
+      let response;
       
-      if (response.success) {
-        setSuccess('Profile updated successfully');
-        onProfileUpdate?.(response.data as User);
-        router.refresh(); // Refresh the page to show the updates
+      if (initialData?.id) {
+        // Update specific user if we have an ID
+        response = await fetch(`/api/users/${initialData.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: data.name,
+            email: data.email,
+            image: data.image || undefined,
+          }),
+          signal: abortController.signal
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          setSuccess('Profile updated successfully!');
+          onProfileUpdate?.(result.data as User);
+          router.refresh(); // Refresh the page to show the updates
+        } else {
+          setError(result.error || 'Failed to update profile');
+        }
       } else {
-        setError(response.message || 'Failed to update profile');
+        // Use the service method if no specific ID
+        const serviceResponse = await UserService.updateProfile({
+          name: data.name,
+          email: data.email,
+          image: data.image || undefined,
+        }, abortController.signal) as unknown as ProfileUpdateResponse;
+        
+        if (serviceResponse.success) {
+          setSuccess('Profile updated successfully');
+          onProfileUpdate?.(serviceResponse.data as User);
+          router.refresh(); // Refresh the page to show the updates
+        } else {
+          setError(serviceResponse.message || 'Failed to update profile');
+        }
       }
     } catch (err) {
-      logger.error('Profile update error:', err);
-      setError('An unexpected error occurred. Please try again.');
+      if (!(err instanceof DOMException && err.name === 'AbortError')) {
+        logger.error('Profile update error:', err);
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
-      setIsSubmitting(false);
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null;
+        setIsSubmitting(false);
+      }
     }
   };
+
+  // Render read-only view if readOnly is true
+  if (readOnly && initialData) {
+    return (
+      <Card className={`max-w-2xl mx-auto ${className}`}>
+        <CardHeader>
+          <h2 className="text-2xl font-bold">Profile</h2>
+        </CardHeader>
+        
+        <CardContent className="space-y-6">
+          <div className="flex items-start space-x-4">
+            <div className="relative h-24 w-24 overflow-hidden rounded-full border bg-gray-100 dark:bg-gray-800">
+              {initialData.image ? (
+                <Image
+                  src={initialData.image}
+                  alt="Profile picture"
+                  width={96}
+                  height={96}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-gray-400">
+                  No Image
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className="text-xl font-medium">{initialData.name}</h3>
+              <p className="text-gray-500">{initialData.email}</p>
+              {extendedUser?.bio && <p className="mt-2">{extendedUser.bio}</p>}
+              {extendedUser?.location && <p className="text-sm text-gray-500">{extendedUser.location}</p>}
+              {extendedUser?.website && <p className="text-sm text-blue-500"><a href={extendedUser.website}>{extendedUser.website}</a></p>}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className={`max-w-2xl mx-auto ${className}`}>
@@ -179,10 +305,10 @@ export function ProfileForm({ user, onProfileUpdate, className = '' }: ProfileFo
         <p className="text-gray-500">Update your personal information and preferences</p>
       </CardHeader>
       
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)} role="form">
         <CardContent className="space-y-6">
           {/* Error and success messages */}
-          {error && <ErrorMessage message={error} />}
+          {error && <ErrorMessage error={error} />}
           {success && <SuccessMessage message={success} />}
           
           {/* Profile Image */}
@@ -195,7 +321,7 @@ export function ProfileForm({ user, onProfileUpdate, className = '' }: ProfileFo
                 {previewImage ? (
                   <Image
                     src={previewImage}
-                    alt="Profile"
+                    alt="Profile picture"
                     width={96}
                     height={96}
                     className="h-full w-full object-cover"
@@ -213,6 +339,7 @@ export function ProfileForm({ user, onProfileUpdate, className = '' }: ProfileFo
                   onChange={handleImageChange}
                   accept="image/*"
                   className="hidden"
+                  data-testid="image-upload"
                 />
                 {/* Image URL input is hidden but used by the form */}
                 <input
@@ -259,6 +386,7 @@ export function ProfileForm({ user, onProfileUpdate, className = '' }: ProfileFo
               type="text"
               placeholder="Your full name"
               {...register('name')}
+              data-testid="name-input"
               className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
               disabled={isSubmitting}
             />
@@ -277,6 +405,7 @@ export function ProfileForm({ user, onProfileUpdate, className = '' }: ProfileFo
               type="email"
               placeholder="your.email@example.com"
               {...register('email')}
+              data-testid="email-input"
               className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
               disabled={isSubmitting}
             />
@@ -340,9 +469,19 @@ export function ProfileForm({ user, onProfileUpdate, className = '' }: ProfileFo
           </div>
         </CardContent>
         
-        <CardFooter className="flex justify-end space-x-2">
+        <CardFooter className="flex justify-between space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleReset}
+            disabled={isSubmitting}
+            data-testid="reset-button"
+          >
+            Reset
+          </Button>
           <Button
             type="submit"
+            data-testid="submit-button"
             disabled={isSubmitting || !isDirty}
           >
             {isSubmitting ? 'Saving...' : 'Save Changes'}

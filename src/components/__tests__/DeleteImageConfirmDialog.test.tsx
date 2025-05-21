@@ -1,6 +1,5 @@
-// filepath: /Users/vcostin/Work/pic-gallery/src/components/__tests__/DeleteImageConfirmDialog.test.tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { DeleteImageConfirmDialog } from '../DeleteImageConfirmDialog';
+import { DeleteImageConfirmDialog } from '@/components/DeleteImageConfirmDialog';
 import '@testing-library/jest-dom';
 
 // Mock fetch
@@ -15,7 +14,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock ConfirmDialog component
-jest.mock('../ConfirmDialog', () => ({
+jest.mock('@/components/ConfirmDialog', () => ({
   ConfirmDialog: (props: any) => (
     props.isOpen ? (
       <div data-testid="confirm-dialog">

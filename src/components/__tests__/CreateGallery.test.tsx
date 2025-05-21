@@ -73,12 +73,7 @@ jest.mock('@/components/CreateGallery/CreateGallery', () => ({
   }
 }));
 
-// Mock CreateGalleryBridge component
-jest.mock('@/components/CreateGallery/CreateGalleryBridge', () => ({
-  __esModule: true,
-  CreateGalleryBridge: () => <div data-testid="mocked-create-gallery-bridge">Mocked Bridge Component</div>,
-  default: () => <div data-testid="mocked-create-gallery-bridge">Mocked Bridge Component</div>
-}));
+// No need to mock CreateGalleryBridge anymore since it's been removed
 
 // Mock the Next.js router
 jest.mock('next/navigation', () => ({

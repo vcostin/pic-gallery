@@ -2,11 +2,11 @@
 
 import Image from 'next/image';
 import { useMemo, useState, useEffect, useCallback, memo } from 'react';
-import { EditImageDialogWithZod } from './EditImage';
-import { EmptyState, SkeletonLoader } from './StatusMessages';
-import { ErrorBoundary } from './ErrorBoundary';
+import { EditImageDialog } from '@/components/EditImage';
+import { EmptyState, SkeletonLoader } from '@/components/StatusMessages';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import logger from '@/lib/logger';
-import { ImageTags } from './ui/ImageTags';
+import { ImageTags } from '@/components/ui/ImageTags';
 
 interface Tag {
   id: string;
@@ -201,7 +201,7 @@ export function ImageGrid({ images }: ImageGridProps) {
         )}
 
         {editingImage && (
-          <EditImageDialogWithZod
+          <EditImageDialog
             image={editingImage}
             isOpen={true}
             onClose={handleImageUpdated}

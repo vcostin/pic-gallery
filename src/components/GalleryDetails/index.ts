@@ -1,14 +1,18 @@
-// Main entry point for GalleryDetails components
+/**
+ * GalleryDetails components module
+ * 
+ * This module exports the GalleryDetailsForm component and related types.
+ * GalleryDetailsForm is the preferred Zod-validated implementation.
+ */
 
-// Import the components
-import { GalleryDetailsForm } from './GalleryDetailsForm';
-import { ModernGalleryDetailsForm } from './ModernGalleryDetailsForm';
-import type { GalleryFormData } from './GalleryDetailsForm';
+// Import the main component
+import { GalleryDetailsForm } from '@/components/GalleryDetails/GalleryDetailsForm';
+import type { GalleryFormData } from '@/components/GalleryDetails/GalleryDetailsForm';
 
-// Export the modern version as the default export
-export { ModernGalleryDetailsForm as default };
+// Export the component as the default export
+export default GalleryDetailsForm;
 
-// Export the main component
+// Export named component
 export { GalleryDetailsForm };
 
 // Re-export types

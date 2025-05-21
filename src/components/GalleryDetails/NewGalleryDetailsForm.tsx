@@ -23,7 +23,7 @@ const CardContent = ({ children, className = '' }: { children: React.ReactNode; 
 export type GalleryFormData = z.infer<typeof CreateGallerySchema>;
 
 /**
- * Props for GalleryDetailsFormWithZod component
+ * Props for GalleryDetailsForm component
  */
 export interface GalleryDetailsFormProps {
   // Form handling (provided by react-hook-form)
@@ -59,7 +59,7 @@ export function GalleryDetailsForm({
   isSubmitting = false,
   children,
   className = '',
-}: GalleryDetailsFormWithZodProps) {
+}: GalleryDetailsFormProps) {
   return (
     <Card className={className}>
       <CardHeader>

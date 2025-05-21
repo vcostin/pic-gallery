@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { EditImageDialog } from '../EditImage';
+import { EditImageDialog } from '@/components/EditImage';
 import '@testing-library/jest-dom';
 
 // Mock fetch
@@ -44,7 +44,7 @@ jest.mock('next/image', () => ({
 }));
 
 // Mock DeleteImageConfirmDialog
-jest.mock('../DeleteImageConfirmDialog', () => ({
+jest.mock('@/components/DeleteImageConfirmDialog', () => ({
   DeleteImageConfirmDialog: () => <div data-testid="delete-dialog" />
 }));
 

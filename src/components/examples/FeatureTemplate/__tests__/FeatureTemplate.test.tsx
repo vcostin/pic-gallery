@@ -1,7 +1,7 @@
 import React from 'react';
 import { render } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { FeatureTemplateWithZod } from '../FeatureTemplateWithZod';
+import { FeatureTemplate } from '@/components/examples/FeatureTemplate';
 
 // Mock the Controller component from react-hook-form
 jest.mock('react-hook-form', () => {
@@ -52,12 +52,12 @@ jest.mock('react-hook-form', () => {
   };
 });
 
-describe('FeatureTemplateWithZod', () => {
+describe('FeatureTemplate', () => {
   it('renders without crashing', () => {
     const { container } = render(
-      <FeatureTemplateWithZod
+      <FeatureTemplate
         register={jest.fn()}
-        control={{} as any}
+        control={{}}
         errors={{}}
         onChange={jest.fn()}
       />

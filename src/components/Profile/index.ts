@@ -6,7 +6,7 @@
  * @module Profile
  */
 
-import { ProfileForm } from './ProfileForm';
+import { ProfileForm } from '@/components/Profile/ProfileForm';
 
 /**
  * Default export - ProfileForm component
@@ -20,4 +20,4 @@ export { ProfileForm as default };
 export { ProfileForm };
 
 // Re-export types
-export type { ProfileFormData } from './ProfileForm';
+export type { ProfileFormData } from '@/components/Profile/ProfileForm';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { GalleryDetailsForm } from '../GalleryDetails';
+import { GalleryDetailsForm } from '@/components/GalleryDetails';
 
 // Mock react-hook-form
 jest.mock('react-hook-form', () => ({

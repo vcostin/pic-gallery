@@ -6,7 +6,7 @@
  * @module EditImage
  */
 
-import { EditImageDialog } from './EditImageDialog';
+import { EditImageDialog } from '@/components/EditImage/EditImageDialog';
 
 /**
  * Default export - EditImageDialog component

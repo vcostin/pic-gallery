@@ -37,7 +37,7 @@ const editImageSchema = z.object({
 type EditImageFormData = z.infer<typeof editImageSchema>;
 
 /**
- * Props interface for the EditImageDialogWithZod component
+ * Props interface for the EditImageDialog component
  */
 interface EditImageDialogProps {
   /** The image object to be edited. Must follow the Image type from ImageService */
@@ -52,7 +52,7 @@ interface EditImageDialogProps {
 }
 
 /**
- * EditImageDialogWithZod - Modern dialog component for editing image metadata
+ * EditImageDialog - Modern dialog component for editing image metadata
  * 
  * Features:
  * - Zod schema validation

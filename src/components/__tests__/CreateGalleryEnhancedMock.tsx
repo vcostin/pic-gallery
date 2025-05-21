@@ -5,27 +5,24 @@ import React, { useState } from 'react';
 import { GalleryService } from '@/lib/services/galleryService';
 import { useRouter } from 'next/navigation';
 
-// Define types locally to avoid importing from other modules and causing circular dependencies
-interface GalleryImage {
+// Import types directly from the schema
+import { CreateGallerySchema } from '@/lib/schemas';
+import { z } from 'zod';
+
+// Define types using Zod schema to ensure they match with the actual schema
+type GalleryImage = {
   id: string;
   order: number;
-}
+};
 
-interface GalleryFormData {
-  title: string;
-  description?: string;
-  isPublic: boolean;
-  images: GalleryImage[];
-}
-
-// Direct import of types from schemas to avoid circular dependencies
-import type { CreateGalleryInput } from '@/lib/schemas';
+// Create a type for the form data using the schema
+type GalleryFormData = z.infer<typeof CreateGallerySchema>;
 
 /**
- * A more comprehensive mock of the CreateGalleryWithZod component
+ * A more comprehensive mock of the CreateGallery component
  * that includes form submission handling and other interactive features
  */
-export function MockCreateGalleryWithZodEnhanced(): React.ReactElement {
+export function MockCreateGalleryEnhanced(): React.ReactElement {
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [isPublished, setIsPublished] = useState<boolean>(false);

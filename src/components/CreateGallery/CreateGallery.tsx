@@ -12,7 +12,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { useEnhancedGalleryImages } from '@/lib/hooks/useEnhancedGallery';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import { GallerySortable } from '@/components/GallerySortable';
-import { GalleryDetailsFormWithZod, GalleryFormData } from '@/components/GalleryDetails';
+import { GalleryDetailsForm, GalleryFormData } from '@/components/GalleryDetails';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { CreateGallerySchema, FullImageInGallery } from '@/lib/schemas';
 import { GalleryService } from '@/lib/services/galleryService';
@@ -164,7 +164,7 @@ export function CreateGallery(): React.ReactElement {
           )}
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <GalleryDetailsFormWithZod
+            <GalleryDetailsForm
               register={register}
               errors={errors}
               control={control}

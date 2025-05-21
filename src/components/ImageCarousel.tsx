@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { LoadingSpinner, ErrorMessage } from './StatusMessages';
-import { ErrorBoundary } from './ErrorBoundary';
-import { ImageTags } from './ui/ImageTags';
+import { LoadingSpinner, ErrorMessage } from '@/components/StatusMessages';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ImageTags } from '@/components/ui/ImageTags';
 
 interface Tag {
   id: string;

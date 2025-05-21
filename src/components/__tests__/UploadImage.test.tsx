@@ -1,6 +1,5 @@
-// filepath: /Users/vcostin/Work/pic-gallery/src/components/__tests__/UploadImage.test.tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { UploadImage } from '../UploadImage';
+import { UploadImage } from '@/components/UploadImage';
 import '@testing-library/jest-dom';
 
 // Mock fetch

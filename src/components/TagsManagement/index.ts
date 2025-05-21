@@ -1,8 +1,8 @@
 // Main entry point for TagsManagement components
 // This file exports the tag components
 
-import { TagsManagement } from './TagsManagement';
-import { TagsInput, TagSchema } from './TagsInput';
+import { TagsManagement } from '@/components/TagsManagement/TagsManagement';
+import { TagsInput, TagSchema } from '@/components/TagsManagement/TagsInput';
 
 // Re-export the components as the default exports
 export { TagsManagement as default };
@@ -13,5 +13,5 @@ export { TagsInput };
 
 // Re-export types
 export { TagSchema };
-export type { TagsInputProps } from './TagsInput';
-export type { Tag } from './TagsManagement';
+export type { TagsInputProps } from '@/components/TagsManagement/TagsInput';
+export type { Tag } from '@/components/TagsManagement/TagsManagement';

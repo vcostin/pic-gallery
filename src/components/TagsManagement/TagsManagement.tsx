@@ -13,7 +13,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/components/ui/Toast';
 import { ImageService } from '@/lib/services/imageService';
-import { TagsInput } from './TagsInput';
+import { TagsInput } from '@/components/TagsManagement/TagsInput';
 import { X } from 'lucide-react';
 
 // Import UI components

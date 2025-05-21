@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import TagsManagement from '../TagsManagement';
+import TagsManagement from '@/components/TagsManagement';
 
 describe('TagsManagement', () => {
   test('skipping tests temporarily', () => {

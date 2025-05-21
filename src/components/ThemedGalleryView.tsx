@@ -8,9 +8,9 @@ import {
   mapGalleryImageToDisplayImage,
   mapGalleryImagesToDisplayImages
 } from '@/lib/utils/typeMappers';
-import { GalleryCarousel } from './gallery-display/GalleryCarousel';
-import { ImageGrid } from './ImageGrid'; 
-import { GalleryFullscreen } from './gallery-display/GalleryFullscreen';
+import { GalleryCarousel } from '@/components/gallery-display/GalleryCarousel';
+import { ImageGrid } from '@/components/ImageGrid'; 
+import { GalleryFullscreen } from '@/components/gallery-display/GalleryFullscreen';
 
 interface ThemedGalleryViewProps {
   gallery: DisplayGallery;
