@@ -8,7 +8,6 @@ The GalleryDetailsForm component has been migrated to use Zod for form validatio
 
 - ✅ Tests have been updated to use the Zod version:
   - `/src/components/__tests__/GalleryDetailsFormWithZod.test.tsx`
-  - `/src/components/__tests__/GalleryDetailsFormWithZod.enhanced.test.tsx` 
 
 - ✅ Legacy files have been removed from the root components directory:
   - `/src/components/GalleryDetailsForm.tsx`
