@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { EditImageDialog } from '../EditImageDialog';
+import { EditImageDialog } from '../EditImage';
 import '@testing-library/jest-dom';
 
 // Mock fetch

@@ -15,8 +15,8 @@ import {
   CreateImageSchema, 
   UpdateImageSchema,
   PaginatedImagesResponseSchema,
-  ImageResponseSchema,
-  FlexibleImagesResponseSchema
+  FlexibleImagesResponseSchema,
+  ImageResponseSchema 
 } from '../schemas';
 
 // Type definitions derived from schemas
@@ -82,8 +82,9 @@ export const ImageService = {
    * Get an image by ID
    */
   async getImage(id: string, signal?: AbortSignal): Promise<Image> {
-    // Use ImageResponseSchema (which is a createApiSuccessSchema(ImageSchema))
-    return fetchApi(`/api/images/${id}`, { signal }, ImageResponseSchema).then(response => response.data);
+    // Use ImageResponseSchema to handle the API response format instead of ImageSchema directly
+    const response = await fetchApi(`/api/images/${id}`, { signal }, ImageResponseSchema);
+    return response.data;
   },
 
   /**
@@ -129,12 +130,13 @@ export const ImageService = {
     // Validate input data
     CreateImageSchema.parse(imageData);
 
-    // Use ImageResponseSchema to validate the standard API response format
-    return fetchApi('/api/images', {
+    // Use ImageResponseSchema to handle the API response format
+    const response = await fetchApi('/api/images', {
       method: 'POST',
       body: JSON.stringify(imageData),
       signal
-    }, ImageResponseSchema).then(response => response.data);
+    }, ImageResponseSchema);
+    return response.data;
   },
 
   /**
@@ -144,12 +146,13 @@ export const ImageService = {
     // Validate input data
     UpdateImageSchema.parse({ ...imageData, id });
     
-    // Use ImageResponseSchema to validate the standard API response format
-    return fetchApi(`/api/images/${id}`, {
+    // Use ImageResponseSchema to handle the API response format
+    const response = await fetchApi(`/api/images/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(imageData),
       signal
-    }, ImageResponseSchema).then(response => response.data);
+    }, ImageResponseSchema);
+    return response.data;
   },
 
   /**

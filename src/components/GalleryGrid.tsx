@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { EmptyState } from './StatusMessages';
 import { ErrorBoundary } from './ErrorBoundary';
-import { useAsync } from '@/lib/hooks';
 import { Card, CardImage, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { z } from 'zod';
@@ -31,18 +30,16 @@ interface GalleryGridProps {
 
 export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
   const [isInitializing, setIsInitializing] = useState(true);
+  const [galleriesData, setGalleriesData] = useState<GalleryGridItem[]>(galleries);
   const router = useRouter();
   
-  // Use state to store galleries
-  const { data: galleriesData, setData: setGalleriesData } = useAsync<GalleryGridItem[]>(galleries);
-
   // Set initial data
   useEffect(() => {
     setGalleriesData(galleries);
     // Small delay to prevent flickering of skeleton loader on fast page loads
     const timer = setTimeout(() => setIsInitializing(false), 100);
     return () => clearTimeout(timer);
-  }, [galleries, setGalleriesData]);
+  }, [galleries]);
 
   const handleEditGallery = useCallback((e: React.MouseEvent, galleryId: string) => {
     e.preventDefault(); // Prevent navigation to gallery view

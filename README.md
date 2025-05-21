@@ -16,6 +16,15 @@ A modern image gallery application built with Next.js that allows users to manag
   - Dark mode support
   - Tag management system
 
+## Documentation
+
+For developers working on this project, we maintain comprehensive documentation:
+
+- [Refactoring Documentation Index](/docs/refactoring-documentation-index.md) - Central hub for all refactoring documentation
+- [Consolidated Refactoring Strategy](/docs/refactoring-strategy-consolidated.md) - Overview of our component and schema migration strategy
+- [Component Refactoring Progress](/docs/component-refactoring-progress.md) - Current status of the refactoring effort
+- [Component Migrations History](/docs/component-migrations-history.md) - Historical record of completed component migrations
+
 ## Tech Stack
 
 - Next.js 15.3 (App Router)

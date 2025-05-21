@@ -4,6 +4,10 @@ require('@testing-library/jest-dom');
 // Mock global fetch
 global.fetch = jest.fn();
 
+// Add polyfills for TextEncoder/TextDecoder required by @uploadthing
+global.TextEncoder = require('util').TextEncoder;
+global.TextDecoder = require('util').TextDecoder;
+
 // Mock window.matchMedia for any component tests
 if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'matchMedia', {

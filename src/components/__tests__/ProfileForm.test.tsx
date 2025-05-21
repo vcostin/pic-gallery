@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ProfileForm } from '../ProfileForm';
+import { ProfileForm } from '../Profile';
 import { useRouter } from 'next/navigation';
 import { useUploadThing } from '@/lib/uploadthing';
 

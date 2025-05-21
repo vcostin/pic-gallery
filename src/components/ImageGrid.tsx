@@ -2,9 +2,8 @@
 
 import Image from 'next/image';
 import { useMemo, useState, useEffect, useCallback, memo } from 'react';
-import { EditImageDialogWithZod } from './EditImageDialogWithZod';
+import { EditImageDialogWithZod } from './EditImage';
 import { EmptyState, SkeletonLoader } from './StatusMessages';
-import { useAsync } from '@/lib/hooks';
 import { ErrorBoundary } from './ErrorBoundary';
 import logger from '@/lib/logger';
 import { ImageTags } from './ui/ImageTags';
@@ -93,9 +92,7 @@ export function ImageGrid({ images }: ImageGridProps) {
   const [editingImage, setEditingImage] = useState<ImageType | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
   const [isInitializing, setIsInitializing] = useState(true);
-
-  // Use state to store and filter images
-  const { data: imagesData, setData: setImagesData } = useAsync<ImageType[]>(images);
+  const [imagesData, setImagesData] = useState<ImageType[]>(images);
 
   // Set initial data
   useEffect(() => {
@@ -103,7 +100,7 @@ export function ImageGrid({ images }: ImageGridProps) {
     // Small delay to prevent flickering of skeleton loader on fast page loads
     const timer = setTimeout(() => setIsInitializing(false), 100);
     return () => clearTimeout(timer);
-  }, [images, setImagesData]);
+  }, [images]);
 
   // Extract all unique tags from images
   const allTags = useMemo(() => {

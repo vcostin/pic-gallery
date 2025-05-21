@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { CreateGallery } from "@/components/CreateGallery";
+import { CreateGallery } from "@/components/CreateGallery"; // Using feature-based directory import
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";

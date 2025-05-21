@@ -100,7 +100,7 @@ Several pages are still using the original versions:
 |-------|------------|------------------|
 | Phase 1 | All components | May 20, 2025 |
 | Phase 2 | GalleryDetailsForm, CreateGallery | May 25, 2025 |
-| Phase 2 | EditImageDialog, ProfileForm | May 30, 2025 |
+| Phase 3 | EditImageDialog, ProfileForm | May 30, 2025 |
 | Phase 2 | TagsManagement | June 5, 2025 |
 | Phase 3 | All page components | June 15, 2025 |
 | Phase 4 | Cleanup | June 30, 2025 |
