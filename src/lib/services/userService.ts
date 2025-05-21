@@ -56,12 +56,13 @@ export const UserService = {
    * Update the current user's profile
    */
   async updateProfile(
-    profileData: { name?: string; image?: string },
+    profileData: { name?: string; email?: string; image?: string },
     signal?: AbortSignal
   ): Promise<User> {
     // Validate input data
     const profileSchema = z.object({
       name: z.string().min(1).optional(),
+      email: z.string().email().optional(),
       image: z.string().optional()
     });
 

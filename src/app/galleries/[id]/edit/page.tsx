@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -15,10 +17,10 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { use } from 'react';
 import logger from '@/lib/logger';
 // Import schemas for validation
-import { FullGallerySchema, FullGallery } from '@/lib/schemas'; 
+import { FullGallerySchema, FullGallery, CreateGallerySchema } from '@/lib/schemas'; 
 
-// Import newly created components
-import { GalleryDetailsForm } from '@/components/GalleryDetailsForm';
+// Import gallery components from feature directory
+import { GalleryDetailsForm, type GalleryFormData } from '@/components/GalleryDetails';
 import { GalleryViewSelector } from '@/components/GalleryViewSelector';
 import { GallerySortable, ViewMode } from '@/components/GallerySortable';
 
@@ -51,9 +53,6 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<Error | null>(null);
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [isPublic, setIsPublic] = useState(false);
   const [coverImageId, setCoverImageId] = useState<string | ''>('');
   const [originalGalleryData, setOriginalGalleryData] = useState<FullGallery | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -61,17 +60,41 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const [showSelectImagesDialog, setShowSelectImagesDialog] = useState(false);
   const router = useRouter();
 
-  const [themeColor, setThemeColor] = useState<string | undefined>(undefined);
-  const [backgroundColor, setBackgroundColor] = useState<string | undefined>(undefined);
-  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | undefined>(undefined);
-  const [accentColor, setAccentColor] = useState<string | undefined>(undefined);
-  const [fontFamily, setFontFamily] = useState<string | undefined>(undefined);
-  const [displayMode, setDisplayMode] = useState<string | undefined>(undefined);
-  const [layoutType, setLayoutType] = useState<string | undefined>(undefined);
+  // Set up form with Zod validation
+  const form = useForm<GalleryFormData>({
+    resolver: zodResolver(CreateGallerySchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      isPublic: false,
+      themeColor: null,
+      backgroundColor: null,
+      backgroundImageUrl: null,
+      accentColor: null,
+      fontFamily: null,
+      displayMode: null,
+      layoutType: null
+    }
+  });
+  
+  // State variables to track form changes for comparison with original data
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
+  const [themeColor, setThemeColor] = useState<string | null>(null);
+  const [backgroundColor, setBackgroundColor] = useState<string | null>(null);
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
+  const [accentColor, setAccentColor] = useState<string | null>(null);
+  const [fontFamily, setFontFamily] = useState<string | null>(null);
+  const [displayMode, setDisplayMode] = useState<string | null>(null);
+  const [layoutType, setLayoutType] = useState<string | null>(null);
 
   // Prepare gallery data for submission
   const prepareGalleryUpdatePayload = () => {
     if (!originalGalleryData) throw new Error("Original gallery data not loaded.");
+    
+    // Get current form values
+    const formValues = form.getValues();
     
     // Ensure all images have valid order values before sending to backend
     const updatedImages = images.map((img, index) => ({ 
@@ -83,18 +106,18 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     
     return {
       id: galleryId,
-      title,
-      description,
-      isPublic,
+      title: formValues.title,
+      description: formValues.description,
+      isPublic: formValues.isPublic,
       coverImageId: coverImageId || null,
       images: updatedImages,
-      themeColor: themeColor || null,
-      backgroundColor: backgroundColor || null,
-      backgroundImageUrl: backgroundImageUrl || null,
-      accentColor: accentColor || null,
-      fontFamily: fontFamily || null,
-      displayMode: displayMode || null,
-      layoutType: layoutType || null,
+      themeColor: formValues.themeColor,
+      backgroundColor: formValues.backgroundColor,
+      backgroundImageUrl: formValues.backgroundImageUrl,
+      accentColor: formValues.accentColor,
+      fontFamily: formValues.fontFamily,
+      displayMode: formValues.displayMode,
+      layoutType: formValues.layoutType,
     };
   };
   
@@ -102,20 +125,34 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const { fetch: updateGallery, isLoading: isSubmitting, error: submitErrorEncountered, reset: resetSubmitState } = useApi(FullGallerySchema);
 
   // Define a stable callback function for handling gallery data
-  // This prevents unnecessary re-renders and potential dependency issues
   const handleGalleryData = useCallback((data: FullGallery) => {
+    // Update form values
+    form.reset({
+      title: data.title,
+      description: data.description || '',
+      isPublic: data.isPublic,
+      themeColor: data.themeColor,
+      backgroundColor: data.backgroundColor,
+      backgroundImageUrl: data.backgroundImageUrl,
+      accentColor: data.accentColor,
+      fontFamily: data.fontFamily,
+      displayMode: data.displayMode,
+      layoutType: data.layoutType,
+    });
+    
+    // Also update local state for tracking changes
     setTitle(data.title);
     setDescription(data.description || '');
     setIsPublic(data.isPublic);
     setCoverImageId(data.coverImageId || '');
     setImages(data.images); 
-    setThemeColor(data.themeColor || undefined);
-    setBackgroundColor(data.backgroundColor || undefined);
-    setBackgroundImageUrl(data.backgroundImageUrl || undefined);
-    setAccentColor(data.accentColor || undefined);
-    setFontFamily(data.fontFamily || undefined);
-    setDisplayMode(data.displayMode || undefined);
-    setLayoutType(data.layoutType || undefined);
+    setThemeColor(data.themeColor);
+    setBackgroundColor(data.backgroundColor);
+    setBackgroundImageUrl(data.backgroundImageUrl);
+    setAccentColor(data.accentColor);
+    setFontFamily(data.fontFamily);
+    setDisplayMode(data.displayMode);
+    setLayoutType(data.layoutType);
     
     const fullLoadedData = {
       ...data,
@@ -123,75 +160,71 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
       description: data.description || '',
       isPublic: data.isPublic,
       coverImageId: data.coverImageId || '',
-      images: data.images, 
-      themeColor: data.themeColor || null, 
-      backgroundColor: data.backgroundColor || null,
-      backgroundImageUrl: data.backgroundImageUrl || null,
-      accentColor: data.accentColor || null,
-      fontFamily: data.fontFamily || null,
-      displayMode: data.displayMode || null,
-      layoutType: data.layoutType || null,
+      images: data.images,
+      themeColor: data.themeColor,
+      backgroundColor: data.backgroundColor,
+      backgroundImageUrl: data.backgroundImageUrl,
+      accentColor: data.accentColor,
+      fontFamily: data.fontFamily,
+      displayMode: data.displayMode,
+      layoutType: data.layoutType,
     };
     setOriginalGalleryData(fullLoadedData);
-  // State setters from useState are stable and don't need to be dependencies
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [form]);
 
   useEffect(() => {
     // Fetch gallery data when galleryId changes
-    // Changed to use fetchGalleryAsync as a URL-based fetcher
     fetchGalleryAsync(`/api/galleries/${galleryId}`).then(result => {
       if (result.success && result.data) {
         handleGalleryData(result.data);
       }
     }).catch(() => {
-      // Error is handled by useApi and useFetch hooks, no need to handle 'err' parameter if unused
+      // Error is handled by useApi and useFetch hooks
     });
-    
-    // Only galleryId should trigger a re-fetch
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [galleryId]);
 
   useEffect(() => {
     if (!originalGalleryData) return;
+    
+    const formValues = form.getValues();
     const currentData = {
-      title,
-      description,
-      isPublic,
+      title: formValues.title,
+      description: formValues.description || '',
+      isPublic: formValues.isPublic,
       coverImageId: coverImageId || '',
       images,
-      themeColor: themeColor || null,
-      backgroundColor: backgroundColor || null,
-      backgroundImageUrl: backgroundImageUrl || null,
-      accentColor: accentColor || null,
-      fontFamily: fontFamily || null,
-      displayMode: displayMode || null,
-      layoutType: layoutType || null,
+      themeColor: formValues.themeColor,
+      backgroundColor: formValues.backgroundColor,
+      backgroundImageUrl: formValues.backgroundImageUrl,
+      accentColor: formValues.accentColor,
+      fontFamily: formValues.fontFamily,
+      displayMode: formValues.displayMode,
+      layoutType: formValues.layoutType,
     };
+    
     // Construct originalComparableData with the same structure as currentData
-    // to ensure accurate comparison by deepEqual.
     const originalComparableData = {
       title: originalGalleryData.title,
-      description: originalGalleryData.description, // Already normalized to '' if null/undefined in originalGalleryData
+      description: originalGalleryData.description || '',
       isPublic: originalGalleryData.isPublic,
-      coverImageId: originalGalleryData.coverImageId, // Already normalized to '' if null/undefined in originalGalleryData
+      coverImageId: originalGalleryData.coverImageId || '',
       images: originalGalleryData.images,
-      themeColor: originalGalleryData.themeColor, // Already normalized to null if null/undefined in originalGalleryData
-      backgroundColor: originalGalleryData.backgroundColor, // Already normalized
-      backgroundImageUrl: originalGalleryData.backgroundImageUrl, // Already normalized
-      accentColor: originalGalleryData.accentColor, // Already normalized
-      fontFamily: originalGalleryData.fontFamily, // Already normalized
-      displayMode: originalGalleryData.displayMode, // Already normalized
-      layoutType: originalGalleryData.layoutType, // Already normalized
+      themeColor: originalGalleryData.themeColor,
+      backgroundColor: originalGalleryData.backgroundColor,
+      backgroundImageUrl: originalGalleryData.backgroundImageUrl,
+      accentColor: originalGalleryData.accentColor,
+      fontFamily: originalGalleryData.fontFamily,
+      displayMode: originalGalleryData.displayMode,
+      layoutType: originalGalleryData.layoutType,
     };
+    
     setHasUnsavedChanges(!deepEqual(currentData, originalComparableData));
-  }, [originalGalleryData, title, description, isPublic, coverImageId, images, themeColor, backgroundColor, backgroundImageUrl, accentColor, fontFamily, displayMode, layoutType]);
+  }, [originalGalleryData, form, coverImageId, images]);
 
-  const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => { 
-    if (e) e.preventDefault();
-    setShowConfirmDialog(false); 
+  // Form submission handler using react-hook-form
+  const onSubmit = form.handleSubmit(async () => {
+    setShowConfirmDialog(false);
     try {
-      // Use the new updateGallery function with schema validation
       const payload = prepareGalleryUpdatePayload();
       const result = await updateGallery(`/api/galleries/${galleryId}`, {
         method: 'PATCH',
@@ -203,15 +236,15 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         setOriginalGalleryData(result.data);
         setImages(result.data.images);
         setSuccessMessage("Gallery updated successfully");
-        setHasUnsavedChanges(false); 
+        setHasUnsavedChanges(false);
         setTimeout(() => {
           setSuccessMessage(null);
         }, 3000);
       }
     } catch (err) {
-      logger.error("Submit error caught in handleSubmit:", err);
+      logger.error("Submit error caught in form submission:", err);
     }
-  };
+  });
 
   const handleCancelEdit = () => {
     if (hasUnsavedChanges) {
@@ -223,20 +256,36 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
 
   const handleDiscardChanges = () => {
     if (originalGalleryData) {
+      // Reset form to original values
+      form.reset({
+        title: originalGalleryData.title,
+        description: originalGalleryData.description || '',
+        isPublic: originalGalleryData.isPublic,
+        themeColor: originalGalleryData.themeColor,
+        backgroundColor: originalGalleryData.backgroundColor,
+        backgroundImageUrl: originalGalleryData.backgroundImageUrl,
+        accentColor: originalGalleryData.accentColor,
+        fontFamily: originalGalleryData.fontFamily,
+        displayMode: originalGalleryData.displayMode,
+        layoutType: originalGalleryData.layoutType,
+      });
+      
+      // Also reset tracking state
       setTitle(originalGalleryData.title);
       setDescription(originalGalleryData.description || '');
       setIsPublic(originalGalleryData.isPublic);
       setCoverImageId(originalGalleryData.coverImageId || '');
       setImages(originalGalleryData.images);
-      setThemeColor(originalGalleryData.themeColor || undefined);
-      setBackgroundColor(originalGalleryData.backgroundColor || undefined);
-      setBackgroundImageUrl(originalGalleryData.backgroundImageUrl || undefined);
-      setAccentColor(originalGalleryData.accentColor || undefined);
-      setFontFamily(originalGalleryData.fontFamily || undefined);
-      setDisplayMode(originalGalleryData.displayMode || undefined);
-      setLayoutType(originalGalleryData.layoutType || undefined);
+      setThemeColor(originalGalleryData.themeColor);
+      setBackgroundColor(originalGalleryData.backgroundColor);
+      setBackgroundImageUrl(originalGalleryData.backgroundImageUrl);
+      setAccentColor(originalGalleryData.accentColor);
+      setFontFamily(originalGalleryData.fontFamily);
+      setDisplayMode(originalGalleryData.displayMode);
+      setLayoutType(originalGalleryData.layoutType);
+      
       setShowConfirmDialog(false);
-      setHasUnsavedChanges(false); 
+      setHasUnsavedChanges(false);
       setSuccessMessage("Changes discarded");
       setTimeout(() => setSuccessMessage(null), 3000);
     }
@@ -244,7 +293,6 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
 
   const handleAddImages = useCallback((imageIds: string[]) => {
     setShowSelectImagesDialog(false);
-    // addImages from useEnhancedGalleryImages already handles fetching images internally
     addImages(imageIds);
   }, [addImages]);
 
@@ -268,6 +316,23 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     }
   };
 
+  // Form field change handler to keep local state in sync for change detection
+  const handleFieldChange = (field: string, value: any) => {
+    switch (field) {
+      case 'title': setTitle(value); break;
+      case 'description': setDescription(value); break;
+      case 'isPublic': setIsPublic(value); break;
+      case 'themeColor': setThemeColor(value); break;
+      case 'backgroundColor': setBackgroundColor(value); break;
+      case 'backgroundImageUrl': setBackgroundImageUrl(value); break;
+      case 'accentColor': setAccentColor(value); break;
+      case 'fontFamily': setFontFamily(value); break;
+      case 'displayMode': setDisplayMode(value); break;
+      case 'layoutType': setLayoutType(value); break;
+      default: break;
+    }
+  };
+
   // Only use galleryError for initial load error
   let initialLoadErrorTypeSafe: Error | null = null;
   if (galleryError && !galleryData) {
@@ -278,7 +343,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     return (
       <div className="container mx-auto px-4 py-8">
         <ErrorMessage 
-          error={initialLoadErrorTypeSafe} // Use the type-safe version
+          error={initialLoadErrorTypeSafe}
           retry={() => fetchGalleryAsync(`/api/galleries/${galleryId}`)} 
           className="mb-4"
         />
@@ -317,8 +382,8 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           <ErrorMessage 
             error={submitErrorEncountered} 
             retry={() => {
-              resetSubmitState(); 
-              handleSubmit(); 
+              resetSubmitState();
+              onSubmit();
             }}
             className="mb-4"
           />
@@ -332,33 +397,14 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           />
         )}
         
-        <form onSubmit={handleSubmit} className="space-y-6"> {/* Corrected: form onSubmit calls handleSubmit directly */}
-          {/* @ts-expect-error - We're using the component in legacy mode with state hooks */}
+        <form onSubmit={onSubmit} className="space-y-6">
+          {/* Use the modern Zod-validated form component */}
           <GalleryDetailsForm 
-            title={title}
-            setTitle={setTitle}
-            description={description}
-            setDescription={setDescription}
-            isPublic={isPublic}
-            setIsPublic={setIsPublic}
-            themeColor={themeColor}
-            setThemeColor={setThemeColor}
-            backgroundColor={backgroundColor}
-            setBackgroundColor={setBackgroundColor}
-            backgroundImageUrl={backgroundImageUrl}
-            setBackgroundImageUrl={setBackgroundImageUrl}
-            accentColor={accentColor}
-            setAccentColor={setAccentColor}
-            fontFamily={fontFamily}
-            setFontFamily={setFontFamily}
-            displayMode={displayMode}
-            setDisplayMode={setDisplayMode}
-            layoutType={layoutType}
-            setLayoutType={setLayoutType}
-            useReactHookForm={false}
-            register={function() { return { name: '', onChange: () => {}, onBlur: () => {}, ref: () => {} }}}
-            errors={{}}
-            control={{}}
+            register={form.register}
+            errors={form.formState.errors}
+            control={form.control}
+            onChange={handleFieldChange}
+            isSubmitting={isSubmitting}
           />
           
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -438,9 +484,9 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         </form>
         
         <ConfirmDialog
-          isOpen={showConfirmDialog} 
+          isOpen={showConfirmDialog}
           onClose={() => setShowConfirmDialog(false)}
-          onConfirm={() => handleSubmit()} 
+          onConfirm={onSubmit}
           onCancel={handleDiscardChanges}
           title="Save Changes?"
           message="You have unsaved changes. Do you want to save them before leaving?"
@@ -449,55 +495,34 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         />
         
         <ConfirmDialog
-          isOpen={showRemoveImageDialog} 
-          onClose={cancelRemoveImage}    
-          onConfirm={confirmRemoveImage}  
-          title="Remove Image"
-          message="Are you sure you want to remove this image from the gallery? This action cannot be undone."
-          confirmButtonText="Remove"
-          cancelButtonText="Cancel"
-          confirmButtonColor="red"
+          isOpen={showDeleteGalleryDialog}
+          onClose={() => setShowDeleteGalleryDialog(false)}
+          onConfirm={handleDeleteGallery}
+          title="Delete Gallery"
+          message="Are you sure you want to delete this gallery? This action cannot be undone."
+          confirmButtonText="Delete Gallery"
+          confirmButtonClass="bg-red-500 hover:bg-red-600"
         />
         
         <SelectImagesDialog
           isOpen={showSelectImagesDialog}
           onClose={() => setShowSelectImagesDialog(false)}
-          onImagesSelected={handleAddImages}
-          existingImageIds={images.map(img => img.image.id)}
+          onSelectImages={handleAddImages}
+          excludeIds={images.map(img => img.imageId || '')}
         />
-
+        
         <ConfirmDialog
-          isOpen={showDeleteGalleryDialog} 
-          onClose={() => setShowDeleteGalleryDialog(false)}
-          onConfirm={handleDeleteGallery} 
-          title="Delete Gallery"
-          message={
-            <div>
-              <p className="mb-2">Are you sure you want to delete this gallery?</p>
-              <p className="text-red-500 font-semibold">This action cannot be undone.</p>
-              {images.length > 0 && (
-                <p className="mt-2 text-gray-600">
-                  Note: Your images will not be deleted, only removed from this gallery.
-                </p>
-              )}
-              {isDeleting && (
-                <div className="mt-2 flex items-center text-blue-500">
-                  <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full"></div>
-                  <span>Deleting...</span>
-                </div>
-              )}
-            </div>
-          }
-          confirmButtonText={isDeleting ? "Deleting..." : "Delete Gallery"}
-          confirmButtonColor="red"
+          isOpen={showRemoveImageDialog.isOpen}
+          onClose={cancelRemoveImage}
+          onConfirm={confirmRemoveImage}
+          title="Remove Image"
+          message="Are you sure you want to remove this image from the gallery?"
+          confirmButtonText="Remove Image"
         />
-
-        {showSuccessToast && (
-          <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg flex items-center animate-fade-in-up z-50">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            {toastMessage}
+        
+        {toastMessage && (
+          <div className="fixed bottom-4 right-4">
+            <SuccessMessage message={toastMessage} className="mb-4" onDismiss={showSuccessToast} />
           </div>
         )}
       </div>

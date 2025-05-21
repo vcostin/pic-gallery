@@ -75,5 +75,64 @@ export const GalleryService = {
       method: 'POST',
       body: JSON.stringify({ imageIds })
     }, FullGallerySchema);
-  }
+  },
+
+  /**
+   * Remove an image from a gallery
+   */
+  async removeImage(galleryId: string, imageInGalleryId: string): Promise<FullGallery> {
+    // Use the updateGallery method with an images array that explicitly doesn't include the removed image
+    // Get the current gallery first
+    const gallery = await this.getGallery(galleryId);
+    
+    // Create a new images array without the image to remove
+    const updatedImages = gallery.images
+      .filter(img => img.id !== imageInGalleryId)
+      .map(img => ({
+        id: img.id,
+        description: img.description,
+        order: img.order
+      }));
+    
+    // Update the gallery with the filtered images array
+    return this.updateGallery(galleryId, {
+      id: galleryId,
+      title: gallery.title,
+      isPublic: gallery.isPublic,
+      images: updatedImages
+    });
+  },
+
+  /**
+   * Update the order of images in a gallery
+   */
+  async updateImageOrder(galleryId: string, imageIds: string[]): Promise<FullGallery> {
+    // First get the current gallery
+    const gallery = await this.getGallery(galleryId);
+    
+    // Create a map of the existing images to preserve their data
+    const imageMap = new Map(gallery.images.map(img => [img.id, img]));
+    
+    // Create updated images array with new order
+    const updatedImages = imageIds.map((id, index) => {
+      const imageData = imageMap.get(id);
+      if (!imageData) {
+        throw new Error(`Image with ID ${id} not found in gallery`);
+      }
+      
+      return {
+        id: imageData.id,
+        description: imageData.description,
+        order: index // Update the order based on position in the array
+      };
+    });
+    
+    // Update the gallery with the reordered images
+    return this.updateGallery(galleryId, {
+      id: galleryId,
+      title: gallery.title,
+      isPublic: gallery.isPublic,
+      images: updatedImages
+    });
+  },
 };

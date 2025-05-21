@@ -148,7 +148,7 @@ export function useEnhancedGalleryImages(
     }
   }, [galleryId, images.length]);
 
-  // Remove image from gallery (handles only local state)
+  // Remove image from gallery (uses the API service)
   const removeImage = useCallback(async (imageInGalleryId: string) => {
     if (!galleryId) return;
     
@@ -156,16 +156,12 @@ export function useEnhancedGalleryImages(
     setError(null);
     
     try {
-      // Update local state to remove the image
-      setGallery(prev => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          images: prev.images.filter(img => img.id !== imageInGalleryId)
-        };
-      });
+      // Call the API to remove the image
+      const updatedGallery = await GalleryService.removeImage(galleryId, imageInGalleryId);
       
-      setImages(prev => prev.filter(img => img.id !== imageInGalleryId));
+      // Update state with the returned data
+      setGallery(updatedGallery);
+      setImages(updatedGallery.images);
       
       // Show success toast
       setToastMessage('Image removed from gallery');
@@ -176,6 +172,12 @@ export function useEnhancedGalleryImages(
     } catch (err) {
       const errorObj = err instanceof Error ? err : new Error(String(err));
       setError(errorObj);
+      
+      // Show error toast
+      setToastMessage(`Error removing image: ${errorObj.message}`);
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+      
       return false;
     } finally {
       setLoading(false);
@@ -223,11 +225,11 @@ export function useEnhancedGalleryImages(
     }
   }, []);
   
-  // Handle drag end with improved animations
+  // Handle drag end with improved animations and API persistence
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     
-    if (over && active.id !== over.id) {
+    if (over && active.id !== over.id && galleryId) {
       setImages((items) => {
         const oldIndex = items.findIndex(item => item.id === active.id);
         const newIndex = items.findIndex(item => item.id === over.id);
@@ -258,15 +260,48 @@ export function useEnhancedGalleryImages(
         }));
       });
       
-      // No need to save immediately - the gallery will be saved when the user submits the form
-      // The parent component will receive the updated images through the onImagesReordered callback
+      // Persist the order change to the API
+      if (galleryId) {
+        setLoading(true);
+        
+        // Get the current order of image IDs after the reordering
+        const imageIds = images
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+          .map(img => img.id);
+        
+        // Update the order in the database
+        GalleryService.updateImageOrder(galleryId, imageIds)
+          .then(updatedGallery => {
+            // Update the local state with the returned data
+            setGallery(updatedGallery);
+            setImages(updatedGallery.images);
+            
+            // Show a success toast
+            setToastMessage('Image order updated');
+            setShowSuccessToast(true);
+            setTimeout(() => setShowSuccessToast(false), 3000);
+          })
+          .catch(err => {
+            const errorObj = err instanceof Error ? err : new Error(String(err));
+            setError(errorObj);
+            logger.error('Failed to update image order:', errorObj);
+            
+            // Show error toast
+            setToastMessage(`Error updating image order: ${errorObj.message}`);
+            setShowSuccessToast(true);
+            setTimeout(() => setShowSuccessToast(false), 3000);
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      }
       
       return true; // Return true to indicate changes were made
     }
     
     setActiveId(null);
     return false; // Return false to indicate no changes were made
-  }, []);
+  }, [galleryId, images]);
   
   // Handle drag cancel
   const handleDragCancel = useCallback(() => {

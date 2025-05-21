@@ -81,6 +81,8 @@ export async function fetchWithValidation<T extends z.ZodTypeAny>(
   }
   
   const data = await response.json();
+  
+  // Handle both API response schemas and direct data schemas
   return validateApiResponse(data, responseSchema);
 }
 
@@ -111,5 +113,15 @@ export async function fetchApi<T extends z.ZodTypeAny>(
     throw new Error(responseData.error || 'API request failed');
   }
   
-  return dataSchema.parse(responseData.data);
+  // Check if the schema is an API response schema (created with createApiSuccessSchema)
+  // If so, validate the entire response, otherwise just validate the data field
+  try {
+    // Try to validate the whole response first (for ApiSuccessResponseSchema)
+    return dataSchema.parse(responseData);
+  } catch (_) {
+    // If that fails, try to validate just the data field
+    // This handles both directly using a schema for the data portion
+    // and using a wrapped schema that expects the full API response format
+    return dataSchema.parse(responseData.data);
+  }
 }

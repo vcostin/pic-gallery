@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ConfirmDialog } from './ConfirmDialog';
-import { LoadingSpinner, ErrorMessage } from './StatusMessages';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { LoadingSpinner, ErrorMessage } from '@/components/StatusMessages';
 import { useApi } from '@/lib/hooks/useApi';
 import { z } from 'zod';
 import { ImageUsageResponseSchema } from '@/lib/schemas/imageUsage';

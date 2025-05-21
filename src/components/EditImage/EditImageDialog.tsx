@@ -1,3 +1,10 @@
+/**
+ * @fileoverview EditImageDialog Component
+ * 
+ * A modal dialog for editing image metadata with Zod schema validation.
+ * This is the modern implementation with strong type safety and validation.
+ */
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -6,30 +13,58 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { DeleteImageConfirmDialog } from './DeleteImageConfirmDialog';
-import { ErrorMessage, SuccessMessage } from './StatusMessages';
+import { DeleteImageConfirmDialog } from '@/components/DeleteImageConfirmDialog';
+import { ErrorMessage, SuccessMessage } from '@/components/StatusMessages';
 import { ImageService, type Image, type UpdateImageData } from '@/lib/services/imageService';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import logger from '@/lib/logger';
 
-// Define form schema for editing an image
+/**
+ * Schema for validating image edit form data
+ * Ensures title is required and other fields match expected formats
+ */
 const editImageSchema = z.object({
-  id: z.string().min(1),
+  id: z.string().min(1, 'Image ID is required'),
   title: z.string().min(1, 'Title is required'),
   description: z.string().nullable().optional(),
   tags: z.array(z.string()).optional()
 });
 
+/**
+ * Type for form data based on schema validation
+ */
 type EditImageFormData = z.infer<typeof editImageSchema>;
 
+/**
+ * Props interface for the EditImageDialog component
+ */
 interface EditImageDialogProps {
+  /** The image object to be edited. Must follow the Image type from ImageService */
   image: Image;
+  /** Controls the visibility of the dialog */
   isOpen: boolean;
+  /** 
+   * Callback when the dialog is closed.
+   * @param deletedImageId - Optional ID of the image if it was deleted
+   */
   onClose: (deletedImageId?: string) => void;
 }
 
-export function EditImageDialogWithZod({ image, isOpen, onClose }: EditImageDialogProps) {
+/**
+ * EditImageDialog - Modern dialog component for editing image metadata
+ * 
+ * Features:
+ * - Zod schema validation
+ * - TypeScript type safety
+ * - Integration with ImageService
+ * - Proper error handling
+ * - Abort controller for cancelling pending requests
+ * 
+ * @param props - Component props
+ * @returns React component
+ */
+export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -275,3 +310,6 @@ export function EditImageDialogWithZod({ image, isOpen, onClose }: EditImageDial
     </>
   );
 }
+
+// Export types
+export type { EditImageFormData };
