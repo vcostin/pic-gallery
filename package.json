@@ -4,13 +4,14 @@
   "private": true,
   "description": "A modern web application for artists to showcase and organize their artwork in customizable galleries",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
+    "dev": "prisma generate && next dev --turbopack",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "lint:all": "eslint --ext .js,.jsx,.ts,.tsx ./src",
     "lint:fix": "eslint --ext .js,.jsx,.ts,.tsx ./src --fix",
     "updatedb": "prisma generate && prisma db push",
+    "postinstall": "prisma generate",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --coverageReporters=lcov"

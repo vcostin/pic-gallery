@@ -34,6 +34,7 @@
 
 # Prisma
 /prisma/*.db
+/src/lib/generated/prisma-client
 
 # macOS specific
 .DS_Store
