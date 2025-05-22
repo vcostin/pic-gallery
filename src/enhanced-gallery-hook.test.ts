@@ -1,11 +1,11 @@
 import { renderHook, act } from '@testing-library/react';
-import { useEnhancedGalleryImages } from './lib/hooks/useEnhancedGallery';
-import { GalleryService } from './lib/services/galleryService';
-import { FullGallery, FullImageInGallery } from './lib/schemas';
+import { useEnhancedGalleryImages } from '@/lib/hooks/useEnhancedGallery';
+import { GalleryService } from '@/lib/services/galleryService';
+import { FullGallery, FullImageInGallery } from '@/lib/schemas';
 import { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 
 // Mock the GalleryService API
-jest.mock('./lib/services/galleryService');
+jest.mock('@/lib/services/galleryService');
 
 // Mock vibration API
 Object.defineProperty(navigator, 'vibrate', {

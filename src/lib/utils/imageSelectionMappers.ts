@@ -2,7 +2,7 @@
  * Utility functions for mapping between schema-derived types for image selection
  */
 import { z } from 'zod';
-import { ImageSchema, TagSchema } from '../schemas';
+import { ImageSchema, TagSchema } from '@/lib/schemas';
 
 /**
  * Schema for image selection in UI

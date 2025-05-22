@@ -1,9 +1,9 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaClient, UserRole } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { UserRole } from "@prisma/client"; 
+import bcrypt from "bcrypt";
+import { prisma } from "@/lib/db"; // Import the shared PrismaClient instance
 
 declare module 'next-auth' {
   interface Session {
@@ -46,21 +46,36 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (credentials?.email && credentials?.password) {
-          const user = await prisma.user.upsert({
+          // Find user by email
+          const user = await prisma.user.findUnique({
             where: { email: credentials.email },
-            update: {},
-            create: {
-              email: credentials.email,
-              name: credentials.email.split('@')[0],
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              password: true,
+              role: true,
             },
           });
           
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-          };
+          // Verify that user exists and password is correct
+          if (user && user.password) {
+            // Compare the provided password with stored hash
+            const passwordMatch = await bcrypt.compare(credentials.password, user.password);
+            
+            if (passwordMatch) {
+              return {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+              };
+            }
+          }
+          
+          // If user not found, return null for failed authentication
+          return null;
+          
         }
         return null;
       }
@@ -97,6 +112,6 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: '/auth/signin',
+    signIn: '/auth/login',
   },
 };

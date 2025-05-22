@@ -1,4 +1,4 @@
-import { PaginatedResponse } from '../types';
+import { PaginatedResponse } from '@/lib/types';
 
 // API response types
 export interface ApiSuccess<T> {

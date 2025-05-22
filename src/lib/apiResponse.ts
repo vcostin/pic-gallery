@@ -1,6 +1,6 @@
 import { ZodError } from 'zod';
 import { NextResponse } from 'next/server';
-import type { ApiResponse } from './types/api';
+import type { ApiResponse } from '@/lib/types/api';
 
 export function apiSuccess<T>(data: T, status = 200): NextResponse<ApiResponse<T>> {
   return NextResponse.json({ success: true, data }, { status });

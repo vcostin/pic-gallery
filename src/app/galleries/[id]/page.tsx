@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { ThemedGalleryView } from "@/components/ThemedGalleryView";
 import { FullGallery } from "@/lib/types"; // Assuming FullGallery is defined here or adjust path
-import { UserRole } from '@prisma/client'; // Import UserRole
 
 export default async function GalleryPage({
   params,
@@ -52,12 +51,12 @@ export default async function GalleryPage({
 
   // Removed unused isOwner variable
 
-  // Augment the user object to match the expected structure for FullGallery
+  // Create a user object that matches exactly what FullGallery schema expects
   const augmentedUser = {
-    ...gallery.user,
-    email: null, // Add missing property
-    emailVerified: null, // Add missing property
-    role: UserRole.USER, // Add missing property, provide a default or fetch actual role
+    id: gallery.user.id,
+    name: gallery.user.name,
+    image: gallery.user.image,
+    // No email, emailVerified, or role as they're not in FullGallerySchema
   };
 
   const fullGallery: FullGallery = {

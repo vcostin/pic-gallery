@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Art Gallery",
-  description: "A platform for sharing your artwork",
+  title: "Pic Gallery",
+  description: "A platform for sharing your artwork and creating beautiful galleries",
 };
 
 export default async function RootLayout({

@@ -2,10 +2,10 @@
  * API utilities for working with Zod schemas
  */
 import { z } from 'zod';
-import { ApiResponse } from './types/api';
+import { ApiResponse } from '@/lib/types/api';
 import {
   ApiSuccessResponseSchema
-} from './schemas';
+} from '@/lib/schemas';
 
 /**
  * Validate an API response against a Zod schema

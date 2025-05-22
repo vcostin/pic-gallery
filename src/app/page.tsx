@@ -9,8 +9,8 @@ export default function Home() {
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="max-w-3xl mx-auto text-center">
-        <h1 className="text-4xl font-bold mb-6">
-          Welcome to Art Gallery
+        <h1 className="text-4xl font-bold mb-6 text-indigo-600">
+          Welcome to Pic Gallery
         </h1>
         <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
           Share your artwork, create curated galleries, and connect with other artists.
@@ -51,7 +51,7 @@ export default function Home() {
               Sign in to start uploading your artwork and creating galleries.
             </p>
             <Link
-              href="/auth/signin"
+              href="/auth/login"
               className="inline-block bg-blue-500 text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition-colors"
             >
               Get Started

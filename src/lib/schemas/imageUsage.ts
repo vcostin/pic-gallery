@@ -2,7 +2,7 @@
  * Schemas for image usage related API responses
  */
 import { z } from "zod";
-import { createApiSuccessSchema } from "../schemas";
+import { createApiSuccessSchema } from "@/lib/schemas";
 
 // Schema for gallery information in usage response
 export const GalleryReferenceSchema = z.object({

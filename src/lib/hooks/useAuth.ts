@@ -41,7 +41,7 @@ export function useAuth(): UseAuthReturn {
    * Sign out handler with redirect capability
    */
   const handleSignOut = useCallback(async (options?: { callbackUrl?: string, redirect?: boolean }) => {
-    const { callbackUrl = '/auth/signin', redirect = true } = options || {};
+    const { callbackUrl = '/auth/login', redirect = true } = options || {};
     await signOut({ callbackUrl, redirect });
   }, []);
   
@@ -56,7 +56,7 @@ export function useAuth(): UseAuthReturn {
     }
     
     if (!isAuthenticated) {
-      router.push('/api/auth/signin');
+      router.push('/auth/login');
       return false;
     }
     

@@ -3,11 +3,11 @@
  * Using Zod schemas for validation
  */
 import { z } from 'zod';
-import { fetchApi } from '../apiUtils';
+import { fetchApi } from '@/lib/apiUtils';
 import { 
   UserSchema,
   PaginatedUsersResponseSchema
-} from '../schemas';
+} from '@/lib/schemas';
 
 // Type definitions derived from schemas
 export type User = z.infer<typeof UserSchema>;

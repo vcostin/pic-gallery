@@ -10,16 +10,16 @@ import {
   useFetch, 
   useSubmit,
   // Exclude useGalleryImages as it's also defined in ./useGallery
-} from '../hooks';
+} from '@/lib/hooks';
 
 export { useAsync, useFetch, useSubmit };
 
 // API hooks
-export * from './useApi';
+export * from '@/lib/hooks/useApi';
 
 // Gallery hooks
-export * from './useGallery';
-export * from './useEnhancedGallery';
+export * from '@/lib/hooks/useGallery';
+export * from '@/lib/hooks/useEnhancedGallery';
 
 // Migration guide
-export * from './migration';
+export * from '@/lib/hooks/migration';
