@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
   if (path.startsWith('/admin')) {
     // If user is not authenticated, redirect to login page
     if (!session) {
-      return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+      return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 
     // Verify if the user is an admin by making a fetch request to our own API
