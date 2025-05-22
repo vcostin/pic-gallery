@@ -55,7 +55,7 @@ export default async function GalleryPage({
   // Augment the user object to match the expected structure for FullGallery
   const augmentedUser = {
     ...gallery.user,
-    email: null, // Add missing property
+    email: gallery.user.email || 'user@example.com', // Default email (should always have a value now)
     emailVerified: null, // Add missing property
     role: UserRole.USER, // Add missing property, provide a default or fetch actual role
   };
