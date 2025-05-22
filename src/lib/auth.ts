@@ -1,9 +1,9 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@prisma/client"; 
 import bcrypt from "bcrypt";
-import { prisma } from "./db"; // Import the shared PrismaClient instance
+import { prisma } from "@/lib/db"; // Import the shared PrismaClient instance
 
 declare module 'next-auth' {
   interface Session {

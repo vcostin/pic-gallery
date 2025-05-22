@@ -2,8 +2,8 @@
  * Enhanced gallery hooks for UI and API operations
  */
 import { useState, useCallback, useEffect } from 'react';
-import { GalleryService } from '../services/galleryService';
-import { FullGallery, FullImageInGallery } from '../schemas';
+import { GalleryService } from '@/lib/services/galleryService';
+import { FullGallery, FullImageInGallery } from '@/lib/schemas';
 import { arrayMove } from '@dnd-kit/sortable';
 import { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import logger from '@/lib/logger';

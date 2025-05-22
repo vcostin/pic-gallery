@@ -36,7 +36,6 @@ export default async function GalleryPage({
           id: true,
           name: true,
           image: true,
-          email: true, // Include email to avoid using fallbacks
         },
       },
     },

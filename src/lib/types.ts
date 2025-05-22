@@ -13,7 +13,7 @@ import {
   Gallery as ZodGallery,
   Tag as ZodTag,
   ImageInGallery as ZodImageInGallery
-} from './schemas';
+} from '@/lib/schemas';
 import { Gallery, ImageInGallery, Tag as PrismaTag, UserRole, Image as PrismaImage } from '@prisma/client';
 
 // API Response types

@@ -5,8 +5,8 @@ import { z } from 'zod';
 import { 
   GallerySchema,
   TagSchema
-} from '../schemas';
-import { DisplayGallery } from './typeMappers';
+} from '@/lib/schemas';
+import { DisplayGallery } from '@/lib/utils/typeMappers';
 
 /**
  * Schema for Gallery View

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { SelectImagesDialog } from './components/SelectImagesDialog';
+import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import '@testing-library/jest-dom';
 
 // Mock fetch for API calls

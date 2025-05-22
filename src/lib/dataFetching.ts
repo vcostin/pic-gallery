@@ -2,7 +2,7 @@
  * Data fetching utilities to optimize API requests and responses
  */
 
-import logger from './logger';
+import logger from '@/lib/logger';
 
 export interface PaginationParams {
   page?: number;
