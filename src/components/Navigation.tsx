@@ -25,8 +25,8 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold">
-              Art Gallery
+            <Link href="/" className="text-2xl font-bold text-indigo-600">
+              Pic Gallery
             </Link>
             {isAuthenticated && (
               <div className="ml-10 flex items-baseline space-x-4">
