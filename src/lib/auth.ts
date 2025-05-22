@@ -46,21 +46,25 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (credentials?.email && credentials?.password) {
-          const user = await prisma.user.upsert({
+          // Find user by email
+          const user = await prisma.user.findUnique({
             where: { email: credentials.email },
-            update: {},
-            create: {
-              email: credentials.email,
-              name: credentials.email.split('@')[0],
-            },
           });
           
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-          };
+          // For this example, we're just validating that the user exists
+          // In a real application, you would verify the password with bcrypt or similar
+          if (user) {
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+            };
+          }
+          
+          // If user not found, return null for failed authentication
+          return null;
+          
         }
         return null;
       }
@@ -97,6 +101,6 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: '/auth/signin',
+    signIn: '/auth/login',
   },
 };
