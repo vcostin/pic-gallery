@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { prisma } from '@/lib/db';
+import { auth } from '@/lib/config';
 
 // Validation schema for registration request
 const registerSchema = z.object({
@@ -38,9 +39,8 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Hash the password before storing it
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    // Hash the password before storing it using configured salt rounds
+    const hashedPassword = await bcrypt.hash(password, auth.saltRounds);
     
     // Create user with hashed password
     const user = await prisma.user.create({
