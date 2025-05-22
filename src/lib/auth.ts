@@ -2,6 +2,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient, UserRole } from "@prisma/client";
+import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
@@ -49,17 +50,28 @@ export const authOptions: NextAuthOptions = {
           // Find user by email
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              password: true,
+              role: true,
+            },
           });
           
-          // For this example, we're just validating that the user exists
-          // In a real application, you would verify the password with bcrypt or similar
-          if (user) {
-            return {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              role: user.role,
-            };
+          // Verify that user exists and password is correct
+          if (user && user.password) {
+            // Compare the provided password with stored hash
+            const passwordMatch = await bcrypt.compare(credentials.password, user.password);
+            
+            if (passwordMatch) {
+              return {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+              };
+            }
           }
           
           // If user not found, return null for failed authentication

@@ -1,0 +1,122 @@
+// This is your Prisma schema file
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/lib/generated/prisma-client"
+}
+
+// Define available user roles
+enum UserRole {
+  USER
+  ADMIN
+  // MODERATOR // Uncomment this when needed in the future
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  password      String? // Hashed password for credentials login
+  emailVerified DateTime?
+  image         String?
+  role          UserRole  @default(USER)
+  accounts      Account[]
+  sessions      Session[]
+  images        Image[]
+  galleries     Gallery[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Image {
+  id          String           @id @default(cuid())
+  title       String
+  description String?          @db.Text
+  url         String
+  userId      String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags        Tag[]
+  inGalleries ImageInGallery[]
+  coverFor    Gallery[]        @relation("GalleryCover")
+}
+
+model Gallery {
+  id           String           @id @default(cuid())
+  title        String
+  description  String?          @db.Text
+  isPublic     Boolean          @default(false)
+  userId       String
+  coverImageId String?
+  coverImage   Image?           @relation("GalleryCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images       ImageInGallery[]
+
+  // Theming options
+  themeColor         String? // e.g., hex code for a primary color
+  backgroundColor    String? // e.g., hex code for background
+  backgroundImageUrl String? // URL for a background image
+  accentColor        String? // e.g., hex code for accents
+  fontFamily         String? // e.g., "Arial, sans-serif"
+  displayMode        String? // e.g., "carousel", "grid", "slideshow"
+  layoutType         String? // e.g., "full-width", "contained"
+}
+
+model Tag {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  images Image[]
+}
+
+model ImageInGallery {
+  id          String   @id @default(cuid())
+  imageId     String
+  galleryId   String
+  description String?  @db.Text
+  order       Int      @default(0) // New field to track image order in the gallery
+  image       Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  gallery     Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([imageId, galleryId])
+}

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -39,16 +40,16 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Create user
-    // Note: In a real app, you would hash the password before storing it
-    // For this example, we're relying on NextAuth's adapter to handle credentials
+    // Hash the password before storing it
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    
+    // Create user with hashed password
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        // When using NextAuth with Credentials provider, you typically don't store raw passwords
-        // in the user table directly, as NextAuth handles auth separately.
-        // If your auth flow needs direct password storage, add proper bcrypt/Argon2 hashing here.
+        password: hashedPassword, // Store the hashed password
       },
     });
     
