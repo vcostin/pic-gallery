@@ -13,8 +13,9 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e-tests',
-  /* Path to global setup file that runs before all tests */
+  /* Path to global setup and teardown files */
   globalSetup: './e2e-tests/global-setup.ts',
+  globalTeardown: './e2e-tests/global-teardown.ts',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -36,6 +37,24 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    // Setup project to create an authenticated state for use in other tests
+    {
+      name: 'setup',
+      testMatch: /auth\.setup\.ts/,
+    },
+    
+    // Test project that uses the authenticated state
+    {
+      name: 'authenticated',
+      use: { 
+        ...devices['Desktop Chrome'],
+        // Use the authenticated state from the setup project
+        storageState: './playwright/.auth/user.json',
+      },
+      dependencies: ['setup'],
+    },
+    
+    // Regular project without authentication for basic tests
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },

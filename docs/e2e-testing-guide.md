@@ -28,6 +28,15 @@ npm run test:e2e:debug
 
 # View the HTML test report
 npm run test:e2e:report
+
+# Run only authentication-related tests in Chromium
+npm run test:e2e:auth
+
+# Run only gallery-related tests in Chromium
+npm run test:e2e:gallery
+
+# Run authenticated tests using pre-authenticated state
+npm run test:e2e:authenticated
 ```
 
 ### Running Tests in Specific Browsers
@@ -48,9 +57,49 @@ npx playwright test --project=webkit
 Tests are organized in the `e2e-tests` directory:
 
 - `gallery.spec.ts` - Tests for gallery browsing and image viewing functionality
-- `auth.spec.ts` - Tests for authentication flows
+- `auth.spec.ts` - Tests for authentication flows (login, registration, etc.)
+- `authenticated.spec.ts` - Tests that run with pre-authenticated state
 - `helpers.ts` - Shared helper functions for common operations
 - `global-setup.ts` - Setup that runs before all tests
+- `global-teardown.ts` - Cleanup that runs after all tests
+- `auth.setup.ts` - Setup for authenticated tests
+
+## Selector Strategy
+
+To ensure tests are reliable and maintainable, we follow these practices for selectors:
+
+1. **Prefer `data-testid` attributes** - Add these to components specifically for testing
+2. **Use semantic selectors** as a fallback - `getByRole()`, `getByLabel()`, etc.
+3. **Avoid CSS selectors** based on styles or non-semantic attributes
+4. **Avoid text-based selectors** that might change with copy updates
+
+### Example of data-testid Usage
+
+In component:
+```tsx
+<button 
+  onClick={handleClick}
+  className="primary-button"
+  data-testid="submit-form"
+>
+  Submit
+</button>
+```
+
+In test:
+```typescript
+await page.getByTestId('submit-form').click();
+```
+
+### Common data-testid Patterns
+
+We use the following naming conventions for data-testid attributes:
+
+- Form inputs: `{form-name}-{field-name}` (e.g., `login-email`)
+- Form submission: `{form-name}-submit` (e.g., `login-submit`)
+- Error messages: `{form-name}-error` (e.g., `login-error`)
+- List items: `{list-type}-item` (e.g., `gallery-item`)
+- Detail elements: `{entity}-detail-{property}` (e.g., `gallery-detail-title`)
 
 ## Writing Tests
 
@@ -74,13 +123,29 @@ test.describe('Feature Name', () => {
     await page.goto('/specific-page');
     
     // Act - perform the action being tested
-    await page.getByRole('button', { name: 'Action' }).click();
+    await page.getByTestId('action-button').click();
     
     // Assert - verify the expected outcome
-    await expect(page.locator('.result')).toContainText('Expected Result');
+    await expect(page.getByTestId('result-message')).toContainText('Expected Result');
   });
 });
 ```
+
+## Authentication in Tests
+
+For tests requiring authentication, we provide three approaches:
+
+1. **Persistent Authentication State**
+   - Use tests in the `authenticated` project which automatically use the saved auth state
+   - Run with `npm run test:e2e:authenticated`
+   - These tests will always start in an authenticated state without having to log in
+  
+2. **Helper Functions**
+   - Use `TestHelpers.login()` to log in programmatically within a test
+   - Best for tests where you need different users or authentication is part of what you're testing
+
+3. **Skip Authentication**
+   - Use `test.skip()` for tests that require complex auth setup in some environments
 
 ## CI/CD Integration
 
@@ -96,3 +161,13 @@ If tests are failing:
 2. Try running in debug mode with `npm run test:e2e:debug`
 3. Check for timing issues - look for race conditions
 4. Verify selectors are stable and resilient
+
+## Adding New Tests
+
+When adding new tests:
+
+1. Add appropriate `data-testid` attributes to components
+2. Write tests that use these attributes for selection
+3. Keep tests focused on user-facing functionality
+4. Add the test file to the `e2e-tests` directory
+5. Create a dedicated npm script if it's a major feature area
