@@ -149,7 +149,7 @@ describe('useEnhancedGalleryImages', () => {
       result.current.handleRemoveImage('img1-in-gallery');
     });
     
-    expect(result.current.showRemoveImageDialog).toBe(true);
+    expect(result.current.showRemoveImageDialog.isOpen).toBe(true);
     expect(result.current.imageToRemove).toBe('img1-in-gallery');
     
     // Confirm removal and wait for the promise to resolve

@@ -24,7 +24,7 @@ export function useEnhancedGalleryImages(
   // UI state
   const [activeId, setActiveId] = useState<string | null>(null);
   const [imageToRemove, setImageToRemove] = useState<string | null>(null);
-  const [showRemoveImageDialog, setShowRemoveImageDialog] = useState(false);
+  const [showRemoveImageDialog, setShowRemoveImageDialog] = useState({ isOpen: false });
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   
@@ -194,23 +194,26 @@ export function useEnhancedGalleryImages(
   // Handle opening the remove image dialog
   const handleRemoveImage = useCallback((id: string) => {
     setImageToRemove(id);
-    setShowRemoveImageDialog(true);
+    setShowRemoveImageDialog({ isOpen: true });
   }, []);
   
   // Confirm removing an image
   const confirmRemoveImage = useCallback(() => {
     if (imageToRemove) {
-      // Use the API function to remove the image
+      // Update local state immediately for better UX
+      setImages(prevImages => prevImages.filter(img => img.id !== imageToRemove));
+      
+      // Then use the API function to remove the image
       removeImage(imageToRemove);
     }
-    setShowRemoveImageDialog(false);
+    setShowRemoveImageDialog({ isOpen: false });
     setImageToRemove(null);
     return true;
   }, [imageToRemove, removeImage]);
   
   // Cancel removing an image
   const cancelRemoveImage = useCallback(() => {
-    setShowRemoveImageDialog(false);
+    setShowRemoveImageDialog({ isOpen: false });
     setImageToRemove(null);
   }, []);
   
