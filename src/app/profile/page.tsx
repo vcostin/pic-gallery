@@ -92,8 +92,9 @@ export default async function ProfilePage() {
               <button
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition"
                 data-delete-account-id={user.id}
+                data-testid="delete-account-button"
               >
-                Delete Account
+                Delete My Account
               </button>
             </div>
           </div>

@@ -125,9 +125,10 @@ export function DeleteAccountDialog({ userId }: DeleteAccountDialogProps) {
             type="button"
             onClick={handleDeleteAccount}
             disabled={isDeleting || confirmText !== 'DELETE'}
+            data-testid="confirm-delete-account"
             className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition disabled:opacity-50"
           >
-            {isDeleting ? 'Deleting...' : 'Delete My Account'}
+            {isDeleting ? 'Deleting...' : 'Yes, delete account'}
           </button>
         </div>
       </div>
