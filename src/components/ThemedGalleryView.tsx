@@ -118,17 +118,17 @@ export function ThemedGalleryView({ gallery }: ThemedGalleryViewProps) {
   };
 
   return (
-    <div style={galleryStyle} className={`py-8 ${containerClass}`}>
+    <div style={galleryStyle} className={`py-8 ${containerClass}`} data-testid="gallery-view">
       <div className="mb-4 px-4">
-        <h1 className="text-3xl font-bold" style={{ color: themeColor || undefined }}>
+        <h1 className="text-3xl font-bold" style={{ color: themeColor || undefined }} data-testid="gallery-detail-title">
           {gallery.title}
         </h1>
         {gallery.description && (
-          <p className="text-lg mt-2" style={{ color: themeColor || undefined }}>
+          <p className="text-lg mt-2" style={{ color: themeColor || undefined }} data-testid="gallery-detail-description">
             {gallery.description}
           </p>
         )}
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1" data-testid="gallery-detail-author">
           By {gallery.user.name || 'Anonymous'}
         </p>
       </div>

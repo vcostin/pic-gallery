@@ -28,7 +28,7 @@ interface ImageGridProps {
 // Memoized image card component to prevent unnecessary re-renders
 const ImageCard = memo(({ image, onEdit }: { image: ImageType; onEdit: (image: ImageType) => void }) => {
   return (
-    <div className="group relative bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+    <div className="group relative bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden gallery-image" data-testid="gallery-image">
       <div className="aspect-square relative">
         <Image
           src={image.url}

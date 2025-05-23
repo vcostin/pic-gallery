@@ -91,7 +91,8 @@ export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
           <Link
             href={`/galleries/${gallery.id}`}
             key={gallery.id}
-            className="block group"
+            className="block group gallery-item"
+            data-testid="gallery-item"
           >
             <Card hover>
               <CardImage>
@@ -149,9 +150,9 @@ export function GalleryGrid({ galleries, isOwner }: GalleryGridProps) {
                 )}
               </CardImage>
               <CardContent>
-                <h2 className="font-semibold truncate">{gallery.title}</h2>
+                <h2 className="font-semibold truncate" data-testid="gallery-title">{gallery.title}</h2>
                 {gallery.description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mt-1">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mt-1" data-testid="gallery-description">
                     {gallery.description}
                   </p>
                 )}

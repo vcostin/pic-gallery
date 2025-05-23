@@ -50,6 +50,7 @@ export const GalleryFullscreen: React.FC<GalleryFullscreenProps> = ({
         color: themeColor || 'white'
       }}
       onClick={onClose} // Close on backdrop click
+      data-testid="gallery-fullscreen"
     >
       <div 
         style={{ padding: '20px', background: 'black', borderRadius: '5px', position: 'relative'}} 
@@ -62,15 +63,16 @@ export const GalleryFullscreen: React.FC<GalleryFullscreenProps> = ({
             Close
         </button>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button onClick={(e) => { e.stopPropagation(); onPrev(); }} style={{ background:'transparent', border:'none', fontSize:'2rem', color: themeColor || 'white', marginRight: '10px' }}>&#10094;</button>
+          <button onClick={(e) => { e.stopPropagation(); onPrev(); }} style={{ background:'transparent', border:'none', fontSize:'2rem', color: themeColor || 'white', marginRight: '10px' }} data-testid="gallery-prev-button">&#10094;</button>
           <Image 
             src={image.url} 
             alt={image.title || 'Fullscreen image'} 
             width={800} // Example width, adjust as needed
             height={600} // Example height, adjust as needed
             style={{ maxHeight: '80vh', maxWidth: '80vw', display: 'block', objectFit: 'contain' }}
+            data-testid="gallery-fullscreen-image"
           />
-          <button onClick={(e) => { e.stopPropagation(); onNext(); }} style={{ background:'transparent', border:'none', fontSize:'2rem', color: themeColor || 'white', marginLeft: '10px' }}>&#10095;</button>
+          <button onClick={(e) => { e.stopPropagation(); onNext(); }} style={{ background:'transparent', border:'none', fontSize:'2rem', color: themeColor || 'white', marginLeft: '10px' }} data-testid="gallery-next-button">&#10095;</button>
         </div>
         {image.title && <h3 style={{ textAlign: 'center', marginTop: '10px' }}>{image.title}</h3>}
         {image.description && <p style={{ textAlign: 'center', marginTop: '5px' }}>{image.description}</p>}
