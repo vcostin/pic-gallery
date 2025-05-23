@@ -139,7 +139,7 @@ export function UploadImageWithService() {
           />
         )}
         
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4" role="form">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4" role="form" data-testid="upload-form">
           <div>
             <label className="block text-sm font-medium mb-1">Title</label>
             <input
@@ -149,6 +149,7 @@ export function UploadImageWithService() {
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
               placeholder="Enter image title"
               required
+              data-testid="upload-title"
             />
           </div>
           <div>
@@ -159,6 +160,7 @@ export function UploadImageWithService() {
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
               placeholder="Enter image description"
               rows={3}
+              data-testid="upload-description"
             />
           </div>
           <div>
@@ -169,6 +171,7 @@ export function UploadImageWithService() {
               onChange={(e) => setTags(e.target.value)}
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
               placeholder="Enter tags separated by commas"
+              data-testid="upload-tags"
             />
           </div>
           <div>
@@ -179,6 +182,7 @@ export function UploadImageWithService() {
               accept="image/*"
               className="w-full"
               required
+              data-testid="upload-file"
             />
             {preview && (
               <div className="mt-2 relative aspect-square w-full max-w-[200px]">
@@ -198,6 +202,7 @@ export function UploadImageWithService() {
             fullWidth
             disabled={isUploading || !file || !title}
             isLoading={isUploading}
+            data-testid="upload-submit"
           >
             Upload Image
           </Button>

@@ -39,6 +39,7 @@ export default function Home() {
                 <Link
                   href="/galleries"
                   className="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+                  data-testid="go-to-galleries"
                 >
                   Go to Galleries
                 </Link>

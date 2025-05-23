@@ -79,6 +79,7 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 {...register('email')}
+                data-testid="login-email"
                 className="relative block w-full rounded-md border-0 p-2 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600"
                 placeholder="Email address"
               />
@@ -96,6 +97,7 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 {...register('password')}
+                data-testid="login-password"
                 className="relative block w-full rounded-md border-0 p-2 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600"
                 placeholder="Password"
               />
@@ -106,7 +108,7 @@ export default function LoginPage() {
           </div>
           
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
+            <div className="rounded-md bg-red-50 p-4" role="alert" data-testid="login-error">
               <div className="flex">
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800">{error}</h3>
@@ -119,6 +121,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
+              data-testid="login-submit"
               className="group relative flex w-full justify-center rounded-md bg-indigo-600 py-2 px-3 text-sm font-semibold text-white hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}

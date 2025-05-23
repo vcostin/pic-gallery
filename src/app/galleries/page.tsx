@@ -39,6 +39,7 @@ export default async function GalleriesPage() {
         <Link
           href="/galleries/create"
           className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          data-testid="create-gallery-link"
         >
           Create New Gallery
         </Link>

@@ -87,6 +87,7 @@ export default function RegisterPage() {
                 type="text"
                 autoComplete="name"
                 {...register('name')}
+                data-testid="register-name"
                 className="relative block w-full rounded-md border-0 p-2 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600"
                 placeholder="Your name"
               />
@@ -104,6 +105,7 @@ export default function RegisterPage() {
                 type="email"
                 autoComplete="email"
                 {...register('email')}
+                data-testid="register-email"
                 className="relative block w-full rounded-md border-0 p-2 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600"
                 placeholder="Email address"
               />
@@ -121,6 +123,7 @@ export default function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 {...register('password')}
+                data-testid="register-password"
                 className="relative block w-full rounded-md border-0 p-2 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600"
                 placeholder="Password"
               />
@@ -138,6 +141,7 @@ export default function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 {...register('confirmPassword')}
+                data-testid="register-confirm-password"
                 className="relative block w-full rounded-md border-0 p-2 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600"
                 placeholder="Confirm password"
               />
@@ -148,7 +152,7 @@ export default function RegisterPage() {
           </div>
           
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
+            <div className="rounded-md bg-red-50 p-4" role="alert" data-testid="register-error">
               <div className="flex">
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800">{error}</h3>
@@ -161,6 +165,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
+              data-testid="register-submit"
               className="group relative flex w-full justify-center rounded-md bg-indigo-600 py-2 px-3 text-sm font-semibold text-white hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
             >
               {isLoading ? 'Creating account...' : 'Create account'}

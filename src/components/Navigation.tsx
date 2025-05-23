@@ -60,8 +60,9 @@ export function Navigation() {
                   variant="ghost" 
                   size="sm" 
                   onClick={() => signOut()}
+                  data-testid="logout-button"
                 >
-                  Sign Out
+                  Logout
                 </Button>
               </div>
             ) : (
