@@ -74,7 +74,7 @@ test.describe('User Account Lifecycle', () => {
     
     // Confirm account deletion in the dialog
     // We need to type DELETE in the confirmation field
-    await page.locator('input[placeholder="DELETE"]').fill('DELETE');
+    await page.getByTestId('delete-confirmation-input').fill('DELETE');
     await page.getByTestId('confirm-delete-account').click();
 
     // After deletion, user should be logged out and redirected to login page or home page
