@@ -15,6 +15,12 @@ test.describe('User Account Lifecycle', () => {
   const profileUrl = '/profile';
 
   test('should test complete user lifecycle: registration, login, account deletion, and login attempt after deletion', async ({ page }: { page: Page }) => {
+    // Skip in authenticated project as it conflicts with pre-authenticated state
+    if (process.env.AUTH_ONLY) {
+      console.log('Skipping user lifecycle test in authenticated project');
+      return;
+    }
+    
     // 1. Create a new account with generated credentials
     await page.goto(registerUrl);
     await expect(page).toHaveURL(registerUrl);
@@ -126,6 +132,12 @@ test.describe('Authentication UI Elements', () => {
 // Example of how to test protected routes
 test.describe('Protected Routes', () => {
   test('should redirect unauthenticated users from protected pages', async ({ page }: { page: Page }) => {
+    // Skip if running in the authenticated project (using AUTH_ONLY env var)
+    if (process.env.AUTH_ONLY) {
+      console.log('Skipping protected routes test in authenticated project');
+      return;
+    }
+    
     // Try to access a protected page
     await page.goto('/profile');
     

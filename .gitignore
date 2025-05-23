@@ -58,7 +58,9 @@ dist-ssr
 *.local
 tsconfig.tsbuildinfo
 
-.env*
+.env
+.env.*
+!.env.example
 
 # Playwright
 node_modules/

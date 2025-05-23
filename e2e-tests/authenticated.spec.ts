@@ -1,8 +1,17 @@
 import { test, expect } from '@playwright/test';
 
 // These tests will use the authenticated state
+// They're designed specifically for the authenticated project
+// Skip these tests when running in any project other than 'authenticated'
+
 test.describe('Authenticated Gallery Features', () => {
   test('should display user galleries when authenticated', async ({ page }) => {
+    // Skip if we're not using the AUTH_ONLY environment variable
+    if (!process.env.AUTH_ONLY) {
+      console.log('Skipping test - requires authenticated project');
+      return;
+    }
+    
     // Go directly to galleries page - we should already be authenticated
     await page.goto('/galleries');
     
@@ -28,6 +37,12 @@ test.describe('Authenticated Gallery Features', () => {
   });
   
   test('should be able to access the upload image page', async ({ page }) => {
+    // Skip if we're not using the AUTH_ONLY environment variable
+    if (!process.env.AUTH_ONLY) {
+      console.log('Skipping test - requires authenticated project');
+      return;
+    }
+    
     // Go to the images upload page
     await page.goto('/images/upload');
     

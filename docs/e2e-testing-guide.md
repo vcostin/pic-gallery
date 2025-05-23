@@ -139,6 +139,10 @@ For tests requiring authentication, we provide three approaches:
    - Use tests in the `authenticated` project which automatically use the saved auth state
    - Run with `npm run test:e2e:authenticated`
    - These tests will always start in an authenticated state without having to log in
+   - Authentication state is set up by the `auth.setup.ts` file which:
+     - Performs UI login with the test user
+     - Verifies authentication was successful
+     - Saves the browser storage state to a file for reuse in other tests
   
 2. **Helper Functions**
    - Use `TestHelpers.login()` to log in programmatically within a test
@@ -147,6 +151,14 @@ For tests requiring authentication, we provide three approaches:
 3. **Skip Authentication**
    - Use `test.skip()` for tests that require complex auth setup in some environments
 
+### Authentication Troubleshooting
+
+If authenticated tests are failing with redirects to the login page:
+
+1. **Check the auth storage file**: Verify `playwright/.auth/user.json` contains valid session cookies
+2. **Run the auth setup manually**: Run `npx playwright test auth.setup.ts --project=setup`
+3. **Browser inconsistencies**: Ensure you're using the same browser configuration for auth setup and tests
+4. **Session expiration**: Check if your NextAuth session is configured with a very short expiration time
 ## CI/CD Integration
 
 Tests will run automatically:
