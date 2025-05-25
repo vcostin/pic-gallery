@@ -29,11 +29,11 @@ test.describe('Gallery Management E2E', () => {
     const galleryTitle = `Test Gallery ${Date.now()}`;
     const galleryDescription = 'This is a test gallery created by E2E tests';
 
-    await page.getByTestId('gallery-title-input').fill(galleryTitle);
-    await page.getByTestId('gallery-description-input').fill(galleryDescription);
+    await page.getByTestId('gallery-title').fill(galleryTitle);
+    await page.getByTestId('gallery-description').fill(galleryDescription);
     
     // Make gallery public
-    await page.getByTestId('gallery-is-public-checkbox').check();
+    await page.getByTestId('gallery-public').check();
 
     // Step 3: Add images to gallery
     const selectImagesButton = page.getByTestId('select-images-button');
@@ -67,7 +67,7 @@ test.describe('Gallery Management E2E', () => {
     }
 
     // Step 4: Create the gallery
-    const submitButton = page.getByTestId('gallery-details-submit-button');
+    const submitButton = page.getByTestId('create-gallery-submit');
     await expect(submitButton).toBeVisible();
     await submitButton.click();
 
@@ -85,8 +85,8 @@ test.describe('Gallery Management E2E', () => {
       await expect(page).toHaveURL(/\/galleries\/[a-zA-Z0-9-]+\/edit$/);
 
       // Verify edit form is populated
-      await expect(page.getByTestId('gallery-title-input')).toHaveValue(galleryTitle);
-      await expect(page.getByTestId('gallery-description-input')).toHaveValue(galleryDescription);
+      await expect(page.getByTestId('gallery-title')).toHaveValue(galleryTitle);
+      await expect(page.getByTestId('gallery-description')).toHaveValue(galleryDescription);
 
       // Step 7: Test adding more images in edit mode
       const editSelectImagesButton = page.getByTestId('select-images-button');
@@ -233,7 +233,7 @@ test.describe('Gallery Management E2E', () => {
         await editButtons.first().click();
         
         // Make a small change and save to trigger success toast
-        const titleInput = page.getByTestId('gallery-title-input');
+        const titleInput = page.getByTestId('gallery-title');
         const currentTitle = await titleInput.inputValue();
         await titleInput.fill(currentTitle + ' (updated)');
         

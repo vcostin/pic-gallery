@@ -92,7 +92,7 @@ test('create a basic gallery', async ({ page, context }) => {
     
     // Submit the form
     console.log('Submitting gallery form...');
-    await page.getByTestId('create-gallery-submit-button').click();
+    await page.getByTestId('create-gallery-submit').click();
     
     // Wait for gallery creation
     await page.waitForURL(/\/galleries\/[\w-]+/, { timeout: 10000 });

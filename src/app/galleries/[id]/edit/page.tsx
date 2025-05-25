@@ -41,6 +41,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     confirmRemoveImage,    
     cancelRemoveImage,     
     showSuccessToast,      
+    setShowSuccessToast,
     toastMessage           
   } = useEnhancedGalleryImages(galleryId);
 
@@ -167,9 +168,11 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         setOriginalGalleryData(result.data);
         setImages(result.data.images);
         setSuccessMessage("Gallery updated successfully");
+        
+        // Redirect to gallery view after successful save
         setTimeout(() => {
-          setSuccessMessage(null);
-        }, 3000);
+          router.push(`/galleries/${galleryId}`);
+        }, 1000);
       }
     } catch (err) {
       logger.error("Submit error caught in form submission:", err);
@@ -322,7 +325,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
                 className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                 disabled={isSubmitting} 
               >
-                Add Images
+                Select Images
               </button>
             </div>
             
@@ -373,7 +376,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
             </button>
             <button 
               type="submit" 
-              disabled={isSubmitting || !hasUnsavedChanges}
+              disabled={isSubmitting}
               className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400"
               data-testid="edit-gallery-save-button"
             >

@@ -39,8 +39,8 @@ test('toast notifications should properly appear and disappear', async ({ page }
       const publicCheckbox = await page.locator('input[type="checkbox"]').first();
       await publicCheckbox.check();
       
-      // Submit the form
-      await page.locator('button[type="submit"]').click();
+      // Submit the form using the specific test ID
+      await page.getByTestId('create-gallery-submit').click();
       
       // Wait for navigation to the gallery page
       await page.waitForURL(/\/galleries\/[\w-]+/, { timeout: 10000 });

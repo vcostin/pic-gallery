@@ -118,7 +118,7 @@ test.describe('Setup Test Gallery', () => {
   
   // Submit the form
   try {
-    const createButton = page.getByTestId('create-gallery-submit-button');
+    const createButton = page.getByTestId('create-gallery-submit');
     await createButton.click();
     console.log('Clicked create gallery button');
   } catch (error) {

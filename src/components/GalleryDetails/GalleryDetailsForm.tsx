@@ -41,6 +41,7 @@ export interface GalleryDetailsFormProps {
   
   // Optional display customization
   submitText?: string;
+  showSubmitButton?: boolean;
   showCancelButton?: boolean;
   onCancel?: () => void;
   isSubmitting?: boolean;
@@ -58,6 +59,7 @@ export function GalleryDetailsForm({
   errors,
   onChange,
   submitText = 'Save',
+  showSubmitButton = true,
   showCancelButton = true,
   onCancel,
   isSubmitting = false,
@@ -84,7 +86,7 @@ export function GalleryDetailsForm({
               })}
               className={`w-full p-2 border ${errors.title ? 'border-red-500' : 'border-gray-300'} rounded`}
               aria-invalid={!!errors.title}
-              data-testid="gallery-title-input"
+              data-testid="gallery-title"
               aria-errormessage={errors.title ? "title-error" : undefined}
             />
             {errors.title && (
@@ -108,7 +110,7 @@ export function GalleryDetailsForm({
               className={`w-full p-2 border ${errors.description ? 'border-red-500' : 'border-gray-300'} rounded`}
               rows={4}
               aria-invalid={!!errors.description}
-              data-testid="gallery-description-input"
+              data-testid="gallery-description"
               aria-errormessage={errors.description ? "description-error" : undefined}
             />
             {errors.description && (
@@ -128,7 +130,7 @@ export function GalleryDetailsForm({
                   }
                 })}
                 className="w-4 h-4"
-                data-testid="gallery-is-public-checkbox"
+                data-testid="gallery-public"
               />
               <span>Public Gallery</span>
             </label>
@@ -276,14 +278,16 @@ export function GalleryDetailsForm({
                 Cancel
               </button>
             )}
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 ml-auto"
-              disabled={isSubmitting}
-              data-testid="gallery-details-submit-button"
-            >
-              {isSubmitting ? 'Saving...' : submitText}
-            </button>
+            {showSubmitButton && (
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 ml-auto"
+                disabled={isSubmitting}
+                data-testid="gallery-details-submit-button"
+              >
+                {isSubmitting ? 'Saving...' : submitText}
+              </button>
+            )}
           </div>
         </div>
       </CardContent>

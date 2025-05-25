@@ -53,11 +53,11 @@ test.describe('Comprehensive Gallery Workflow', () => {
     await expect(page.getByTestId('create-gallery-form')).toBeVisible();
 
     // Fill out basic gallery information
-    await page.getByTestId('gallery-title-input').fill(testGalleryName);
-    await page.getByTestId('gallery-description-input').fill(testGalleryDescription);
+    await page.getByTestId('gallery-title').fill(testGalleryName);
+    await page.getByTestId('gallery-description').fill(testGalleryDescription);
     
     // Set gallery to public for visibility
-    const publicCheckbox = page.getByTestId('gallery-is-public-checkbox');
+    const publicCheckbox = page.getByTestId('gallery-public');
     await publicCheckbox.check();
     await expect(publicCheckbox).toBeChecked();
 
@@ -162,7 +162,7 @@ test.describe('Comprehensive Gallery Workflow', () => {
     console.log('Phase 4: Saving gallery...');
     
     // Create the gallery
-    const submitButton = page.getByTestId('create-gallery-submit-button');
+    const submitButton = page.getByTestId('create-gallery-submit');
     await expect(submitButton).toBeVisible();
     await expect(submitButton).toBeEnabled();
     
@@ -241,8 +241,8 @@ test.describe('Comprehensive Gallery Workflow', () => {
       await expect(page).toHaveURL(/\/galleries\/[a-zA-Z0-9-]+\/edit$/);
 
       // Verify edit form is populated with existing data
-      const titleInput = page.getByTestId('gallery-title-input');
-      const descInput = page.getByTestId('gallery-description-input');
+      const titleInput = page.getByTestId('gallery-title');
+      const descInput = page.getByTestId('gallery-description');
       
       await expect(titleInput).toHaveValue(testGalleryName);
       await expect(descInput).toHaveValue(testGalleryDescription);

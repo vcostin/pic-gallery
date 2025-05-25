@@ -167,11 +167,9 @@ export function CreateGallery(): React.ReactElement {
             <GalleryDetailsForm
               register={register}
               errors={errors}
-              control={control}
               isSubmitting={isSubmitting}
-              showCancelButton
-              submitText="Create Gallery"
-              onCancel={handleCancelCreate}
+              showSubmitButton={false}
+              showCancelButton={false}
             />
             
             <div className="border-t pt-6">
@@ -232,7 +230,7 @@ export function CreateGallery(): React.ReactElement {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                data-testid="create-gallery-submit-button"
+                data-testid="create-gallery-submit"
               >
                 {isSubmitting ? 'Creating Gallery...' : 'Create Gallery'}
               </Button>
