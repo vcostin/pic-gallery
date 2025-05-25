@@ -751,4 +751,194 @@ export class TestHelpers {
       return false;
     }
   }
+
+  /**
+   * Create a gallery with images for testing purposes
+   * This ensures toast tests have galleries with images to work with
+   */
+  static async createGalleryWithImages(page: Page): Promise<{ galleryId: string, galleryName: string } | null> {
+    try {
+      console.log('Creating gallery with images for testing...');
+      
+      // Ensure we're authenticated
+      const isAuth = await this.isAuthenticated(page);
+      if (!isAuth) {
+        console.log('Not authenticated, attempting to login...');
+        const testEmail = process.env.E2E_TEST_USER_EMAIL || 'e2e-test@example.com';
+        const testPassword = process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!';
+        const loginSuccess = await this.login(page, testEmail, testPassword);
+        if (!loginSuccess) {
+          console.error('Failed to authenticate for gallery creation');
+          return null;
+        }
+      }
+
+      // Step 1: Upload images first
+      console.log('Step 1: Uploading test images...');
+      const uploadedImages = await this.uploadTestImages(page);
+      if (!uploadedImages || uploadedImages.length === 0) {
+        console.error('Failed to upload test images');
+        return null;
+      }
+      console.log(`Uploaded ${uploadedImages.length} test images`);
+
+      // Step 2: Create a gallery
+      console.log('Step 2: Creating gallery...');
+      const uniqueId = Date.now();
+      const galleryName = `Test Gallery ${uniqueId}`;
+      
+      await page.goto('/galleries/create');
+      await page.waitForLoadState('networkidle');
+      
+      // Fill gallery form
+      await page.getByTestId('gallery-title').fill(galleryName);
+      await page.getByTestId('gallery-description').fill('Test gallery created for E2E toast testing');
+      await page.getByTestId('gallery-public').check();
+      
+      // Submit gallery form
+      await page.getByTestId('create-gallery-submit').click();
+      
+      // Wait for redirect to gallery view page
+      await page.waitForURL(/\/galleries\/[\w-]+$/, { timeout: 10000 });
+      
+      // Extract gallery ID from URL
+      const currentUrl = page.url();
+      const galleryId = currentUrl.split('/').pop();
+      if (!galleryId || galleryId === 'create') {
+        console.error(`Failed to extract gallery ID from URL: ${currentUrl}`);
+        return null;
+      }
+      
+      console.log(`Created gallery: ${galleryName} (ID: ${galleryId})`);
+
+      // Step 3: Add images to the gallery
+      console.log('Step 3: Adding images to gallery...');
+      
+      // Navigate to edit page
+      await page.getByTestId('edit-gallery-button').click();
+      await page.waitForURL(/\/galleries\/[\w-]+\/edit/, { timeout: 10000 });
+      
+      // Click select images button
+      await page.getByRole('button', { name: /select images/i }).click();
+      
+      // Wait for image selection modal/interface
+      await page.waitForTimeout(1000);
+      
+      // Select the uploaded images (try multiple strategies)
+      let selectedCount = 0;
+      for (const imageName of uploadedImages) {
+        try {
+          // Try clicking on the image by title
+          const imageElement = page.getByText(imageName);
+          if (await imageElement.isVisible({ timeout: 2000 })) {
+            await imageElement.click();
+            selectedCount++;
+            console.log(`Selected image: ${imageName}`);
+          }
+        } catch (error) {
+          console.warn(`Could not select image ${imageName}:`, error);
+        }
+      }
+      
+      if (selectedCount === 0) {
+        // Try selecting any available images if we couldn't find our specific ones
+        console.log('Could not find uploaded images, trying to select any available images...');
+        const imageCheckboxes = page.locator('input[type="checkbox"]');
+        const checkboxCount = await imageCheckboxes.count();
+        const maxToSelect = Math.min(checkboxCount, 3);
+        
+        for (let i = 0; i < maxToSelect; i++) {
+          try {
+            await imageCheckboxes.nth(i).check();
+            selectedCount++;
+          } catch (error) {
+            console.warn(`Could not select image checkbox ${i}:`, error);
+          }
+        }
+      }
+      
+      console.log(`Selected ${selectedCount} images`);
+      
+      // Confirm image selection
+      await page.getByTestId('select-images-add-button').click();
+      
+      // Save the gallery
+      await page.getByRole('button', { name: /save changes/i }).click();
+      await page.waitForTimeout(2000);
+      
+      // Verify the gallery has images
+      const galleryImages = page.locator('.gallery-image');
+      const imageCount = await galleryImages.count();
+      console.log(`Gallery now has ${imageCount} images`);
+      
+      if (imageCount > 0) {
+        console.log(`✅ Successfully created gallery "${galleryName}" with ${imageCount} images`);
+        return { galleryId, galleryName };
+      } else {
+        console.warn(`⚠️ Gallery created but has 0 images`);
+        return { galleryId, galleryName };
+      }
+      
+    } catch (error) {
+      console.error('Error creating gallery with images:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Upload test images for gallery testing
+   */
+  static async uploadTestImages(page: Page): Promise<string[]> {
+    const uploadedImages: string[] = [];
+    
+    try {
+      // Upload 2 test images
+      const imagesToUpload = [
+        {
+          filename: './public/uploads/1746721541274-454864497-----8856477.jpeg',
+          title: `Test Image ${Date.now()}-1`
+        },
+        {
+          filename: './public/uploads/1746721666749-415981397-----8856477.jpeg', 
+          title: `Test Image ${Date.now()}-2`
+        }
+      ];
+      
+      for (const image of imagesToUpload) {
+        try {
+          console.log(`Uploading: ${image.title}`);
+          
+          // Go to upload page
+          await page.goto('/images/upload');
+          await page.waitForLoadState('networkidle');
+          
+          // Set file
+          await page.getByTestId('upload-file').setInputFiles(image.filename);
+          
+          // Fill title - use the correct test ID
+          await page.getByTestId('upload-title').fill(image.title);
+          
+          // Fill description - use the correct test ID
+          await page.getByTestId('upload-description').fill('Test image for E2E testing');
+          
+          // Submit form
+          await page.getByTestId('upload-submit').click();
+          
+          // Wait for success message
+          await page.getByText(/uploaded successfully/i).waitFor({ timeout: 10000 });
+          
+          uploadedImages.push(image.title);
+          console.log(`✅ Uploaded: ${image.title}`);
+          
+        } catch (error) {
+          console.error(`Failed to upload ${image.title}:`, error);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error uploading test images:', error);
+    }
+    
+    return uploadedImages;
+  }
 }

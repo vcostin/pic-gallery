@@ -14,26 +14,19 @@ test.describe('Gallery Edit Functionality', () => {
   });
 
   test('toast notifications should appear and disappear correctly when removing an image', async ({ page }) => {
-    // Find an existing gallery to edit
-    const galleries = page.getByTestId('gallery-item');
-    const count = await galleries.count();
+    // Create a gallery with images for testing
+    const galleryData = await TestHelpers.createGalleryWithImages(page);
     
-    console.log(`Found ${count} galleries`);
-    
-    if (count === 0) {
-      console.log('No galleries found, skipping test');
-      test.skip('No galleries found to test');
+    if (!galleryData) {
+      test.skip('Failed to create gallery with images for testing');
       return;
     }
     
-    // Click the first gallery
-    await galleries.first().click();
+    console.log(`Using test gallery: ${galleryData.galleryName}`);
     
-    // Verify we're on the gallery detail page
-    await expect(page).toHaveURL(/\/galleries\/[\w-]+/);
-    
-    // Click the edit gallery button
-    await page.getByRole('link', { name: /edit/i }).click();
+    // Navigate to the created gallery's edit page
+    await page.goto(`/galleries/${galleryData.galleryId}/edit`);
+    await page.waitForLoadState('networkidle');
     
     // Verify we're on the edit page
     await expect(page).toHaveURL(/\/galleries\/[\w-]+\/edit/);
@@ -42,8 +35,11 @@ test.describe('Gallery Edit Functionality', () => {
     const galleryImages = page.locator('.gallery-image');
     const imageCount = await galleryImages.count();
     
+    console.log(`Gallery has ${imageCount} images`);
+    
     if (imageCount === 0) {
       test.skip('No images in gallery to test removal');
+      return;
     }
     
     // Click the remove button on the first image
@@ -70,22 +66,19 @@ test.describe('Gallery Edit Functionality', () => {
   });
 
   test('toast notifications should disappear when clicking the X button', async ({ page }) => {
-    // Find an existing gallery to edit
-    const galleries = page.getByTestId('gallery-item');
-    const count = await galleries.count();
+    // Create a gallery with images for testing
+    const galleryData = await TestHelpers.createGalleryWithImages(page);
     
-    if (count === 0) {
-      test.skip('No galleries found to test');
+    if (!galleryData) {
+      test.skip('Failed to create gallery with images for testing');
+      return;
     }
     
-    // Click the first gallery
-    await galleries.first().click();
+    console.log(`Using test gallery: ${galleryData.galleryName}`);
     
-    // Verify we're on the gallery detail page
-    await expect(page).toHaveURL(/\/galleries\/[\w-]+/);
-    
-    // Click the edit gallery button
-    await page.getByRole('link', { name: /edit/i }).click();
+    // Navigate to the created gallery's edit page
+    await page.goto(`/galleries/${galleryData.galleryId}/edit`);
+    await page.waitForLoadState('networkidle');
     
     // Verify we're on the edit page
     await expect(page).toHaveURL(/\/galleries\/[\w-]+\/edit/);
@@ -94,8 +87,11 @@ test.describe('Gallery Edit Functionality', () => {
     const galleryImages = page.locator('.gallery-image');
     const imageCount = await galleryImages.count();
     
+    console.log(`Gallery has ${imageCount} images`);
+    
     if (imageCount === 0) {
       test.skip('No images in gallery to test removal');
+      return;
     }
     
     // Click the remove button on the first image
