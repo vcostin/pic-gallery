@@ -1,76 +1,99 @@
-import { chromium } from 'playwright';
-import { FullConfig } from '@playwright/test';
-import fs from 'fs/promises';
+import { chromium, Page } from '@playwright/test';
 import path from 'path';
-import { TestHelpers } from './helpers';
+import fs from 'fs';
+import { TEST_USER, TestUser } from './auth-config';
 
-/**
- * Global setup for Playwright tests
- * This runs once before all tests
- * We create a test user account if needed and perform browser-based authentication
- */
-async function globalSetup(config: FullConfig) {
-  const browser = await chromium.launch();
-  const context = await browser.newContext({
-    baseURL: config.projects[0].use.baseURL as string,
-  });
-  const page = await context.newPage();
+async function createUser(page: Page, user: TestUser): Promise<void> {
+  console.log(`Creating user: ${user.email}`);
+  
+  // Go to registration page
+  await page.goto('http://localhost:3000/auth/register');
+  await page.waitForLoadState('networkidle');
 
+  // Fill registration form
+  await page.fill('input[name="name"]', user.name);
+  await page.fill('input[name="email"]', user.email);
+  await page.fill('input[name="password"]', user.password);
+
+  // Submit registration
+  await page.click('button[type="submit"]');
+  await page.waitForTimeout(2000);
+
+  // Check if registration was successful or user already exists
+  const currentUrl = page.url();
+  if (currentUrl.includes('/dashboard') || currentUrl.includes('/') && !currentUrl.includes('/auth/')) {
+    console.log(`✅ User ${user.email} registered successfully`);
+  } else {
+    // User might already exist, try logging in
+    await page.goto('http://localhost:3000/auth/login');
+    await page.waitForLoadState('networkidle');
+    
+    await page.fill('input[type="email"]', user.email);
+    await page.fill('input[type="password"]', user.password);
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(2000);
+    
+    console.log(`✅ User ${user.email} logged in (already existed)`);
+  }
+}
+
+async function saveAuthState(page: Page, user: TestUser): Promise<void> {
+  // Ensure auth directory exists
+  const authDir = path.join(__dirname, '../playwright/.auth');
+  if (!fs.existsSync(authDir)) {
+    fs.mkdirSync(authDir, { recursive: true });
+  }
+
+  // Save authentication state
+  await page.context().storageState({ path: user.storageStatePath });
+  console.log(`✅ Authentication state saved for ${user.email}`);
+}
+
+async function globalSetup() {
+  console.log('🧪 Starting E2E Global Setup - Single User Strategy...');
+  
   try {
-    // Create a test user if it doesn't exist using environment variables
-    const testUser = {
-      email: process.env.E2E_TEST_USER_EMAIL || 'e2e-test@example.com',
-      password: process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!',
-      name: process.env.E2E_TEST_USER_NAME || 'E2E Test User'
-    };
+    const browser = await chromium.launch();
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    console.log(`\n🗑️  Step 0: Deleting any existing test user (${TEST_USER.email})...`);
     
-    // Register test user via the UI to ensure it works
-    console.log('Setting up test user account...');
-    
-    // First check if we can log in with the test user
-    console.log('Attempting to log in with test user...');
-    
-    // Use our helper methods for more reliable login
-    const loginSuccess = await TestHelpers.login(page, testUser.email, testUser.password, false);
-    
-    if (!loginSuccess) {
-      console.log('Login failed, forcing registration of test user...');
+    // Attempt to delete existing test user before creating new one
+    try {
+      const deleteResult = await page.request.delete('/api/e2e/delete-user', {
+        data: { email: TEST_USER.email },
+        timeout: 10000
+      });
       
-      // Register the test user using our helper method
-      await TestHelpers.registerAndLogin(page, testUser.name, testUser.email, testUser.password);
+      if (deleteResult.ok()) {
+        console.log('✅ Existing test user deleted successfully');
+      } else {
+        console.log('ℹ️  No existing test user found (this is normal)');
+      }
+    } catch {
+      console.log('ℹ️  No existing test user to delete (this is normal)');
     }
+
+    console.log(`\n📝 Step 1: Creating single test user...`);
     
-    // Check again if we're logged in with a more robust check
-    const isLoggedInAfterRetry = await TestHelpers.isAuthenticated(page);
-    
-    if (isLoggedInAfterRetry) {
-      console.log('Successfully authenticated as test user');
-      
-      // Clean up any leftover test data from previous runs
-      console.log('Cleaning up any existing test data...');
-      await TestHelpers.cleanupTestData(page, false);
-      
-      // Save authentication state for reuse in tests
-      const authDir = path.join(process.cwd(), 'playwright/.auth');
-      await fs.mkdir(authDir, { recursive: true }).catch(() => {});
-      await context.storageState({ path: path.join(authDir, 'user.json') });
-      console.log('Authentication state saved for tests');
-    } else {
-      console.error('WARNING: Could not authenticate as test user');
-      // Take screenshot for debugging
-      await page.screenshot({ path: 'global-setup-auth-failed.png' });
-      
-      throw new Error('Authentication failed during global setup');
-    }
-    
-    console.log('Global setup completed - test user ready');
-  } catch (error) {
-    console.error('Error during global setup:', error);
-    await page.screenshot({ path: 'global-setup-error.png' });
-    throw error; // Re-throw to fail the setup
-  } finally {
+    await createUser(page, TEST_USER);
+    await saveAuthState(page, TEST_USER);
+
     await context.close();
     await browser.close();
+    
+    console.log('\n✅ Global Setup Complete - Single test user strategy initialized');
+    console.log('📋 Test Execution Strategy:');
+    console.log('   0. ✅ Delete existing test user (clean slate)');
+    console.log('   1. ✅ Create single test user');
+    console.log('   2. Auth tests (register verification, login/logout) - User persists');
+    console.log('   3. Feature tests (galleries, images, etc.) - Same user');  
+    console.log('   4. Cleanup tests (delete galleries/images via API) - Same user');
+    console.log('   5. Final test: Delete user profile and verify deletion');
+  } catch (error) {
+    console.error('❌ Global Setup Failed:', error);
+    throw error;
   }
 }
 

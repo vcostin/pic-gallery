@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { TestHelpers } from './helpers';
+import { SimpleHelpers } from './simple-helpers';
 
 /**
  * Comprehensive E2E cleanup test
@@ -18,23 +18,17 @@ test.describe('E2E Cleanup System', () => {
   const testImageTitle = `Cleanup Test Image ${Date.now()}`;
 
   test.beforeEach(async ({ page }) => {
-    // Ensure we start authenticated
-    await page.goto('/galleries');
-    const isAuthenticated = await TestHelpers.isAuthenticated(page);
+    // Simple authentication check - tests should already be authenticated from global setup
+    const isAuthenticated = await SimpleHelpers.isAuthenticated(page);
     if (!isAuthenticated) {
-      console.log('Not authenticated, performing login...');
+      // If not authenticated, try quick login
       const testUser = {
         email: process.env.E2E_TEST_USER_EMAIL || 'e2e-test@example.com',
         password: process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!'
       };
-      const loginSuccess = await TestHelpers.login(page, testUser.email, testUser.password);
+      const loginSuccess = await SimpleHelpers.quickLogin(page, testUser.email, testUser.password);
       
       if (!loginSuccess) {
-        console.log('Login failed. Checking environment variables:');
-        console.log(`- E2E_TEST_USER_EMAIL: ${process.env.E2E_TEST_USER_EMAIL ? 'Set' : 'Not set'}`);
-        console.log(`- E2E_TEST_USER_PASSWORD: ${process.env.E2E_TEST_USER_PASSWORD ? 'Set' : 'Not set'}`);
-        
-        // We can't use test.skip here as it needs to be in the test function
         throw new Error('Could not authenticate with the E2E test user');
       }
     }
@@ -68,14 +62,14 @@ test.describe('E2E Cleanup System', () => {
     console.log('Phase 2: Performing data-only cleanup...');
     
     // Clean up test data (but keep user account)
-    await TestHelpers.cleanupTestData(page, false);
+    await SimpleHelpers.cleanupTestData(page, false);
     
     // Wait a moment for cleanup to complete
     await page.waitForTimeout(1000);
     
     // Verify we're still authenticated (user account should still exist)
     await page.goto('/galleries');
-    const stillAuthenticated = await TestHelpers.isAuthenticated(page);
+    const stillAuthenticated = await SimpleHelpers.isAuthenticated(page);
     expect(stillAuthenticated).toBe(true);
     console.log('✅ User account preserved after data cleanup');
     
@@ -101,7 +95,7 @@ test.describe('E2E Cleanup System', () => {
     console.log('Phase 4: Performing complete cleanup (including user account)...');
     
     // Perform complete cleanup including user deletion
-    await TestHelpers.completeCleanup(page);
+    await SimpleHelpers.cleanupTestData(page, true);
     
     // Wait for cleanup to complete
     await page.waitForTimeout(2000);
@@ -148,10 +142,10 @@ test.describe('E2E Cleanup System', () => {
     console.log('Testing cleanup with no existing data...');
     
     // Attempt cleanup when no galleries/images exist
-    await TestHelpers.cleanupTestData(page, false);
+    await SimpleHelpers.cleanupTestData(page, false);
     
     // Should still be authenticated and no errors should occur
-    const stillAuthenticated = await TestHelpers.isAuthenticated(page);
+    const stillAuthenticated = await SimpleHelpers.isAuthenticated(page);
     expect(stillAuthenticated).toBe(true);
     
     console.log('✅ Cleanup with no data handled gracefully');
