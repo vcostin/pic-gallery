@@ -115,7 +115,7 @@ export function TagsInput<T>({
       <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-10 bg-background">
         {/* Render existing tags */}
         {currentTags.map((tag, index) => (
-          <Badge key={`${tag}-${index}`} variant="secondary" className="text-sm flex items-center gap-1">
+          <Badge key={`${tag}-${index}`} variant="secondary" className="text-sm flex items-center gap-1" data-testid={`tags-input-tag-${tag.toLowerCase().replace(/\s+/g, '-')}`}>
             {tag}
             <button 
               type="button" 
@@ -123,6 +123,7 @@ export function TagsInput<T>({
               className="focus:outline-none"
               disabled={disabled}
               aria-label={`Remove tag ${tag}`}
+              data-testid={`tags-input-remove-tag-${tag.toLowerCase().replace(/\s+/g, '-')}`}
             >
               <X className="w-3 h-3" />
             </button>
@@ -138,6 +139,7 @@ export function TagsInput<T>({
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
           disabled={disabled || (maxTags && currentTags.length >= maxTags)}
+          data-testid="tags-input-field"
         />
       </div>
       

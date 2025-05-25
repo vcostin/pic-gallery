@@ -220,7 +220,7 @@ export function UploadImage() {
           />
         )}
         
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4" role="form">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4" role="form" data-testid="upload-image-form">
           <div>
             <label className="block text-sm font-medium mb-1">Title</label>
             <input
@@ -230,6 +230,7 @@ export function UploadImage() {
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
               placeholder="Enter image title"
               required
+              data-testid="upload-image-title-input"
             />
           </div>
           <div>
@@ -240,6 +241,7 @@ export function UploadImage() {
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
               placeholder="Enter image description"
               rows={3}
+              data-testid="upload-image-description-input"
             />
           </div>
           <div>
@@ -250,6 +252,7 @@ export function UploadImage() {
               onChange={(e) => setTags(e.target.value)}
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
               placeholder="Enter tags separated by commas"
+              data-testid="upload-image-tags-input"
             />
           </div>
           <div>
@@ -260,6 +263,7 @@ export function UploadImage() {
               accept="image/*"
               className="w-full"
               required
+              data-testid="upload-image-file-input"
             />
             {preview && (
               <div className="mt-2 relative aspect-square w-full max-w-[200px]">
@@ -279,6 +283,7 @@ export function UploadImage() {
             fullWidth
             disabled={isUploading || !file || !title}
             isLoading={isUploading}
+            data-testid="upload-image-submit-button"
           >
             Upload Image
           </Button>

@@ -46,7 +46,7 @@ export default defineConfig({
     // Test project that uses the authenticated state
     {
       name: 'authenticated',
-      testMatch: /authenticated\.spec\.ts/,
+      testMatch: /(authenticated\.spec\.ts|comprehensive-gallery-workflow\.spec\.ts|gallery-management\.spec\.ts|check-gallery-exists\.spec\.ts|setup-basic-gallery\.spec\.ts|setup-gallery\.spec\.ts|toast-notification\.spec\.ts|gallery-edit\.spec\.ts|simple-gallery-toast\.spec\.ts)/,
       use: { 
         ...devices['Desktop Chrome'],
         // Use the authenticated state from the setup project
@@ -58,7 +58,7 @@ export default defineConfig({
     // Regular project without authentication for basic tests
     {
       name: 'chromium',
-      testIgnore: /authenticated\.spec\.ts/,
+      testIgnore: /(authenticated\.spec\.ts|comprehensive-gallery-workflow\.spec\.ts|gallery-management\.spec\.ts|check-gallery-exists\.spec\.ts|setup-basic-gallery\.spec\.ts|setup-gallery\.spec\.ts|toast-notification\.spec\.ts|gallery-edit\.spec\.ts|simple-gallery-toast\.spec\.ts)/,
       use: { ...devices['Desktop Chrome'] },
     },
 

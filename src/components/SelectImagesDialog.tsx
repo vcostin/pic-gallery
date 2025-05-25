@@ -244,7 +244,7 @@ export function SelectImagesDialog({
       >
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-2xl font-bold">Select Images</h2>
-          <Button onClick={onClose} variant="ghost" size="sm" aria-label="Close">
+          <Button onClick={onClose} variant="ghost" size="sm" aria-label="Close" data-testid="select-images-close-button">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -259,6 +259,7 @@ export function SelectImagesDialog({
               className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white pl-10"
               value={inputValue}
               onChange={handleSearchInputChange}
+              data-testid="select-images-search-input"
             />
             <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -270,6 +271,7 @@ export function SelectImagesDialog({
               onClick={handleConfirmSelection}
               disabled={selectedImages.size === 0}
               variant="primary"
+              data-testid="select-images-add-button"
             >
               Add {selectedImages.size} {selectedImages.size === 1 ? 'Image' : 'Images'}
             </Button>
@@ -287,6 +289,7 @@ export function SelectImagesDialog({
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
+                data-testid={`select-images-tag-filter-${tag}`}
               >
                 {tag}
               </button>
@@ -321,6 +324,7 @@ export function SelectImagesDialog({
                       isSelected ? 'ring-2 ring-blue-500' : 'hover:shadow-md'
                     }`}
                     onClick={() => handleSelectImage(image.id)}
+                    data-testid={`select-images-image-card-${image.id}`}
                   >
                     <div className="aspect-square relative">
                       <Image
@@ -328,10 +332,11 @@ export function SelectImagesDialog({
                         alt={image.title}
                         fill
                         className="object-cover"
+                        data-testid={`select-images-image-thumbnail-${image.id}`}
                       />
                       {isSelected && (
                         <div className="absolute inset-0 bg-blue-500 bg-opacity-30 flex items-center justify-center">
-                          <div className="rounded-full bg-blue-500 p-2">
+                          <div className="rounded-full bg-blue-500 p-2" data-testid={`select-images-image-selected-${image.id}`}>
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
@@ -340,12 +345,13 @@ export function SelectImagesDialog({
                       )}
                     </div>
                     <CardContent className="p-3">
-                      <h3 className="font-medium text-sm truncate">{image.title}</h3>
+                      <h3 className="font-medium text-sm truncate" data-testid={`select-images-image-title-${image.id}`}>{image.title}</h3>
                       {image.tags && image.tags.length > 0 && (
                         <div className="mt-1">
                           <ImageTags 
                             tags={image.tags.map(tag => ({ id: tag.id, name: tag.name }))}
                             max={3}
+                            data-testid={`select-images-image-tags-${image.id}`}
                           />
                         </div>
                       )}

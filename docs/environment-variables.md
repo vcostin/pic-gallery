@@ -23,6 +23,15 @@ Most application settings can be overridden through environment variables. The d
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | Required |
 
+### E2E Testing
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `E2E_TEST_USER_EMAIL` | Email of the E2E test user (server-side) | Required for E2E tests |
+| `E2E_TEST_USER_PASSWORD` | Password for E2E test user | Required for E2E tests |
+| `E2E_TEST_USER_NAME` | Display name for E2E test user | Required for E2E tests |
+| `NEXT_PUBLIC_E2E_TEST_USER_EMAIL` | Email of the E2E test user (client-side) | Should match `E2E_TEST_USER_EMAIL` |
+
 ### API Settings
 
 | Variable | Description | Default |
@@ -36,6 +45,7 @@ Most application settings can be overridden through environment variables. The d
 |----------|-------------|---------|
 | `ENABLE_REGISTRATION` | Whether user registration is enabled | `true` |
 | `ENABLE_PASSWORD_RESET` | Whether password reset functionality is enabled | `true` |
+| `NEXT_PUBLIC_ENABLE_E2E_TEST_FEATURES` | Whether E2E test features (like cleanup button) are visible | `false` |
 
 ## Usage in Code
 
@@ -61,4 +71,11 @@ NEXTAUTH_SECRET="your-secure-secret-key-here"
 NEXTAUTH_URL="http://localhost:3000"
 BCRYPT_SALT_ROUNDS=12
 ENABLE_REGISTRATION=true
+
+# E2E Testing
+E2E_TEST_USER_EMAIL="test@example.com"
+E2E_TEST_USER_PASSWORD="your-test-password"
+E2E_TEST_USER_NAME="Test User"
+NEXT_PUBLIC_E2E_TEST_USER_EMAIL="test@example.com"
+NEXT_PUBLIC_ENABLE_E2E_TEST_FEATURES="true"  # Only enable in development/testing
 ```

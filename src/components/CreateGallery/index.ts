@@ -2,4 +2,4 @@
 
 // Export the main CreateGallery component
 export { CreateGallery } from './CreateGallery';
-export { CreateGallery as default } from './CreateGallery';
+export { default } from './CreateGallery';

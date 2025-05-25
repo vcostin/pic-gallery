@@ -1,10 +1,9 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { CreateGallery } from "@/components/CreateGallery"; // Using feature-based directory import
+import CreateGallery from "@/components/CreateGallery"; // Import default export
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
 
 export default async function CreateGalleryPage() {
   const session = await getServerSession(authOptions);
@@ -12,15 +11,6 @@ export default async function CreateGalleryPage() {
   if (!session?.user) {
     redirect("/api/auth/signin");
   }
-
-  const images = await prisma.image.findMany({
-    where: {
-      userId: session.user.id,
-    },
-    include: {
-      tags: true,
-    },
-  });
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -41,7 +31,7 @@ export default async function CreateGalleryPage() {
         </Link>
       </div>
       
-      <CreateGallery availableImages={images} />
+      <CreateGallery />
     </div>
   );
 }

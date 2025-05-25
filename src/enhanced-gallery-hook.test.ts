@@ -161,9 +161,11 @@ describe('useEnhancedGalleryImages', () => {
     
     // After the promise resolves, loading should be false
     expect(result.current.loading).toBe(false);
-    expect(GalleryService.removeImage).toHaveBeenCalledWith(mockGalleryId, 'img1-in-gallery');
-    expect(result.current.showRemoveImageDialog).toBe(false);
+    // After our batch update changes, we no longer call the API directly
+    // expect(GalleryService.removeImage).toHaveBeenCalledWith(mockGalleryId, 'img1-in-gallery');
+    expect(result.current.showRemoveImageDialog.isOpen).toBe(false);
     expect(result.current.imageToRemove).toBe(null);
+    expect(result.current.hasUnsavedChanges).toBe(true);
   });
   
   test('should handle drag and drop to reorder images', async () => {
@@ -202,11 +204,14 @@ describe('useEnhancedGalleryImages', () => {
     expect(result.current.images[0].order).toBe(0);
     expect(result.current.images[1].order).toBe(1);
     
-    // Check if API was called to update order
-    expect(GalleryService.updateImageOrder).toHaveBeenCalledWith(
-      mockGalleryId,
-      expect.arrayContaining(['img1-in-gallery', 'img2-in-gallery'])
-    );
+    // After our batch update changes, we no longer call the API directly
+    // expect(GalleryService.updateImageOrder).toHaveBeenCalledWith(
+    //   mockGalleryId,
+    //   expect.arrayContaining(['img1-in-gallery', 'img2-in-gallery'])
+    // );
+    
+    // Instead, check if hasUnsavedChanges is set to true
+    expect(result.current.hasUnsavedChanges).toBe(true);
   });
   
   test('should add images when galleryId is not available', async () => {

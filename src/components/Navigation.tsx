@@ -25,7 +25,7 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="text-2xl font-bold text-indigo-600">
+            <Link href="/" className="text-2xl font-bold text-indigo-600" data-testid="nav-logo">
               Pic Gallery
             </Link>
             {isAuthenticated && (
@@ -33,12 +33,14 @@ export function Navigation() {
                 <Link
                   href="/images"
                   className={getLinkClassName('/images')}
+                  data-testid="nav-images-link"
                 >
                   My Images
                 </Link>
                 <Link
                   href="/galleries"
                   className={getLinkClassName('/galleries')}
+                  data-testid="nav-galleries-link"
                 >
                   My Galleries
                 </Link>
@@ -53,6 +55,7 @@ export function Navigation() {
                 <Link
                   href="/profile"
                   className={getLinkClassName('/profile')}
+                  data-testid="nav-profile-link"
                 >
                   My Profile
                 </Link>
@@ -70,6 +73,7 @@ export function Navigation() {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => signIn()}
+                data-testid="nav-signin-button"
               >
                 Sign In
               </Button>

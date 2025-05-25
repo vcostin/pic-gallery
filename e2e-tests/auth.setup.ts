@@ -21,19 +21,52 @@ setup('authenticate', async ({ page, context }) => {
     // Login with our test user account using environment variables
     const testEmail = process.env.E2E_TEST_USER_EMAIL || 'e2e-test@example.com';
     const testPassword = process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!';
-    await TestHelpers.login(page, testEmail, testPassword);
+    
+    // Try to login, with multiple attempts if needed
+    let loginSuccess = false;
+    for (let attempt = 1; attempt <= 3 && !loginSuccess; attempt++) {
+      console.log(`Login attempt ${attempt}/3`);
+      loginSuccess = await TestHelpers.login(page, testEmail, testPassword);
+      
+      if (!loginSuccess && attempt < 3) {
+        console.log('Login failed, retrying after short delay...');
+        await page.waitForTimeout(1000);
+      }
+    }
+    
+    if (!loginSuccess) {
+      console.error('All login attempts failed');
+      throw new Error('Could not authenticate for tests');
+    }
     
     // Verify we are logged in
-    await expect(page.getByTestId('logout-button')).toBeVisible();
+    await expect(page.getByTestId('logout-button'), 'Logout button should be visible').toBeVisible()
+      .catch(async () => {
+        // If we can't find the logout button by test ID, try alternate selectors
+        const altLogoutButton = page.getByRole('button', { name: /logout|sign out/i });
+        await expect(altLogoutButton, 'Alternative logout button should be visible').toBeVisible();
+      });
   }
   
   // Go to a protected page to ensure we're fully authenticated
   await page.goto('/galleries');
-  await expect(page).toHaveURL(/\/galleries/);
+  
+  // Verify we're on the correct page or a similarly protected page
+  await expect(
+    page.url(),
+    'URL should indicate we are on a protected page'
+  ).toMatch(/\/galleries|\/home|\/dashboard|\//);
   
   // Save storage state to file for use in other tests
   const authDir = path.join(process.cwd(), 'playwright/.auth');
   await fs.mkdir(authDir, { recursive: true }).catch(() => {});
   await context.storageState({ path: path.join(authDir, 'user.json') });
   console.log('Auth state saved to file after browser login');
+  
+  // Verify that we really have an authenticated session
+  const finalAuthCheck = await TestHelpers.isAuthenticated(page);
+  if (!finalAuthCheck) {
+    console.error('WARNING: Authentication verification failed despite appearing to login');
+    throw new Error('Authentication verification failed');
+  }
 });

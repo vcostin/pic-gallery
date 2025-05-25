@@ -123,6 +123,7 @@ function GalleryImageActionButtons({
                   : 'bg-white/90 text-gray-800 hover:bg-blue-600 hover:text-white'
               }`
         }
+        data-testid={isCover ? "gallery-image-cover-active" : "gallery-image-set-cover"}
       >
         {isCover ? 'Cover ✓' : coverLabel}
       </button>
@@ -135,6 +136,7 @@ function GalleryImageActionButtons({
             : 'w-8 h-8 bg-white/90 hover:bg-red-600 text-gray-800 hover:text-white rounded-full flex items-center justify-center'
         }
         title={removeLabel}
+        data-testid="gallery-image-remove"
       >
         {compact ? removeLabel : (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
@@ -320,6 +322,7 @@ export function GridGalleryCard(props: GalleryCardProps) {
             onChange={(e) => onDescriptionChange(galleryImage.id, e.target.value)}
             className="w-full px-2 py-1.5 text-xs rounded border border-gray-200 dark:border-gray-600 dark:bg-gray-700"
             placeholder="Add quick description..."
+            data-testid="gallery-image-description-input"
           />
         </div>
       </div>

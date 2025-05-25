@@ -23,6 +23,9 @@ const customJestConfig = {
   // Define patterns for test files
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)', '**/(*.)+(spec|test).[jt]s?(x)'],
   
+  // Exclude Playwright E2E tests
+  testPathIgnorePatterns: ['/e2e-tests/'],
+  
   // Handle specific node_modules that use ESM
   transformIgnorePatterns: [
     'node_modules/(?!(@dnd-kit|uuid)/)'

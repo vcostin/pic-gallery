@@ -137,7 +137,10 @@ export function useGalleryImages(
       // Show success toast
       setToastMessage(`Added ${imageIds.length} image${imageIds.length > 1 ? 's' : ''} to gallery`);
       setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
+      setTimeout(() => {
+        setShowSuccessToast(false);
+        setToastMessage('');
+      }, 3000);
       
       return data;
     } catch (err) {
@@ -147,7 +150,10 @@ export function useGalleryImages(
       // Show error toast
       setToastMessage(`Error adding images: ${errorObj.message}`);
       setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
+      setTimeout(() => {
+        setShowSuccessToast(false);
+        setToastMessage('');
+      }, 3000);
       
       return null;
     } finally {
@@ -177,7 +183,10 @@ export function useGalleryImages(
       // Show success toast
       setToastMessage('Image removed from gallery');
       setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
+      setTimeout(() => {
+        setShowSuccessToast(false);
+        setToastMessage('');
+      }, 3000);
       
       return true;
     } catch (err) {
