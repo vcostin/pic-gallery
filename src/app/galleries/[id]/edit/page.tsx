@@ -428,8 +428,12 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         />
         
         {toastMessage && showSuccessToast && (
-          <div className="fixed bottom-4 right-4 pointer-events-none">
-            <SuccessMessage message={toastMessage} className="mb-4 pointer-events-auto" onDismiss={() => {}} />
+          <div className="fixed bottom-4 right-4 pointer-events-none" data-testid="toast-container">
+            <SuccessMessage 
+              message={toastMessage} 
+              className="mb-4 pointer-events-auto" 
+              onDismiss={() => setShowSuccessToast(false)} 
+            />
           </div>
         )}
       </div>

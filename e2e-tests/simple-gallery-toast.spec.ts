@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { TestHelpers } from './helpers';
 
 // This is a simplified test that focuses only on the toast notification behavior
 test('toast notifications should disappear completely', async ({ page }) => {
@@ -16,7 +15,7 @@ test('toast notifications should disappear completely', async ({ page }) => {
     // Wait for authentication to complete
     await page.waitForURL(/\/galleries|\/|\/home/, { timeout: 10000 });
     console.log('Login successful');
-  } catch (error) {
+  } catch {
     console.log('Login failed or already logged in, continuing...');
   }
   
@@ -47,12 +46,17 @@ test('toast notifications should disappear completely', async ({ page }) => {
         await page.locator('.gallery-image').first().getByRole('button', { name: /remove/i }).click();
         await page.getByRole('button', { name: /remove image/i }).click();
         
-        // Check toast visibility
-        const toast = page.locator('.fixed.bottom-4.right-4');
+        // Check toast visibility using data-testid
+        const toast = page.getByTestId('toast-container');
         
         // Toast should be visible at first
         await expect(toast).toBeVisible({ timeout: 5000 });
         console.log('Toast is visible');
+        
+        // Verify the toast message is also visible
+        const toastMessage = page.getByTestId('toast-message');
+        await expect(toastMessage).toBeVisible();
+        console.log('Toast message is visible');
         
         // Toast should disappear after timeout (we added about 1-2 seconds buffer)
         await expect(toast).not.toBeVisible({ timeout: 5000 });

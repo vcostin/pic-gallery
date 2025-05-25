@@ -86,10 +86,15 @@ test('toast notifications should properly appear and disappear', async ({ page }
       // Confirm removal in the dialog
       await page.getByRole('button', { name: /remove image/i }).click();
       
-      // Verify toast notification appears
-      const toast = page.locator('.fixed.bottom-4.right-4');
+      // Verify toast notification appears using data-testid
+      const toast = page.getByTestId('toast-container');
       await expect(toast).toBeVisible();
       console.log('Toast appeared');
+      
+      // Verify the toast message is also visible
+      const toastMessage = page.getByTestId('toast-message');
+      await expect(toastMessage).toBeVisible();
+      console.log('Toast message is visible');
       
       // Wait for the toast to disappear (it should auto-dismiss after 3 seconds)
       // Using a timeout slightly longer than the expected 3 seconds
@@ -108,16 +113,16 @@ test('toast notifications should properly appear and disappear', async ({ page }
         // Confirm removal in the dialog
         await page.getByRole('button', { name: /remove image/i }).click();
         
-        // Verify toast notification appears
+        // Verify toast notification appears using data-testid
         await expect(toast).toBeVisible();
         console.log('Toast appeared for X button test');
         
-        // Click the X button on the toast
-        await toast.getByRole('button').click();
+        // Click the close button on the toast using data-testid
+        await page.getByTestId('toast-close-button').click();
         
         // Verify toast disappears immediately
         await expect(toast).not.toBeVisible({ timeout: 1000 });
-        console.log('Toast disappeared after clicking X button');
+        console.log('Toast disappeared after clicking close button');
       }
       
       // Test passed
