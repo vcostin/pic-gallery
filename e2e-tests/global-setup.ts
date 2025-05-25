@@ -14,6 +14,7 @@ async function createUser(page: Page, user: TestUser): Promise<void> {
   await page.fill('input[name="name"]', user.name);
   await page.fill('input[name="email"]', user.email);
   await page.fill('input[name="password"]', user.password);
+  await page.fill('input[name="confirmPassword"]', user.password);
 
   // Submit registration
   await page.click('button[type="submit"]');
@@ -21,8 +22,20 @@ async function createUser(page: Page, user: TestUser): Promise<void> {
 
   // Check if registration was successful or user already exists
   const currentUrl = page.url();
-  if (currentUrl.includes('/dashboard') || currentUrl.includes('/') && !currentUrl.includes('/auth/')) {
-    console.log(`✅ User ${user.email} registered successfully`);
+  if (currentUrl.includes('/dashboard') || currentUrl.includes('/galleries') || (currentUrl.includes('/') && !currentUrl.includes('/auth/'))) {
+    console.log(`✅ User ${user.email} registered and logged in successfully`);
+  } else if (currentUrl.includes('/auth/login')) {
+    // Registration successful, now need to login
+    console.log(`✅ User ${user.email} registered, now logging in...`);
+    
+    await page.fill('input[type="email"]', user.email);
+    await page.fill('input[type="password"]', user.password);
+    await page.click('button[type="submit"]');
+    
+    // Wait for successful login - check for redirect to protected page
+    await page.waitForURL((url) => !url.toString().includes('/auth/'), { timeout: 10000 });
+    
+    console.log(`✅ User ${user.email} logged in successfully`);
   } else {
     // User might already exist, try logging in
     await page.goto('http://localhost:3000/auth/login');
@@ -31,10 +44,23 @@ async function createUser(page: Page, user: TestUser): Promise<void> {
     await page.fill('input[type="email"]', user.email);
     await page.fill('input[type="password"]', user.password);
     await page.click('button[type="submit"]');
-    await page.waitForTimeout(2000);
+    
+    // Wait for successful login - check for redirect to protected page
+    await page.waitForURL((url) => !url.toString().includes('/auth/'), { timeout: 10000 });
     
     console.log(`✅ User ${user.email} logged in (already existed)`);
   }
+  
+  // Verify authentication by checking if we can access a protected page
+  await page.goto('http://localhost:3000/galleries');
+  await page.waitForLoadState('networkidle');
+  
+  // If still on auth page, authentication failed
+  if (page.url().includes('/auth/')) {
+    throw new Error('Authentication failed - still on auth page');
+  }
+  
+  console.log('✅ Authentication verified - user can access protected pages');
 }
 
 async function saveAuthState(page: Page, user: TestUser): Promise<void> {

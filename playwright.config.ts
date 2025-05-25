@@ -57,7 +57,7 @@ export default defineConfig({
       testMatch: /(authenticated\.spec\.ts|comprehensive-gallery-workflow\.spec\.ts|gallery-management\.spec\.ts|check-gallery-exists\.spec\.ts|setup-basic-gallery\.spec\.ts|setup-gallery\.spec\.ts|toast-notification\.spec\.ts|gallery-edit\.spec\.ts|simple-gallery-toast\.spec\.ts)/,
       use: { 
         ...devices['Desktop Chrome'],
-        storageState: './playwright/.auth/user.json',
+        storageState: './playwright/.auth/single-user.json',
       },
       dependencies: ['auth-tests'],
     },
@@ -68,7 +68,7 @@ export default defineConfig({
       testMatch: '**/e2e-cleanup-comprehensive.spec.ts',
       use: { 
         ...devices['Desktop Chrome'],
-        storageState: './playwright/.auth/user.json',
+        storageState: './playwright/.auth/single-user.json',
       },
       dependencies: ['authenticated-tests'],
     },
@@ -79,7 +79,7 @@ export default defineConfig({
       testMatch: '**/profile-deletion.spec.ts',
       use: { 
         ...devices['Desktop Chrome'],
-        storageState: './playwright/.auth/user.json',
+        storageState: './playwright/.auth/single-user.json',
       },
       dependencies: ['cleanup-tests'],
     },
