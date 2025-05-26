@@ -28,6 +28,47 @@ export function useEnhancedGalleryImages(
   const [showRemoveImageDialog, setShowRemoveImageDialog] = useState({ isOpen: false });
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastTimeoutId, setToastTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  
+  // Clear toast timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutId) {
+        clearTimeout(toastTimeoutId);
+      }
+    };
+  }, [toastTimeoutId]);
+
+  // Function to hide toast
+  const hideToast = useCallback(() => {
+    setShowSuccessToast(false);
+    setToastMessage('');
+    
+    // Clear timeout if it exists
+    if (toastTimeoutId) {
+      clearTimeout(toastTimeoutId);
+      setToastTimeoutId(null);
+    }
+  }, [toastTimeoutId]);
+
+  // Function to show toast with proper cleanup
+  const showToast = useCallback((message: string, duration = 3000) => {
+    // Clear any existing timeout
+    if (toastTimeoutId) {
+      clearTimeout(toastTimeoutId);
+      setToastTimeoutId(null);
+    }
+    
+    setToastMessage(message);
+    setShowSuccessToast(true);
+    
+    // Set new timeout
+    const timeoutId = setTimeout(() => {
+      hideToast();
+    }, duration);
+    
+    setToastTimeoutId(timeoutId);
+  }, [toastTimeoutId, hideToast]);
   
   // Get the active image for drag overlay
   const activeImage = activeId ? images.find(img => img.id === activeId) : null;
@@ -82,12 +123,7 @@ export function useEnhancedGalleryImages(
         setImages(prev => [...prev, ...newImages]);
         
         // Show success toast
-        setToastMessage(`Added ${newImages.length} image${newImages.length > 1 ? 's' : ''} to gallery`);
-        setShowSuccessToast(true);
-        setTimeout(() => {
-          setShowSuccessToast(false);
-          setToastMessage('');
-        }, 3000);
+        showToast(`Added ${newImages.length} image${newImages.length > 1 ? 's' : ''} to gallery`);
         
         // Mark that we have unsaved changes (this will be used by the edit page)
         setHasUnsavedChanges(true);
@@ -109,12 +145,7 @@ export function useEnhancedGalleryImages(
       setError(errorObj);
       
       // Show error toast
-      setToastMessage(`Error adding images: ${errorObj.message}`);
-      setShowSuccessToast(true);
-      setTimeout(() => {
-        setShowSuccessToast(false);
-        setToastMessage('');
-      }, 3000);
+      showToast(`Error adding images: ${errorObj.message}`);
       
       return null;
     } finally {
@@ -128,18 +159,13 @@ export function useEnhancedGalleryImages(
     setImages(prevImages => prevImages.filter(img => img.id !== imageInGalleryId));
     
     // Show success toast
-    setToastMessage('Image removed from gallery');
-    setShowSuccessToast(true);
-    setTimeout(() => {
-      setShowSuccessToast(false);
-      setToastMessage('');
-    }, 3000);
+    showToast('Image removed from gallery');
     
     // Mark that we have unsaved changes (this will be used by the edit page)
     setHasUnsavedChanges(true);
     
     return true;
-  }, []);
+  }, [showToast]);
   
   // Handle image description change
   const handleImageDescriptionChange = useCallback((id: string, newDescription: string) => {
@@ -300,11 +326,13 @@ export function useEnhancedGalleryImages(
     loading,
     error,
     activeImage,
+    activeId,
     showRemoveImageDialog,
     imageToRemove,
     showSuccessToast,
     toastMessage,
     setShowSuccessToast,
+    setToastMessage,
     hasUnsavedChanges,
     setHasUnsavedChanges,
     // API methods
@@ -318,6 +346,9 @@ export function useEnhancedGalleryImages(
     cancelRemoveImage,
     handleDragStart,
     handleDragEnd,
-    handleDragCancel
+    handleDragCancel,
+    // Toast functions
+    showToast,
+    hideToast
   };
 }
