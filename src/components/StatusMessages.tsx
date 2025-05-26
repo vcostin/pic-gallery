@@ -93,7 +93,10 @@ export function SuccessMessage({ message, className = '', onDismiss }: SuccessMe
         </div>
         {onDismiss && (
           <button 
-            onClick={onDismiss} 
+            onClick={(e) => {
+              e.stopPropagation();
+              onDismiss();
+            }} 
             className="text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100"
             data-testid="toast-close-button"
             aria-label="Close notification"

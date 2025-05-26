@@ -238,9 +238,14 @@ export function SelectImagesDialog({
   const availableImages = images.filter(img => !existingImageIds.includes(img.id));
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      data-testid="select-images-modal-overlay"
+      onClick={() => onClose()} // Close the dialog when clicking on the backdrop
+    >
       <div 
         className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()} // Prevent clicks on the content from closing the dialog
       >
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-2xl font-bold">Select Images</h2>

@@ -42,7 +42,8 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     cancelRemoveImage,     
     showSuccessToast,      
     setShowSuccessToast,
-    toastMessage           
+    toastMessage,
+    hideToast           
   } = useEnhancedGalleryImages(galleryId);
 
   const { fetch: fetchGalleryAsync, isLoading: galleryIsLoading, error: galleryError, data: galleryData } = useApi(FullGallerySchema);
@@ -435,7 +436,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
             <SuccessMessage 
               message={toastMessage} 
               className="mb-4 pointer-events-auto" 
-              onDismiss={() => setShowSuccessToast(false)} 
+              onDismiss={hideToast} 
             />
           </div>
         )}
