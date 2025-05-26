@@ -163,15 +163,13 @@ export function CreateGallery(): React.ReactElement {
             />
           )}
           
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" data-testid="create-gallery-form">
             <GalleryDetailsForm
               register={register}
               errors={errors}
-              control={control}
               isSubmitting={isSubmitting}
-              showCancelButton
-              submitText="Create Gallery"
-              onCancel={handleCancelCreate}
+              showSubmitButton={false}
+              showCancelButton={false}
             />
             
             <div className="border-t pt-6">
@@ -182,6 +180,7 @@ export function CreateGallery(): React.ReactElement {
                   variant="outline"
                   className="flex items-center gap-2"
                   type="button"
+                  data-testid="select-images-button"
                 >
                   <span>Add Images</span>
                 </Button>
@@ -231,6 +230,7 @@ export function CreateGallery(): React.ReactElement {
               <Button
                 type="submit"
                 disabled={isSubmitting}
+                data-testid="create-gallery-submit"
               >
                 {isSubmitting ? 'Creating Gallery...' : 'Create Gallery'}
               </Button>
@@ -241,3 +241,6 @@ export function CreateGallery(): React.ReactElement {
     </div>
   );
 }
+
+// Add default export to support both named and default imports
+export default CreateGallery;

@@ -1,27 +1,13 @@
-import { FullConfig } from '@playwright/test';
-
 /**
- * Global teardown for Playwright tests
- * This runs after all tests are complete
+ * Minimal global teardown for single-user strategy
+ * User deletion happens in the final test sequence for verification
  */
-async function globalTeardown(config: FullConfig) {
-  console.log('Running global teardown...');
+async function globalTeardown() {
+  console.log('🧹 E2E Global Teardown - User deletion handled in test sequence');
   
-  // Clean up any resources created during testing
-  
-  // If you need to perform API calls to clean up test data:
-  // const apiContext = await request.newContext({
-  //   baseURL: config.projects[0].use.baseURL as string,
-  // });
-  
-  // try {
-  //   // Example API cleanup calls
-  //   await apiContext.delete('/api/cleanup/test-data');
-  // } catch (error) {
-  //   console.error('Error during teardown:', error);
-  // }
-  
-  // await apiContext.dispose();
+  // Minimal teardown since user deletion happens in the final test
+  // This ensures we can verify the deletion worked properly
+  console.log('✅ Global Teardown Complete');
 }
 
 export default globalTeardown;

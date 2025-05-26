@@ -81,6 +81,7 @@ const TagFilterButton = memo(({
         ? 'bg-blue-500 text-white' 
         : 'bg-gray-200 dark:bg-gray-700'
     }`}
+    data-testid={`image-grid-tag-filter-${tag.toLowerCase().replace(/\s+/g, '-')}`}
   >
     {tag}
   </button>

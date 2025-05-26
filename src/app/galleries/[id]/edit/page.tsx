@@ -1,10 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -12,17 +10,19 @@ import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import { ErrorMessage, LoadingSpinner, SuccessMessage } from '@/components/StatusMessages';
 import { useApi } from '@/lib/hooks/useApi';
 import { useEnhancedGalleryImages } from '@/lib/hooks/useEnhancedGallery';
-import { deepEqual } from '@/lib/deepEqual';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { use } from 'react';
 import logger from '@/lib/logger';
 // Import schemas for validation
-import { FullGallerySchema, FullGallery, CreateGallerySchema } from '@/lib/schemas'; 
+import { FullGallerySchema, FullGallery } from '@/lib/schemas'; 
 
 // Import gallery components from feature directory
-import { GalleryDetailsForm, type GalleryFormData } from '@/components/GalleryDetails';
+import { GalleryDetailsForm } from '@/components/GalleryDetails';
 import { GalleryViewSelector } from '@/components/GalleryViewSelector';
 import { GallerySortable, ViewMode } from '@/components/GallerySortable';
+
+// Import our custom form hook
+import { useGalleryEditForm } from '@/lib/hooks/useGalleryEditForm';
 
 export default function EditGalleryPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -41,7 +41,9 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     confirmRemoveImage,    
     cancelRemoveImage,     
     showSuccessToast,      
-    toastMessage           
+    setShowSuccessToast,
+    toastMessage,
+    hideToast           
   } = useEnhancedGalleryImages(galleryId);
 
   const { fetch: fetchGalleryAsync, isLoading: galleryIsLoading, error: galleryError, data: galleryData } = useApi(FullGallerySchema);
@@ -55,46 +57,33 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
 
   const [coverImageId, setCoverImageId] = useState<string | ''>('');
   const [originalGalleryData, setOriginalGalleryData] = useState<FullGallery | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid'); 
   const [showSelectImagesDialog, setShowSelectImagesDialog] = useState(false);
   const router = useRouter();
 
-  // Set up form with Zod validation
-  const form = useForm<GalleryFormData>({
-    resolver: zodResolver(CreateGallerySchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      isPublic: false,
-      themeColor: null,
-      backgroundColor: null,
-      backgroundImageUrl: null,
-      accentColor: null,
-      fontFamily: null,
-      displayMode: null,
-      layoutType: null
-    }
-  });
+  // Set up form with our custom hook
+  const {
+    reset: resetForm,
+    watch,
+    isDirty,
+    form
+  } = useGalleryEditForm();
   
-  // State variables to track form changes for comparison with original data
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [isPublic, setIsPublic] = useState(false);
-  const [themeColor, setThemeColor] = useState<string | null>(null);
-  const [backgroundColor, setBackgroundColor] = useState<string | null>(null);
-  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
-  const [accentColor, setAccentColor] = useState<string | null>(null);
-  const [fontFamily, setFontFamily] = useState<string | null>(null);
-  const [displayMode, setDisplayMode] = useState<string | null>(null);
-  const [layoutType, setLayoutType] = useState<string | null>(null);
+  // Watch form values to detect changes
+  const watchedValues = watch();
+  
+  // Use React Hook Form's built-in dirty state detection
+  const hasUnsavedChanges = isDirty;
+  
+  // Ref to track if initial data has been loaded to prevent infinite loops
+  const hasLoadedInitialData = useRef(false);
 
   // Prepare gallery data for submission
   const prepareGalleryUpdatePayload = () => {
     if (!originalGalleryData) throw new Error("Original gallery data not loaded.");
     
     // Get current form values
-    const formValues = form.getValues();
+    const currentValues = watchedValues;
     
     // Ensure all images have valid order values before sending to backend
     const updatedImages = images.map((img, index) => ({ 
@@ -106,120 +95,64 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     
     return {
       id: galleryId,
-      title: formValues.title,
-      description: formValues.description,
-      isPublic: formValues.isPublic,
+      title: currentValues.title,
+      description: currentValues.description,
+      isPublic: currentValues.isPublic,
       coverImageId: coverImageId || null,
       images: updatedImages,
-      themeColor: formValues.themeColor,
-      backgroundColor: formValues.backgroundColor,
-      backgroundImageUrl: formValues.backgroundImageUrl,
-      accentColor: formValues.accentColor,
-      fontFamily: formValues.fontFamily,
-      displayMode: formValues.displayMode,
-      layoutType: formValues.layoutType,
+      themeColor: currentValues.themeColor,
+      backgroundColor: currentValues.backgroundColor,
+      backgroundImageUrl: currentValues.backgroundImageUrl,
+      accentColor: currentValues.accentColor,
+      fontFamily: currentValues.fontFamily,
+      displayMode: currentValues.displayMode,
+      layoutType: currentValues.layoutType,
     };
   };
   
   // API hook for updating the gallery with schema validation
   const { fetch: updateGallery, isLoading: isSubmitting, error: submitErrorEncountered, reset: resetSubmitState } = useApi(FullGallerySchema);
 
-  // Define a stable callback function for handling gallery data
-  const handleGalleryData = useCallback((data: FullGallery) => {
-    // Update form values
-    form.reset({
-      title: data.title,
-      description: data.description || '',
-      isPublic: data.isPublic,
-      themeColor: data.themeColor,
-      backgroundColor: data.backgroundColor,
-      backgroundImageUrl: data.backgroundImageUrl,
-      accentColor: data.accentColor,
-      fontFamily: data.fontFamily,
-      displayMode: data.displayMode,
-      layoutType: data.layoutType,
-    });
-    
-    // Also update local state for tracking changes
-    setTitle(data.title);
-    setDescription(data.description || '');
-    setIsPublic(data.isPublic);
-    setCoverImageId(data.coverImageId || '');
-    setImages(data.images); 
-    setThemeColor(data.themeColor);
-    setBackgroundColor(data.backgroundColor);
-    setBackgroundImageUrl(data.backgroundImageUrl);
-    setAccentColor(data.accentColor);
-    setFontFamily(data.fontFamily);
-    setDisplayMode(data.displayMode);
-    setLayoutType(data.layoutType);
-    
-    const fullLoadedData = {
-      ...data,
-      title: data.title,
-      description: data.description || '',
-      isPublic: data.isPublic,
-      coverImageId: data.coverImageId || '',
-      images: data.images,
-      themeColor: data.themeColor,
-      backgroundColor: data.backgroundColor,
-      backgroundImageUrl: data.backgroundImageUrl,
-      accentColor: data.accentColor,
-      fontFamily: data.fontFamily,
-      displayMode: data.displayMode,
-      layoutType: data.layoutType,
-    };
-    setOriginalGalleryData(fullLoadedData);
-  }, [form]);
-
   useEffect(() => {
-    // Fetch gallery data when galleryId changes
-    fetchGalleryAsync(`/api/galleries/${galleryId}`).then(result => {
-      if (result.success && result.data) {
-        handleGalleryData(result.data);
+    // Only fetch gallery data once on mount
+    if (hasLoadedInitialData.current) return;
+    
+    const loadGalleryData = async () => {
+      try {
+        const result = await fetchGalleryAsync(`/api/galleries/${galleryId}`);
+        if (result.success && result.data) {
+          const data = result.data;
+          
+          // Set images and cover image
+          setImages(data.images); 
+          setCoverImageId(data.coverImageId || '');
+          
+          // Reset the form with the loaded data
+          resetForm({
+            title: data.title,
+            description: data.description || '',
+            isPublic: data.isPublic,
+            themeColor: data.themeColor || null,
+            backgroundColor: data.backgroundColor || null,
+            backgroundImageUrl: data.backgroundImageUrl || null,
+            accentColor: data.accentColor || null,
+            fontFamily: data.fontFamily || null,
+            displayMode: data.displayMode || null,
+            layoutType: data.layoutType || null,
+          });
+          
+          // Store original data for comparison and restoration
+          setOriginalGalleryData(data);
+          hasLoadedInitialData.current = true;
+        }
+      } catch {
+        // Error is handled by useApi and useFetch hooks
       }
-    }).catch(() => {
-      // Error is handled by useApi and useFetch hooks
-    });
-  }, [galleryId]);
-
-  useEffect(() => {
-    if (!originalGalleryData) return;
-    
-    const formValues = form.getValues();
-    const currentData = {
-      title: formValues.title,
-      description: formValues.description || '',
-      isPublic: formValues.isPublic,
-      coverImageId: coverImageId || '',
-      images,
-      themeColor: formValues.themeColor,
-      backgroundColor: formValues.backgroundColor,
-      backgroundImageUrl: formValues.backgroundImageUrl,
-      accentColor: formValues.accentColor,
-      fontFamily: formValues.fontFamily,
-      displayMode: formValues.displayMode,
-      layoutType: formValues.layoutType,
     };
     
-    // Construct originalComparableData with the same structure as currentData
-    const originalComparableData = {
-      title: originalGalleryData.title,
-      description: originalGalleryData.description || '',
-      isPublic: originalGalleryData.isPublic,
-      coverImageId: originalGalleryData.coverImageId || '',
-      images: originalGalleryData.images,
-      themeColor: originalGalleryData.themeColor,
-      backgroundColor: originalGalleryData.backgroundColor,
-      backgroundImageUrl: originalGalleryData.backgroundImageUrl,
-      accentColor: originalGalleryData.accentColor,
-      fontFamily: originalGalleryData.fontFamily,
-      displayMode: originalGalleryData.displayMode,
-      layoutType: originalGalleryData.layoutType,
-    };
-    
-    setHasUnsavedChanges(!deepEqual(currentData, originalComparableData));
-  }, [originalGalleryData, form, coverImageId, images]);
+    loadGalleryData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [galleryId]); // Only depend on galleryId to prevent infinite loops
 
   // Form submission handler using react-hook-form
   const onSubmit = form.handleSubmit(async () => {
@@ -236,15 +169,22 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         setOriginalGalleryData(result.data);
         setImages(result.data.images);
         setSuccessMessage("Gallery updated successfully");
-        setHasUnsavedChanges(false);
+        
+        // Redirect to gallery view after successful save
         setTimeout(() => {
-          setSuccessMessage(null);
-        }, 3000);
+          router.push(`/galleries/${galleryId}`);
+        }, 1000);
       }
     } catch (err) {
       logger.error("Submit error caught in form submission:", err);
     }
   });
+
+  // Helper function for confirming the form submission
+  const handleConfirmSubmit = () => {
+    const event = new Event('submit', { bubbles: true, cancelable: true });
+    onSubmit(event as unknown as React.FormEvent<Element>);
+  };
 
   const handleCancelEdit = () => {
     if (hasUnsavedChanges) {
@@ -256,36 +196,25 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
 
   const handleDiscardChanges = () => {
     if (originalGalleryData) {
-      // Reset form to original values
-      form.reset({
+      // Reset the form to original values using React Hook Form
+      resetForm({
         title: originalGalleryData.title,
         description: originalGalleryData.description || '',
         isPublic: originalGalleryData.isPublic,
-        themeColor: originalGalleryData.themeColor,
-        backgroundColor: originalGalleryData.backgroundColor,
-        backgroundImageUrl: originalGalleryData.backgroundImageUrl,
-        accentColor: originalGalleryData.accentColor,
-        fontFamily: originalGalleryData.fontFamily,
-        displayMode: originalGalleryData.displayMode,
-        layoutType: originalGalleryData.layoutType,
+        themeColor: originalGalleryData.themeColor || null,
+        backgroundColor: originalGalleryData.backgroundColor || null,
+        backgroundImageUrl: originalGalleryData.backgroundImageUrl || null,
+        accentColor: originalGalleryData.accentColor || null,
+        fontFamily: originalGalleryData.fontFamily || null,
+        displayMode: originalGalleryData.displayMode || null,
+        layoutType: originalGalleryData.layoutType || null,
       });
       
-      // Also reset tracking state
-      setTitle(originalGalleryData.title);
-      setDescription(originalGalleryData.description || '');
-      setIsPublic(originalGalleryData.isPublic);
+      // Reset other state to original values
       setCoverImageId(originalGalleryData.coverImageId || '');
       setImages(originalGalleryData.images);
-      setThemeColor(originalGalleryData.themeColor);
-      setBackgroundColor(originalGalleryData.backgroundColor);
-      setBackgroundImageUrl(originalGalleryData.backgroundImageUrl);
-      setAccentColor(originalGalleryData.accentColor);
-      setFontFamily(originalGalleryData.fontFamily);
-      setDisplayMode(originalGalleryData.displayMode);
-      setLayoutType(originalGalleryData.layoutType);
       
       setShowConfirmDialog(false);
-      setHasUnsavedChanges(false);
       setSuccessMessage("Changes discarded");
       setTimeout(() => setSuccessMessage(null), 3000);
     }
@@ -313,23 +242,6 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     } finally {
       setIsDeleting(false);
       setShowDeleteGalleryDialog(false);
-    }
-  };
-
-  // Form field change handler to keep local state in sync for change detection
-  const handleFieldChange = (field: string, value: any) => {
-    switch (field) {
-      case 'title': setTitle(value); break;
-      case 'description': setDescription(value); break;
-      case 'isPublic': setIsPublic(value); break;
-      case 'themeColor': setThemeColor(value); break;
-      case 'backgroundColor': setBackgroundColor(value); break;
-      case 'backgroundImageUrl': setBackgroundImageUrl(value); break;
-      case 'accentColor': setAccentColor(value); break;
-      case 'fontFamily': setFontFamily(value); break;
-      case 'displayMode': setDisplayMode(value); break;
-      case 'layoutType': setLayoutType(value); break;
-      default: break;
     }
   };
 
@@ -383,7 +295,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
             error={submitErrorEncountered} 
             retry={() => {
               resetSubmitState();
-              onSubmit();
+              handleConfirmSubmit();
             }}
             className="mb-4"
           />
@@ -402,8 +314,6 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           <GalleryDetailsForm 
             register={form.register}
             errors={form.formState.errors}
-            control={form.control}
-            onChange={handleFieldChange}
             isSubmitting={isSubmitting}
           />
           
@@ -416,7 +326,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
                 className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                 disabled={isSubmitting} 
               >
-                Add Images
+                Select Images
               </button>
             </div>
             
@@ -467,8 +377,9 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
             </button>
             <button 
               type="submit" 
-              disabled={isSubmitting || !hasUnsavedChanges}
+              disabled={isSubmitting}
               className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+              data-testid="edit-gallery-save-button"
             >
               {isSubmitting ? (
                 <span className="flex items-center">
@@ -486,7 +397,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         <ConfirmDialog
           isOpen={showConfirmDialog}
           onClose={() => setShowConfirmDialog(false)}
-          onConfirm={onSubmit}
+          onConfirm={handleConfirmSubmit}
           onCancel={handleDiscardChanges}
           title="Save Changes?"
           message="You have unsaved changes. Do you want to save them before leaving?"
@@ -501,14 +412,14 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           title="Delete Gallery"
           message="Are you sure you want to delete this gallery? This action cannot be undone."
           confirmButtonText="Delete Gallery"
-          confirmButtonClass="bg-red-500 hover:bg-red-600"
+          confirmButtonColor="red"
         />
         
         <SelectImagesDialog
           isOpen={showSelectImagesDialog}
           onClose={() => setShowSelectImagesDialog(false)}
-          onSelectImages={handleAddImages}
-          excludeIds={images.map(img => img.imageId || '')}
+          onImagesSelected={handleAddImages}
+          existingImageIds={images.map(img => img.imageId || '')}
         />
         
         <ConfirmDialog
@@ -520,9 +431,13 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           confirmButtonText="Remove Image"
         />
         
-        {toastMessage && (
-          <div className="fixed bottom-4 right-4">
-            <SuccessMessage message={toastMessage} className="mb-4" onDismiss={showSuccessToast} />
+        {toastMessage && showSuccessToast && (
+          <div className="fixed bottom-4 right-4 pointer-events-none" data-testid="toast-container">
+            <SuccessMessage 
+              message={toastMessage} 
+              className="mb-4 pointer-events-auto" 
+              onDismiss={hideToast} 
+            />
           </div>
         )}
       </div>

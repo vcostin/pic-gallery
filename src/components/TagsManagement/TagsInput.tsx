@@ -122,13 +122,14 @@ export function TagsInput<T>({
       <div className="w-full p-1 border rounded-md bg-background flex flex-wrap gap-1 items-center">
         {/* Display existing tags */}
         {value && value.length > 0 && value.map((tag: { name: string }, index: number) => (
-          <Badge key={index} variant="secondary" className="flex items-center gap-1">
+          <Badge key={index} variant="secondary" className="flex items-center gap-1" data-testid={`tags-management-tag-${tag.name.toLowerCase().replace(/\s+/g, '-')}`}>
             {tag.name}
             {!disabled && (
               <button
                 type="button"
                 onClick={() => removeTag(index)}
                 className="text-muted-foreground hover:text-foreground"
+                data-testid={`tags-management-remove-tag-${tag.name.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <X size={14} />
               </button>
@@ -147,6 +148,7 @@ export function TagsInput<T>({
             placeholder={placeholder}
             className="flex-grow min-w-[120px] px-2 py-1 border-none focus:outline-none bg-transparent"
             disabled={disabled}
+            data-testid="tags-management-input-field"
           />
         )}
       </div>

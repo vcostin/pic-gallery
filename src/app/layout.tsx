@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { SessionProvider } from "@/components/SessionProvider";
 import { Navigation } from "@/components/Navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { E2ETestFeatures } from "@/components/E2ETestFeatures";
 import { authOptions } from "@/lib/auth";
 import "./globals.css";
 
@@ -38,6 +39,7 @@ export default async function RootLayout({
           <main className="min-h-[calc(100vh-4rem)]">
             {children}
           </main>
+          <E2ETestFeatures />
         </SessionProvider>
       </body>
     </html>

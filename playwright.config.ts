@@ -16,16 +16,17 @@ export default defineConfig({
   /* Path to global setup and teardown files */
   globalSetup: './e2e-tests/global-setup.ts',
   globalTeardown: './e2e-tests/global-teardown.ts',
-  /* Run tests in files in parallel */
-  fullyParallel: true,
+  /* Run tests sequentially for single-user strategy */
+  fullyParallel: false,
+  workers: 1,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html'], ['list']],
+  /* Directory for artifacts like screenshots */
+  outputDir: './test-screenshots',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
@@ -33,64 +34,60 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+    
+    /* Screenshot only on failure */
+    screenshot: 'only-on-failure',
   },
 
   /* Configure projects for major browsers */
   projects: [
-    // Setup project to create an authenticated state for use in other tests
+    // Basic tests that don't require authentication
     {
-      name: 'setup',
-      testMatch: /auth\.setup\.ts/,
-    },
-    
-    // Test project that uses the authenticated state
-    {
-      name: 'authenticated',
-      testMatch: /authenticated\.spec\.ts/,
-      use: { 
-        ...devices['Desktop Chrome'],
-        // Use the authenticated state from the setup project
-        storageState: './playwright/.auth/user.json',
-      },
-      dependencies: ['setup'],
-    },
-    
-    // Regular project without authentication for basic tests
-    {
-      name: 'chromium',
-      testIgnore: /authenticated\.spec\.ts/,
+      name: 'basic-tests',
+      testMatch: '**/basic.spec.ts',
       use: { ...devices['Desktop Chrome'] },
     },
 
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
+    // Authentication verification tests 
+    {
+      name: 'auth-tests',
+      testMatch: '**/auth.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: [],
+    },
 
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
+    // Main authenticated tests using the single test user
+    {
+      name: 'authenticated-tests',
+      testMatch: /(authenticated\.spec\.ts|comprehensive-gallery-workflow\.spec\.ts|gallery-management\.spec\.ts|check-gallery-exists\.spec\.ts|setup-basic-gallery\.spec\.ts|setup-gallery\.spec\.ts|toast-notification\.spec\.ts|gallery-edit\.spec\.ts|simple-gallery-toast\.spec\.ts)/,
+      use: { 
+        ...devices['Desktop Chrome'],
+        storageState: './playwright/.auth/single-user.json',
+      },
+      dependencies: ['auth-tests'],
+    },
 
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
+    // Data cleanup tests (keep user, clean data)
+    {
+      name: 'cleanup-tests',
+      testMatch: '**/e2e-cleanup-comprehensive.spec.ts',
+      use: { 
+        ...devices['Desktop Chrome'],
+        storageState: './playwright/.auth/single-user.json',
+      },
+      dependencies: ['authenticated-tests'],
+    },
 
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    // Final profile deletion tests (delete user)
+    {
+      name: 'deletion-tests',
+      testMatch: '**/profile-deletion.spec.ts',
+      use: { 
+        ...devices['Desktop Chrome'],
+        storageState: './playwright/.auth/single-user.json',
+      },
+      dependencies: ['cleanup-tests'],
+    },
   ],
 
   /* Run your local dev server before starting the tests */

@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { DeleteImageConfirmDialog } from '@/components/DeleteImageConfirmDialog';
 import { ErrorMessage, SuccessMessage } from '@/components/StatusMessages';
-import { ImageService, type Image, type UpdateImageData } from '@/lib/services/imageService';
+import { ImageService, type Image as ImageType, type UpdateImageData } from '@/lib/services/imageService';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import logger from '@/lib/logger';
@@ -41,7 +41,7 @@ type EditImageFormData = z.infer<typeof editImageSchema>;
  */
 interface EditImageDialogProps {
   /** The image object to be edited. Must follow the Image type from ImageService */
-  image: Image;
+  image: ImageType;
   /** Controls the visibility of the dialog */
   isOpen: boolean;
   /** 
@@ -210,7 +210,7 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
               </div>
             </div>
             
-            <form id="edit-image-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form id="edit-image-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4" data-testid="edit-image-form">
               <div>
                 <label className="block text-sm font-medium mb-1">Title</label>
                 <Controller
@@ -223,6 +223,7 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
                       className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
                       placeholder="Enter image title"
                       aria-invalid={errors.title ? 'true' : 'false'}
+                      data-testid="edit-image-title-input"
                     />
                   )}
                 />
@@ -243,6 +244,7 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
                       className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
                       placeholder="Enter image description"
                       rows={3}
+                      data-testid="edit-image-description-input"
                     />
                   )}
                 />
@@ -260,6 +262,7 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
                       onChange={(e) => field.onChange(parseTagsFromString(e.target.value))}
                       className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
                       placeholder="Enter tags separated by commas"
+                      data-testid="edit-image-tags-input"
                     />
                   )}
                 />
@@ -272,6 +275,7 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
               variant="danger"
               onClick={() => setShowDeleteConfirm(true)}
               disabled={isSubmitting}
+              data-testid="edit-image-delete-button"
             >
               Delete
             </Button>
@@ -281,6 +285,7 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
                 variant="secondary"
                 onClick={() => onClose()}
                 disabled={isSubmitting}
+                data-testid="edit-image-cancel-button"
               >
                 Cancel
               </Button>
@@ -290,6 +295,7 @@ export function EditImageDialog({ image, isOpen, onClose }: EditImageDialogProps
                 form="edit-image-form"
                 disabled={!isDirty || isSubmitting}
                 isLoading={isSubmitting}
+                data-testid="edit-image-save-button"
               >
                 Save Changes
               </Button>

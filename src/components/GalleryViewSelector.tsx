@@ -20,6 +20,7 @@ export function GalleryViewSelector({ viewMode, setViewMode }: GalleryViewSelect
           viewMode !== 'compact' ? 'text-gray-600 dark:text-gray-300' : ''
         }`}
         title="Compact view"
+        data-testid="gallery-view-compact-button"
       >
         Compact
       </Button>
@@ -31,6 +32,7 @@ export function GalleryViewSelector({ viewMode, setViewMode }: GalleryViewSelect
           viewMode !== 'grid' ? 'text-gray-600 dark:text-gray-300' : ''
         }`}
         title="Grid view"
+        data-testid="gallery-view-grid-button"
       >
         Grid
       </Button>

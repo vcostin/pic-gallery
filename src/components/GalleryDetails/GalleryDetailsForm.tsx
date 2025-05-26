@@ -8,9 +8,8 @@
 'use client';
 
 import React from 'react';
-import { Controller } from 'react-hook-form';
 import { z } from 'zod';
-import { FieldErrors, UseFormRegister, Control } from '@/lib/form-types';
+import { FieldErrors, UseFormRegister } from '@/lib/form-types';
 import { CreateGallerySchema } from '@/lib/schemas';
 
 // Simple inline Card components to avoid import issues
@@ -36,13 +35,13 @@ export interface GalleryDetailsFormProps {
   // Form handling (provided by react-hook-form)
   register: UseFormRegister<GalleryFormData>;
   errors: FieldErrors<GalleryFormData>;
-  control: Control<GalleryFormData>; 
   
   // Optional form change handler
   onChange?: (field: string, value: unknown) => void;
   
   // Optional display customization
   submitText?: string;
+  showSubmitButton?: boolean;
   showCancelButton?: boolean;
   onCancel?: () => void;
   isSubmitting?: boolean;
@@ -58,9 +57,9 @@ export interface GalleryDetailsFormProps {
 export function GalleryDetailsForm({
   register,
   errors,
-  control,
   onChange,
   submitText = 'Save',
+  showSubmitButton = true,
   showCancelButton = true,
   onCancel,
   isSubmitting = false,
@@ -81,10 +80,13 @@ export function GalleryDetailsForm({
             <input
               id="title"
               {...register('title', {
-                onChange: (e) => onChange?.('title', e.target.value)
+                onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                  onChange?.('title', e.target.value);
+                }
               })}
               className={`w-full p-2 border ${errors.title ? 'border-red-500' : 'border-gray-300'} rounded`}
               aria-invalid={!!errors.title}
+              data-testid="gallery-title"
               aria-errormessage={errors.title ? "title-error" : undefined}
             />
             {errors.title && (
@@ -100,10 +102,15 @@ export function GalleryDetailsForm({
             </label>
             <textarea
               id="description"
-              {...register('description')}
+              {...register('description', {
+                onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                  onChange?.('description', e.target.value);
+                }
+              })}
               className={`w-full p-2 border ${errors.description ? 'border-red-500' : 'border-gray-300'} rounded`}
               rows={4}
               aria-invalid={!!errors.description}
+              data-testid="gallery-description"
               aria-errormessage={errors.description ? "description-error" : undefined}
             />
             {errors.description && (
@@ -117,8 +124,13 @@ export function GalleryDetailsForm({
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                {...register('isPublic')}
+                {...register('isPublic', {
+                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                    onChange?.('isPublic', e.target.checked);
+                  }
+                })}
                 className="w-4 h-4"
+                data-testid="gallery-public"
               />
               <span>Public Gallery</span>
             </label>
@@ -136,18 +148,17 @@ export function GalleryDetailsForm({
                 <label htmlFor="themeColor" className="block mb-1 text-sm font-medium">
                   Theme Color
                 </label>
-                <Controller
-                  name="themeColor"
-                  control={control}
-                  render={({ field }) => (
-                    <input
-                      id="themeColor"
-                      type="color"
-                      value={field.value || '#6366f1'}
-                      onChange={field.onChange}
-                      className="w-full p-1 border border-gray-300 rounded h-10"
-                    />
-                  )}
+                <input
+                  id="themeColor"
+                  type="color"
+                  {...register('themeColor', {
+                    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                      onChange?.('themeColor', e.target.value);
+                    }
+                  })}
+                  className="w-full p-1 border border-gray-300 rounded h-10"
+                  data-testid="gallery-theme-color-input"
+                  defaultValue="#6366f1"
                 />
               </div>
               
@@ -155,18 +166,17 @@ export function GalleryDetailsForm({
                 <label htmlFor="backgroundColor" className="block mb-1 text-sm font-medium">
                   Background Color
                 </label>
-                <Controller
-                  name="backgroundColor"
-                  control={control}
-                  render={({ field }) => (
-                    <input
-                      id="backgroundColor"
-                      type="color"
-                      value={field.value || '#ffffff'}
-                      onChange={field.onChange}
-                      className="w-full p-1 border border-gray-300 rounded h-10"
-                    />
-                  )}
+                <input
+                  id="backgroundColor"
+                  type="color"
+                  {...register('backgroundColor', {
+                    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                      onChange?.('backgroundColor', e.target.value);
+                    }
+                  })}
+                  className="w-full p-1 border border-gray-300 rounded h-10"
+                  data-testid="gallery-background-color-input"
+                  defaultValue="#ffffff"
                 />
               </div>
               
@@ -174,18 +184,17 @@ export function GalleryDetailsForm({
                 <label htmlFor="accentColor" className="block mb-1 text-sm font-medium">
                   Accent Color
                 </label>
-                <Controller
-                  name="accentColor"
-                  control={control}
-                  render={({ field }) => (
-                    <input
-                      id="accentColor"
-                      type="color"
-                      value={field.value || '#10b981'}
-                      onChange={field.onChange}
-                      className="w-full p-1 border border-gray-300 rounded h-10"
-                    />
-                  )}
+                <input
+                  id="accentColor"
+                  type="color"
+                  {...register('accentColor', {
+                    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                      onChange?.('accentColor', e.target.value);
+                    }
+                  })}
+                  className="w-full p-1 border border-gray-300 rounded h-10"
+                  data-testid="gallery-accent-color-input"
+                  defaultValue="#10b981"
                 />
               </div>
               
@@ -193,66 +202,63 @@ export function GalleryDetailsForm({
                 <label htmlFor="fontFamily" className="block mb-1 text-sm font-medium">
                   Font Family
                 </label>
-                <Controller
-                  name="fontFamily"
-                  control={control}
-                  render={({ field }) => (
-                    <select
-                      id="fontFamily"
-                      value={field.value || 'sans-serif'}
-                      onChange={field.onChange}
-                      className="w-full p-2 border border-gray-300 rounded"
-                    >
-                      <option value="sans-serif">Sans Serif</option>
-                      <option value="serif">Serif</option>
-                      <option value="monospace">Monospace</option>
-                    </select>
-                  )}
-                />
+                <select
+                  id="fontFamily"
+                  {...register('fontFamily', {
+                    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
+                      onChange?.('fontFamily', e.target.value);
+                    }
+                  })}
+                  className="w-full p-2 border border-gray-300 rounded"
+                  data-testid="gallery-font-family-select"
+                  defaultValue="sans-serif"
+                >
+                  <option value="sans-serif">Sans Serif</option>
+                  <option value="serif">Serif</option>
+                  <option value="monospace">Monospace</option>
+                </select>
               </div>
               
               <div>
                 <label htmlFor="displayMode" className="block mb-1 text-sm font-medium">
                   Display Mode
                 </label>
-                <Controller
-                  name="displayMode"
-                  control={control}
-                  render={({ field }) => (
-                    <select
-                      id="displayMode"
-                      value={field.value || 'grid'}
-                      onChange={field.onChange}
-                      className="w-full p-2 border border-gray-300 rounded"
-                    >
-                      <option value="grid">Grid</option>
-                      <option value="carousel">Carousel</option>
-                      <option value="slideshow">Slideshow</option>
-                    </select>
-                  )}
-                />
+                <select
+                  id="displayMode"
+                  {...register('displayMode', {
+                    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
+                      onChange?.('displayMode', e.target.value);
+                    }
+                  })}
+                  className="w-full p-2 border border-gray-300 rounded"
+                  data-testid="gallery-display-mode-select"
+                  defaultValue="grid"
+                >
+                  <option value="grid">Grid</option>
+                  <option value="carousel">Carousel</option>
+                  <option value="slideshow">Slideshow</option>
+                </select>
               </div>
               
               <div>
                 <label htmlFor="layoutType" className="block mb-1 text-sm font-medium">
                   Layout Type
                 </label>
-                <Controller
-                  name="layoutType"
-                  control={control}
-                  render={({ field }) => (
-                    <select
-                      id="layoutType"
-                      value={field.value || 'masonry'}
-                      onChange={field.onChange}
-                      className="w-full p-2 border border-gray-300 rounded"
-                    >
-                      <option value="masonry">Masonry</option>
-                      <option value="uniform">Uniform</option>
-                      <option value="compact">Compact</option>
-                    </select>
-                  )}
-                />
+                <select
+                  id="layoutType"
+                  {...register('layoutType', {
+                    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
+                      onChange?.('layoutType', e.target.value);
+                    }
+                  })}
+                  className="w-full p-2 border border-gray-300 rounded"
+                  data-testid="gallery-layout-type-select"
+                  defaultValue="masonry"
+                >
+                  <option value="masonry">Masonry</option>
+                  <option value="uniform">Uniform</option>
+                  <option value="compact">Compact</option>
+                </select>
               </div>
             </div>
           </div>
@@ -267,17 +273,21 @@ export function GalleryDetailsForm({
                 onClick={onCancel}
                 className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
                 disabled={isSubmitting}
+                data-testid="gallery-details-cancel-button"
               >
                 Cancel
               </button>
             )}
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 ml-auto"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Saving...' : submitText}
-            </button>
+            {showSubmitButton && (
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 ml-auto"
+                disabled={isSubmitting}
+                data-testid="gallery-details-submit-button"
+              >
+                {isSubmitting ? 'Saving...' : submitText}
+              </button>
+            )}
           </div>
         </div>
       </CardContent>

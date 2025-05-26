@@ -46,6 +46,13 @@ export const POST = withApiHandler(async (req) => {
         include: {
           image: { include: { tags: true } }
         }
+      },
+      user: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+        }
       }
     },
   });

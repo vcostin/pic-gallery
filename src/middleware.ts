@@ -2,10 +2,23 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { UserRole } from '@prisma/client';
+import { e2eRateLimiter } from './lib/rateLimit';
 
 export async function middleware(request: NextRequest) {
   // Get the pathname of the request
   const path = request.nextUrl.pathname;
+
+  // Apply rate limiting to auth routes and E2E cleanup endpoint
+  if (path.startsWith('/api/auth') || 
+      path.startsWith('/auth') ||
+      path.startsWith('/api/e2e/cleanup')) {
+    
+    // Check if this is an E2E test and apply appropriate rate limiting
+    const rateLimitResponse = e2eRateLimiter(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+  }
 
   // Get the token
   const session = await getToken({ req: request });
@@ -56,3 +69,12 @@ export async function middleware(request: NextRequest) {
 
   return NextResponse.next();
 }
+
+export const config = {
+  matcher: [
+    '/admin/:path*',
+    '/api/auth/:path*',
+    '/auth/:path*',
+    '/api/e2e/:path*',
+  ],
+};

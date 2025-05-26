@@ -110,6 +110,7 @@ export function DeleteAccountDialog({ userId }: DeleteAccountDialogProps) {
             className="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700"
             placeholder="DELETE"
             autoComplete="off"
+            data-testid="delete-confirmation-input"
           />
         </div>
         
