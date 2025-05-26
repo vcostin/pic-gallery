@@ -21,6 +21,7 @@
     "test:e2e:debug": "playwright test --debug",
     "e2e:cleanup": "node scripts/e2e-cleanup.js",
     "e2e:cleanup:all": "node scripts/e2e-cleanup.js --delete-user",
+    "e2e:cleanup:screenshots": "./scripts/cleanup-screenshots.sh",
     "test:e2e:report": "playwright show-report",
     "test:e2e:auth": "playwright test e2e-tests/auth.spec.ts --project=chromium",
     "test:e2e:gallery": "SKIP_AUTH=1 playwright test e2e-tests/gallery.spec.ts --project=chromium",
