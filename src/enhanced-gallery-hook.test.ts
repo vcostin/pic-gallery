@@ -174,7 +174,11 @@ describe('useEnhancedGalleryImages', () => {
     await act(async () => {
       result.current.confirmRemoveImage();
       await mockRemoveImagePromise;
-      jest.runAllTimers(); // Run timers to handle toast timeout
+    });
+    
+    // Run timers in a separate act block to handle toast timeout
+    await act(async () => {
+      jest.runAllTimers();
     });
     
     // After the promise resolves, loading should be false
@@ -255,7 +259,7 @@ describe('useEnhancedGalleryImages', () => {
     expect(result.current.showSuccessToast).toBe(true);
     
     // Now advance timers to simulate the toast disappearing after 3 seconds
-    act(() => {
+    await act(async () => {
       jest.advanceTimersByTime(3000);
     });
     

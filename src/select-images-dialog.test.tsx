@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import '@testing-library/jest-dom';
 
@@ -93,18 +93,22 @@ describe('SelectImagesDialog Component', () => {
     const onImagesSelected = jest.fn();
     
     // Render component
-    render(
-      <SelectImagesDialog
-        isOpen={true}
-        onClose={onClose}
-        onImagesSelected={onImagesSelected}
-        existingImageIds={[]}
-      />
-    );
+    await act(async () => {
+      render(
+        <SelectImagesDialog
+          isOpen={true}
+          onClose={onClose}
+          onImagesSelected={onImagesSelected}
+          existingImageIds={[]}
+        />
+      );
+    });
     
     // Wait for images to load
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalled();
+    await act(async () => {
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalled();
+      });
     });
 
     // Find and click the first image card
@@ -113,12 +117,16 @@ describe('SelectImagesDialog Component', () => {
     const imageCard = await screen.findByText('Image 1');
     const imageCardContainer = imageCard.closest('.cursor-pointer');
     if (imageCardContainer) {
-      fireEvent.click(imageCardContainer);
+      await act(async () => {
+        fireEvent.click(imageCardContainer);
+      });
     }
     
     // Click the Add button
     const addButton = await screen.findByText(/Add 1 Image/);
-    fireEvent.click(addButton);
+    await act(async () => {
+      fireEvent.click(addButton);
+    });
     
     // Verify onImagesSelected was called with the correct image ID
     expect(onImagesSelected).toHaveBeenCalledWith(['image-1']);
@@ -130,18 +138,22 @@ describe('SelectImagesDialog Component', () => {
     const onImagesSelected = jest.fn();
     
     // Render with one image already in the gallery
-    render(
-      <SelectImagesDialog
-        isOpen={true}
-        onClose={onClose}
-        onImagesSelected={onImagesSelected}
-        existingImageIds={['image-1']}
-      />
-    );
+    await act(async () => {
+      render(
+        <SelectImagesDialog
+          isOpen={true}
+          onClose={onClose}
+          onImagesSelected={onImagesSelected}
+          existingImageIds={['image-1']}
+        />
+      );
+    });
     
     // Wait for images to load
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalled();
+    await act(async () => {
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalled();
+      });
     });
     
     // Should only show Image 2 (not Image 1)
