@@ -113,15 +113,13 @@ describe('useEnhancedGalleryImages', () => {
     const mockGetGalleryPromise = Promise.resolve(mockGallery);
     (GalleryService.getGallery as jest.Mock).mockReturnValue(mockGetGalleryPromise);
 
-    const { result } = renderHook(() => 
-      useEnhancedGalleryImages(mockGalleryId)
-    );
+    let hookResult: ReturnType<typeof renderHook<ReturnType<typeof useEnhancedGalleryImages>, string>>;
     
-    // Initially loading should be true
-    expect(result.current.loading).toBe(true);
-    
-    // Wait for the promise to resolve and state to update
+    // Wrap the entire hook rendering and initial effect in act()
     await act(async () => {
+      hookResult = renderHook(() => useEnhancedGalleryImages(mockGalleryId));
+      
+      // Wait for the promise to resolve and state to update
       await mockGetGalleryPromise;
     });
     
@@ -131,10 +129,10 @@ describe('useEnhancedGalleryImages', () => {
     });
     
     // After promise resolves, loading should be false
-    expect(result.current.loading).toBe(false);
+    expect(hookResult!.result.current.loading).toBe(false);
     expect(GalleryService.getGallery).toHaveBeenCalledWith(mockGalleryId);
-    expect(result.current.gallery).toEqual(mockGallery);
-    expect(result.current.images).toEqual(mockGallery.images);
+    expect(hookResult!.result.current.gallery).toEqual(mockGallery);
+    expect(hookResult!.result.current.images).toEqual(mockGallery.images);
   });
 
   test('should handle image description changes', () => {

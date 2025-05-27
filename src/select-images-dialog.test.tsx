@@ -49,10 +49,17 @@ describe('SelectImagesDialog Component', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    // Setup the default mock response
-    (global.fetch as jest.Mock).mockResolvedValue({
+    
+    // Create a synchronous mock that resolves immediately
+    const mockJsonResponse = jest.fn().mockResolvedValue(mockResponse);
+    const mockFetchResponse = {
       ok: true,
-      json: async () => mockResponse
+      json: mockJsonResponse
+    };
+    
+    // Use mockImplementation to control the timing
+    (global.fetch as jest.Mock).mockImplementation(() => {
+      return Promise.resolve(mockFetchResponse);
     });
   });
 
@@ -93,27 +100,21 @@ describe('SelectImagesDialog Component', () => {
     const onImagesSelected = jest.fn();
     
     // Render component
-    await act(async () => {
-      render(
-        <SelectImagesDialog
-          isOpen={true}
-          onClose={onClose}
-          onImagesSelected={onImagesSelected}
-          existingImageIds={[]}
-        />
-      );
-    });
+    render(
+      <SelectImagesDialog
+        isOpen={true}
+        onClose={onClose}
+        onImagesSelected={onImagesSelected}
+        existingImageIds={[]}
+      />
+    );
     
-    // Wait for images to load
-    await act(async () => {
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled();
-      });
+    // Wait for the component to finish loading and all async operations to complete
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
     });
 
     // Find and click the first image card
-    // Note: This is a simplified test. In a real test, you would need to wait
-    // for the images to load and then find the correct elements to click
     const imageCard = await screen.findByText('Image 1');
     const imageCardContainer = imageCard.closest('.cursor-pointer');
     if (imageCardContainer) {
@@ -138,22 +139,18 @@ describe('SelectImagesDialog Component', () => {
     const onImagesSelected = jest.fn();
     
     // Render with one image already in the gallery
-    await act(async () => {
-      render(
-        <SelectImagesDialog
-          isOpen={true}
-          onClose={onClose}
-          onImagesSelected={onImagesSelected}
-          existingImageIds={['image-1']}
-        />
-      );
-    });
+    render(
+      <SelectImagesDialog
+        isOpen={true}
+        onClose={onClose}
+        onImagesSelected={onImagesSelected}
+        existingImageIds={['image-1']}
+      />
+    );
     
-    // Wait for images to load
-    await act(async () => {
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled();
-      });
+    // Wait for the component to finish loading and all async operations to complete
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
     });
     
     // Should only show Image 2 (not Image 1)
