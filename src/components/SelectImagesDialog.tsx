@@ -226,7 +226,7 @@ export function SelectImagesDialog({
   // Add logging to track selected images state
   useEffect(() => {
     if (isOpen) {
-      console.log('[SelectImagesDialog] Selected images:', Array.from(selectedImages));
+      logger.debug('[SelectImagesDialog] Selected images:', Array.from(selectedImages));
     }
   }, [selectedImages, isOpen]);
 
