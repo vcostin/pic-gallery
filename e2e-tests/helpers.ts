@@ -423,58 +423,108 @@ export class TestHelpers {
   static async cleanupTestData(page: Page, deleteUser: boolean = false): Promise<void> {
     try {
       console.log(`Cleaning up E2E test data${deleteUser ? ' (including user account)' : ''}...`);
-      
       // Make sure we're authenticated
-      const isAuthed = await this.isAuthenticated(page);
+      let isAuthed = await this.isAuthenticated(page);
       if (!isAuthed) {
         console.log('User not authenticated, attempting to login...');
-        const testEmail = process.env.E2E_TEST_USER_EMAIL || 'e2e-test@example.com';
-        const testPassword = process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!';
-        
-        // Use skipRegistration=true to avoid recursive login/registration attempts
-        const loginSuccess = await this.login(page, testEmail, testPassword, true);
+        const testEmail = process.env.E2E_TEST_USER_EMAIL || 'e2e-single-user@example.com';
+        const testPassword = process.env.E2E_TEST_USER_PASSWORD || 'testpassword123';
+        const testName = process.env.E2E_TEST_USER_NAME || 'E2E Single Test User';
+        // Try login first
+        let loginSuccess = await this.login(page, testEmail, testPassword, true);
         if (!loginSuccess) {
+          // Try to register the user if login failed
+          console.warn('Login failed, attempting to register the E2E test user...');
+          const registerSuccess = await this.registerAndLogin(page, testName, testEmail, testPassword);
+          if (registerSuccess) {
+            // Save storage state if possible (for single-user strategy)
+            if (typeof page.context().storageState === 'function') {
+              try {
+                await page.context().storageState({ path: './playwright/.auth/single-user.json' });
+                console.log('✅ Refreshed Playwright auth storage state after user recreation');
+              } catch (e) {
+                console.warn('Could not refresh Playwright auth storage state:', e);
+              }
+            }
+            loginSuccess = true;
+          }
+        }
+        isAuthed = loginSuccess;
+        if (!isAuthed) {
           console.error('Authentication failed for cleanup, trying fallback cleanup');
-          // Even if login fails, try UI-based cleanup as a last resort
           await this.fallbackCleanup(page, deleteUser);
           return;
         }
       }
       
-      // Try cleanup with multiple approaches
+      // Try cleanup with retry logic for rate limiting
       try {
-        // First approach: Use the API directly
+        // First approach: Use the API directly with retry logic
         const url = deleteUser ? '/api/e2e/cleanup?deleteUser=true' : '/api/e2e/cleanup';
-        let response;
+        let response: Awaited<ReturnType<typeof page.request.delete>> | null = null;
         
-        // Enhance API request reliability
-        try {
-          // Try DELETE method first
-          response = await page.request.delete(url, {
-            timeout: 15000,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json, text/plain, */*'
-            }
-          });
-        } catch (deleteError) {
-          console.log('DELETE request failed, trying POST method...', deleteError);
+        // Try multiple times with exponential backoff for rate limiting
+        const maxRetries = 3;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          if (attempt > 1) {
+            // Wait with exponential backoff on retry
+            const delay = Math.pow(2, attempt - 1) * 1000; // 2s, 4s, 8s
+            console.log(`Waiting ${delay}ms before retry attempt ${attempt}...`);
+            await page.waitForTimeout(delay);
+          }
           
-          // Some frameworks use POST with a _method param for DELETE
-          response = await page.request.post(url, {
-            timeout: 15000,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json, text/plain, */*'
-            },
-            data: { 
-              _method: 'DELETE',
-              deleteUser: deleteUser 
+          try {
+            // Try DELETE method first
+            response = await page.request.delete(url, {
+              timeout: 15000,
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json, text/plain, */*',
+                'x-e2e-test': 'true'
+              }
+            });
+            
+            if (response.ok()) {
+              break; // Success, exit retry loop
+            } else if (response.status() === 429 && attempt < maxRetries) {
+              console.log(`Rate limited (429), retrying in ${Math.pow(2, attempt) * 1000}ms...`);
+              continue; // Retry on rate limit
             }
-          });
+            
+          } catch (deleteError) {
+            console.log('DELETE request failed, trying POST method...', deleteError);
+            
+            // Some frameworks use POST with a _method param for DELETE
+            try {
+              response = await page.request.post(url, {
+                timeout: 15000,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json, text/plain, */*',
+                  'x-e2e-test': 'true'
+                },
+                data: { 
+                  _method: 'DELETE',
+                  deleteUser: deleteUser 
+                }
+              });
+              
+              if (response.ok()) {
+                break; // Success, exit retry loop
+              } else if (response.status() === 429 && attempt < maxRetries) {
+                console.log(`Rate limited (429), retrying in ${Math.pow(2, attempt) * 1000}ms...`);
+                continue; // Retry on rate limit
+              }
+            } catch (postError) {
+              console.log('POST request also failed:', postError);
+              if (attempt === maxRetries) {
+                throw postError; // Re-throw on final attempt
+              }
+            }
+          }
         }
         
-        if (response.ok()) {
+        if (response && response.ok()) {
           let data;
           try {
             data = await response.json();
@@ -492,7 +542,7 @@ export class TestHelpers {
             const text = await response.text();
             console.log(`✅ Cleanup successful. Response: ${text}`);
           }
-        } else {
+        } else if (response) {
           const status = response.status();
           let errorText = '';
           try {
@@ -505,8 +555,8 @@ export class TestHelpers {
           
           if (status === 401 || status === 403) {
             console.log('Unauthorized error, trying to refresh authentication...');
-            const testEmail = process.env.E2E_TEST_USER_EMAIL || 'e2e-test@example.com';
-            const testPassword = process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!';
+            const testEmail = process.env.E2E_TEST_USER_EMAIL || 'e2e-single-user@example.com';
+            const testPassword = process.env.E2E_TEST_USER_PASSWORD || 'testpassword123';
             
             await this.login(page, testEmail, testPassword, true);
             // Try again with fresh authentication
@@ -514,7 +564,8 @@ export class TestHelpers {
               timeout: 15000,
               headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json, text/plain, */*'
+                'Accept': 'application/json, text/plain, */*',
+                'x-e2e-test': 'true'
               }
             });
             
@@ -526,6 +577,9 @@ export class TestHelpers {
           
           // If still failed, try alternate cleanup methods
           console.log('API cleanup failed, trying UI-based fallback cleanup');
+          await this.fallbackCleanup(page, deleteUser);
+        } else {
+          console.error('❌ No response received from cleanup API');
           await this.fallbackCleanup(page, deleteUser);
         }
       } catch (apiError) {
@@ -764,8 +818,8 @@ export class TestHelpers {
       const isAuth = await this.isAuthenticated(page);
       if (!isAuth) {
         console.log('Not authenticated, attempting to login...');
-        const testEmail = process.env.E2E_TEST_USER_EMAIL || 'e2e-test@example.com';
-        const testPassword = process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!';
+        const testEmail = process.env.E2E_TEST_USER_EMAIL || 'e2e-single-user@example.com';
+        const testPassword = process.env.E2E_TEST_USER_PASSWORD || 'testpassword123';
         const loginSuccess = await this.login(page, testEmail, testPassword);
         if (!loginSuccess) {
           console.error('Failed to authenticate for gallery creation');
@@ -873,7 +927,7 @@ export class TestHelpers {
         try {
           const title = await titleElement.textContent();
           console.log(`Available image ${i}: ${title}`);
-        } catch (e) {
+        } catch {
           console.log(`Available image ${i}: [title not found]`);
         }
       }
@@ -1131,5 +1185,28 @@ export class TestHelpers {
     }
     
     return uploadedImages;
+  }
+
+  /**
+   * Upload an image using the gallery UI
+   */
+  static async uploadImage(page: Page, filePath: string, imageName: string) {
+    await page.getByTestId('upload-image-button').click();
+    const fileInput = await page.getByTestId('upload-image-input');
+    await fileInput.setInputFiles(filePath);
+    await page.getByTestId('image-title-input').fill(imageName);
+    await page.getByTestId('save-uploaded-image').click();
+    await page.waitForSelector(`[data-testid="image-card-title"][data-title="${imageName}"]`, { timeout: 10000 });
+  }
+
+  /**
+   * Verify that an image card with the given name appears in the gallery
+   */
+  static async verifyImageCard(page: Page, imageName: string) {
+    // Wait for the selector to appear
+    await page.waitForSelector(`[data-testid="image-card-title"][data-title="${imageName}"]`, { timeout: 10000 });
+    // Assert visibility
+    const card = await page.getByTestId('image-card-title').filter({ hasText: imageName });
+    await expect(card).toBeVisible();
   }
 }

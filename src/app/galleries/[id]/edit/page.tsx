@@ -229,13 +229,9 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      const result = await deleteGallery(`/api/galleries/${galleryId}`, { method: 'DELETE' });
-      if (result.success) {
-        setSuccessMessage("Gallery deleted successfully.");
-        setTimeout(() => {
-          router.push('/galleries'); 
-        }, 2000);
-      }
+      await deleteGallery(`/api/galleries/${galleryId}`, { method: 'DELETE' });
+      setSuccessMessage("Gallery deleted successfully.");
+      router.push('/galleries');
     } catch (err) {
       logger.error("Error deleting gallery:", err);
       setDeleteError(err instanceof Error ? err : new Error(String(err)));

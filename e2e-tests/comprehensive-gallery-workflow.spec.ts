@@ -152,10 +152,30 @@ test.describe('Comprehensive Gallery Workflow', () => {
 
       // Verify dialog closes
       await expect(searchInput).not.toBeVisible();
+
+      // After adding images, verify they appear in the gallery images section
+      if (selectedImageCount > 0) {
+        for (let i = 0; i < selectedImageCount; i++) {
+          // Use the helper to verify image card presence
+          await TestHelpers.verifyImageCard(page, `test-image-${i+1}`);
+        }
+      }
     } else {
       console.log('No images available for selection');
       // Close dialog if no images available
       await page.getByTestId('select-images-close-button').click();
+    }
+
+    // ========== PHASE 3.1: COVER IMAGE SELECTION DURING CREATION ==========
+    // After images are added, set the first image as cover and verify indicator
+    if (selectedImageCount > 0) {
+      const setCoverButtons = page.locator('[data-testid="gallery-image-set-cover"]');
+      if (await setCoverButtons.count() > 0) {
+        await setCoverButtons.first().click();
+        // Verify cover indicator appears immediately in creation UI
+        const coverIndicator = page.getByTestId('gallery-image-cover-active');
+        await expect(coverIndicator).toBeVisible();
+      }
     }
 
     // ========== PHASE 4: GALLERY CREATION COMPLETION ==========
@@ -217,6 +237,22 @@ test.describe('Comprehensive Gallery Workflow', () => {
     } else {
       console.warn('Could not extract gallery ID from URL:', currentUrl);
     }
+
+    // ========== PHASE 4.1: DATABASE ERROR HANDLING ==========
+    // Try to create a gallery with an invalid image ID and expect an error
+    // (This is a negative test, should not break the main happy path)
+    /*
+    await page.goto('/galleries/create');
+    await page.getByTestId('gallery-title').fill('Invalid Gallery');
+    await page.getByTestId('gallery-description').fill('Should fail');
+    // Simulate adding an invalid image ID (requires test API or UI hook)
+    // This block is a placeholder for a real negative test
+    // await page.evaluate(() => window.addInvalidImageToGallery('nonexistent-id'));
+    const submitButton = page.getByTestId('create-gallery-submit');
+    await submitButton.click();
+    const errorAlert = page.locator('[role="alert"], .error, [data-testid*="error"]');
+    await expect(errorAlert).toContainText('invalid');
+    */
 
     // ========== PHASE 5: GALLERY VERIFICATION ==========
     console.log('Phase 5: Verifying created gallery...');

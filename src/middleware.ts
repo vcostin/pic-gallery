@@ -8,10 +8,10 @@ export async function middleware(request: NextRequest) {
   // Get the pathname of the request
   const path = request.nextUrl.pathname;
 
-  // Apply rate limiting to auth routes and E2E cleanup endpoint
+  // Apply rate limiting to auth routes and E2E endpoints
   if (path.startsWith('/api/auth') || 
       path.startsWith('/auth') ||
-      path.startsWith('/api/e2e/cleanup')) {
+      path.startsWith('/api/e2e/')) {
     
     // Check if this is an E2E test and apply appropriate rate limiting
     const rateLimitResponse = e2eRateLimiter(request);

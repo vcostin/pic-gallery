@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { AuthHelpers } from './auth-helpers';
 
 test.describe('Profile Deletion', () => {
   test('should delete user profile successfully', async ({ page }) => {
@@ -22,11 +21,12 @@ test.describe('Profile Deletion', () => {
     await expect(page).toHaveURL(/\/auth\/login|\//, { timeout: 10000 });
 
     // Verify account has been deleted by trying to login
-    const deletionUser = AuthHelpers.getUser('DELETION');
+    const testEmail = process.env.E2E_TEST_USER_EMAIL || 'e2e-single-user@example.com';
+    const testPassword = process.env.E2E_TEST_USER_PASSWORD || 'testpassword123';
     await page.goto('http://localhost:3000/auth/login');
     
-    await page.fill('input[type="email"]', deletionUser.email);
-    await page.fill('input[type="password"]', deletionUser.password);
+    await page.fill('input[type="email"]', testEmail);
+    await page.fill('input[type="password"]', testPassword);
     await page.click('button[type="submit"]');
 
     // Login should fail with error message
