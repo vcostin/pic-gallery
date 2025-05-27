@@ -32,7 +32,9 @@ describe('useEnhancedGalleryImages', () => {
         title: 'Image 1',
         url: 'http://example.com/img1.jpg',
         userId: 'user-123',
-        createdAt: new Date()
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        tags: [{ id: 'tag1', name: 'nature' }]
       }
     },
     {
@@ -47,7 +49,9 @@ describe('useEnhancedGalleryImages', () => {
         title: 'Image 2',
         url: 'http://example.com/img2.jpg',
         userId: 'user-123',
-        createdAt: new Date()
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        tags: [{ id: 'tag2', name: 'landscape' }]
       }
     }
   ];
@@ -57,7 +61,14 @@ describe('useEnhancedGalleryImages', () => {
     title: 'Test Gallery',
     description: 'Test Gallery Description',
     userId: 'user-123',
+    isPublic: false,
     createdAt: new Date(),
+    updatedAt: new Date(),
+    user: {
+      id: 'user-123',
+      name: 'Test User',
+      image: null
+    },
     images: mockImages
   };
 
@@ -82,7 +93,10 @@ describe('useEnhancedGalleryImages', () => {
               id: 'img3',
               title: 'Image 3',
               url: 'http://example.com/img3.jpg',
-              userId: 'user-123'
+              userId: 'user-123',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              tags: []
             }
           ]
         }
@@ -109,6 +123,10 @@ describe('useEnhancedGalleryImages', () => {
     // Wait for the promise to resolve and state to update
     await act(async () => {
       await mockGetGalleryPromise;
+    });
+    
+    // Run any pending timers
+    act(() => {
       jest.runAllTimers();
     });
     
