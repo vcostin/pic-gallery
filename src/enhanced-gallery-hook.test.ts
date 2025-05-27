@@ -113,6 +113,8 @@ describe('useEnhancedGalleryImages', () => {
     const mockGetGalleryPromise = Promise.resolve(mockGallery);
     (GalleryService.getGallery as jest.Mock).mockReturnValue(mockGetGalleryPromise);
 
+    // `hookResult` stores the result of rendering the `useEnhancedGalleryImages` hook.
+    // The type is derived from `renderHook` and the return type of `useEnhancedGalleryImages`.
     let hookResult: ReturnType<typeof renderHook<ReturnType<typeof useEnhancedGalleryImages>, string>>;
     
     // Wrap the entire hook rendering and initial effect in act()
