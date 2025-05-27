@@ -8,6 +8,7 @@ import { ErrorMessage, SuccessMessage } from '@/components/StatusMessages';
 import logger from '@/lib/logger';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
+import { ErrorBoundary } from 'react-error-boundary';
 
 import { useEnhancedGalleryImages } from '@/lib/hooks/useEnhancedGallery';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
@@ -50,7 +51,6 @@ export function CreateGallery(): React.ReactElement {
   // Define everything we need to avoid any TypeScript errors
   const register = formMethods.register;
   const handleSubmit = formMethods.handleSubmit;
-  const control = formMethods.control;
   const errors = formMethods.formState.errors;
   const isSubmitting = formMethods.formState.isSubmitting;
   const reset = formMethods.reset;
@@ -67,12 +67,40 @@ export function CreateGallery(): React.ReactElement {
     removeImage
   } = useEnhancedGalleryImages(undefined, watchedImages || []);
   
+  // Cover image state
+  const [coverImageId, setCoverImageId] = useState<string | null>(null);
+
   // Update the form with selected images
-  const handleImagesSelected = useCallback((selectedImageIds: string[]) => {
-    // In a real implementation, we would need to fetch the full image data
-    // For now, we're assuming the IDs directly map to existing images
+  const handleImagesSelected = useCallback(async (selectedImageIds: string[]) => {
     logger.log('Selected image IDs:', selectedImageIds);
-  }, []);
+    console.log('[CreateGallery] Images selected:', selectedImageIds);
+    if (!selectedImageIds || selectedImageIds.length === 0) return;
+    // Fetch full image data from API
+    const response = await fetch(`/api/images?ids=${selectedImageIds.join(',')}`);
+    if (!response.ok) {
+      logger.error('Failed to fetch images for selection:', response.status);
+      return;
+    }
+    const data = await response.json();
+    if (!data || !data.data || !Array.isArray(data.data.data)) {
+      logger.error('Invalid image data structure received:', data);
+      return;
+    }
+    // Map to FullImageInGallery format
+    const newImages = data.data.data.map((image: import('@/lib/schemas').Image, index: number) => ({
+      id: image.id,
+      imageId: image.id,
+      galleryId: '', // Will be set by backend
+      description: '',
+      order: (watchedImages?.length || 0) + index,
+      createdAt: new Date(),
+      image: image as import('@/lib/schemas').FullImageInGallery['image'],
+    }));
+    // Update form and gallery state
+    const updatedImages = [...(watchedImages || []), ...newImages];
+    updateImages(updatedImages);
+    setValue('images', updatedImages, { shouldDirty: true });
+  }, [watchedImages, updateImages, setValue]);
   
   // Handle image removal
   const handleImageRemove = useCallback((imageId: string) => {
@@ -85,6 +113,11 @@ export function CreateGallery(): React.ReactElement {
     setValue('images', newImages, { shouldDirty: true });
   }, [setValue]);
   
+  // Handler for setting cover image
+  const handleSetCoverImage = useCallback((imageId: string) => {
+    setCoverImageId(imageId);
+  }, []);
+  
   // Handle form submission
   const onSubmit = async (data: GalleryFormData) => {
     try {
@@ -95,6 +128,7 @@ export function CreateGallery(): React.ReactElement {
         title: data.title,
         description: data.description,
         isPublic: data.isPublic,
+        coverImageId: coverImageId || undefined,
         images: data.images?.map((image, index) => ({
           id: image.id,
           description: image.description,
@@ -128,117 +162,120 @@ export function CreateGallery(): React.ReactElement {
   };
   
   return (
-    <div className="space-y-6">
-      <ConfirmDialog
-        isOpen={isConfirmDialogOpen}
-        onClose={() => setIsConfirmDialogOpen(false)}
-        onConfirm={() => {
-          reset();
-          setIsConfirmDialogOpen(false);
-        }}
-        title="Cancel Gallery Creation?"
-        message={<p>All your current changes will be lost. Do you want to continue?</p>}
-        confirmButtonText="Yes, cancel"
-        cancelButtonText="No, continue editing"
-      />
-      
-      <SelectImagesDialog 
-        isOpen={isImagesDialogOpen}
-        onClose={() => setIsImagesDialogOpen(false)}
-        onImagesSelected={handleImagesSelected}
-        existingImageIds={watchedImages ? watchedImages.map((img: FullImageInGallery) => img.id) : []}
-      />
-      
-      <Card>
-        <CardHeader>
-          <h1 className="text-2xl font-semibold">Create New Gallery</h1>
-        </CardHeader>
-        <CardContent>
-          {successMessage && <SuccessMessage message={successMessage} className="mb-4" />}
-          {error && (
-            <ErrorMessage 
-              error={error}
-              retry={() => setError(null)}
-              className="mb-4"
-            />
-          )}
-          
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" data-testid="create-gallery-form">
-            <GalleryDetailsForm
-              register={register}
-              errors={errors}
-              isSubmitting={isSubmitting}
-              showSubmitButton={false}
-              showCancelButton={false}
-            />
+    <ErrorBoundary fallback={<ErrorMessage error={new Error('Something went wrong in gallery creation.')} />}>
+      <div className="space-y-6">
+        <ConfirmDialog
+          isOpen={isConfirmDialogOpen}
+          onClose={() => setIsConfirmDialogOpen(false)}
+          onConfirm={() => {
+            reset();
+            setIsConfirmDialogOpen(false);
+          }}
+          title="Cancel Gallery Creation?"
+          message={<p>All your current changes will be lost. Do you want to continue?</p>}
+          confirmButtonText="Yes, cancel"
+          cancelButtonText="No, continue editing"
+        />
+        
+        <SelectImagesDialog 
+          isOpen={isImagesDialogOpen}
+          onClose={() => setIsImagesDialogOpen(false)}
+          onImagesSelected={handleImagesSelected}
+          existingImageIds={watchedImages ? watchedImages.map((img: FullImageInGallery) => img.id) : []}
+        />
+        
+        <Card>
+          <CardHeader>
+            <h1 className="text-2xl font-semibold">Create New Gallery</h1>
+          </CardHeader>
+          <CardContent>
+            {successMessage && <SuccessMessage message={successMessage} className="mb-4" />}
+            {error && (
+              <ErrorMessage 
+                error={error}
+                retry={() => setError(null)}
+                className="mb-4"
+              />
+            )}
             
-            <div className="border-t pt-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Gallery Images</h2>
-                <Button 
-                  onClick={() => setIsImagesDialogOpen(true)}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  type="button"
-                  data-testid="select-images-button"
-                >
-                  <span>Add Images</span>
-                </Button>
-              </div>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" data-testid="create-gallery-form">
+              <GalleryDetailsForm
+                register={register}
+                errors={errors}
+                isSubmitting={isSubmitting}
+                showSubmitButton={false}
+                showCancelButton={false}
+              />
               
-              {imageCount > 0 ? (
-                <div>
-                  <GallerySortable
-                    galleryImages={orderedImages}
-                    coverImageId=""
-                    viewMode="grid"
-                    onImagesReordered={handleImagesReordered}
-                    onDescriptionChange={(id, desc) => {
-                      const updatedImages = orderedImages.map(img => 
-                        img.id === id ? { ...img, description: desc } : img
-                      );
-                      updateImages(updatedImages);
-                    }}
-                    onSetCoverImage={() => {}}
-                    onRemoveImage={handleImageRemove}
-                  />
-                </div>
-              ) : (
-                <div className="text-center p-8 border-2 border-dashed rounded-lg">
-                  <p className="text-gray-500 mb-4">No images added to this gallery yet</p>
+              <div className="border-t pt-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">Gallery Images</h2>
                   <Button 
                     onClick={() => setIsImagesDialogOpen(true)}
                     variant="outline"
+                    className="flex items-center gap-2"
                     type="button"
+                    data-testid="select-images-button"
                   >
-                    Select Images
+                    <span>Add Images</span>
                   </Button>
                 </div>
-              )}
+                
+                {imageCount > 0 ? (
+                  <div>
+                    <GallerySortable
+                      galleryImages={orderedImages}
+                      coverImageId={coverImageId || ''}
+                      viewMode="grid"
+                      onImagesReordered={handleImagesReordered}
+                      onDescriptionChange={(id, desc) => {
+                        const updatedImages = orderedImages.map(img => 
+                          img.id === id ? { ...img, description: desc } : img
+                        );
+                        updateImages(updatedImages);
+                        setValue('images', updatedImages, { shouldDirty: true });
+                      }}
+                      onSetCoverImage={handleSetCoverImage}
+                      onRemoveImage={handleImageRemove}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center p-8 border-2 border-dashed rounded-lg">
+                    <p className="text-gray-500 mb-4">No images added to this gallery yet</p>
+                    <Button 
+                      onClick={() => setIsImagesDialogOpen(true)}
+                      variant="outline"
+                      type="button"
+                    >
+                      Select Images
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Optional: Add image validation error message here */}
+              </div>
               
-              {/* Optional: Add image validation error message here */}
-            </div>
-            
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleCancelCreate}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                data-testid="create-gallery-submit"
-              >
-                {isSubmitting ? 'Creating Gallery...' : 'Create Gallery'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleCancelCreate}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  data-testid="create-gallery-submit"
+                >
+                  {isSubmitting ? 'Creating Gallery...' : 'Create Gallery'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </ErrorBoundary>
   );
 }
 

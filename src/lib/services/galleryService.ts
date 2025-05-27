@@ -39,13 +39,28 @@ export const GalleryService = {
   },
 
   /**
-   * Create a new gallery
+   * Create a new gallery with validation and error handling
    */
   async createGallery(galleryData: GalleryCreationData): Promise<FullGallery> {
-    return fetchApi('/api/galleries', {
-      method: 'POST',
-      body: JSON.stringify(galleryData)
-    }, FullGallerySchema);
+    // Validate image IDs before sending to API
+    if (galleryData.images && galleryData.images.length > 0) {
+      for (const img of galleryData.images) {
+        if (!img.id || typeof img.id !== 'string') {
+          throw new Error(`Invalid image ID in gallery creation payload: ${JSON.stringify(img)}`);
+        }
+      }
+    }
+    try {
+      return await fetchApi('/api/galleries', {
+        method: 'POST',
+        body: JSON.stringify(galleryData)
+      }, FullGallerySchema);
+    } catch (err) {
+      if (err instanceof Error && err.message && err.message.includes('Foreign key constraint')) {
+        throw new Error('Database error: One or more image IDs are invalid or do not exist.');
+      }
+      throw err;
+    }
   },
 
   /**

@@ -44,13 +44,14 @@ export function rateLimiter(req: NextRequest, limit: number = AUTH_RATE_LIMIT, w
  * A more lenient rate limiter specifically for E2E tests
  */
 export function e2eRateLimiter(req: NextRequest) {
-  // Check for E2E test header or environment
+  // Check for E2E test environment indicators
   const isE2ETest = req.headers.get("x-e2e-test") === "true" || 
-                   process.env.NODE_ENV === "test";
+                   process.env.NODE_ENV === "test" ||
+                   process.env.NEXT_PUBLIC_ENABLE_E2E_TEST_FEATURES === "true";
                    
   if (isE2ETest) {
-    // Use a much higher limit for E2E tests
-    return rateLimiter(req, 100, AUTH_RATE_LIMIT_WINDOW);
+    // Use a much higher limit for E2E tests - 200 requests per minute
+    return rateLimiter(req, 200, AUTH_RATE_LIMIT_WINDOW);
   }
   
   // Standard rate limit for normal traffic

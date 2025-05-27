@@ -223,6 +223,13 @@ export function SelectImagesDialog({
     onClose();
   };
 
+  // Add logging to track selected images state
+  useEffect(() => {
+    if (isOpen) {
+      logger.debug('[SelectImagesDialog] Selected images:', Array.from(selectedImages));
+    }
+  }, [selectedImages, isOpen]);
+
   if (!isOpen) return null;
 
   // Extract all tags from images for filter options
