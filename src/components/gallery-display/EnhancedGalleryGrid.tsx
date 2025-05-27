@@ -317,30 +317,36 @@ export function EnhancedGalleryGrid({
     </motion.div>
   );
 
-  const renderPolaroidLayout = () => (
-    <motion.div 
-      ref={gridRef}
-      className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 ${className}`}
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {images.map((image, index) => (
-        <motion.div
-          key={image.id}
-          variants={itemVariants}
-          className="group cursor-pointer"
-          onClick={() => onImageClick?.(image, index)}
-          whileHover={{ 
-            rotate: Math.random() * 6 - 3,
-            scale: 1.05,
-            y: -10
-          }}
-          whileTap={{ scale: 0.95 }}
-          style={{
-            rotate: Math.random() * 6 - 3 // Random initial rotation
-          }}
-        >
+  const renderPolaroidLayout = () => {
+    const initialRotations = useMemo(() => 
+      images.map(() => Math.random() * 6 - 3), 
+      [images]
+    );
+
+    return (
+      <motion.div 
+        ref={gridRef}
+        className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 ${className}`}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {images.map((image, index) => (
+          <motion.div
+            key={image.id}
+            variants={itemVariants}
+            className="group cursor-pointer"
+            onClick={() => onImageClick?.(image, index)}
+            whileHover={{ 
+              rotate: Math.random() * 6 - 3,
+              scale: 1.05,
+              y: -10
+            }}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              rotate: initialRotations[index] // Memoized initial rotation
+            }}
+          >
           <div className="bg-white dark:bg-gray-100 p-4 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300">
             <div className="aspect-square overflow-hidden rounded-sm mb-4">
               <Image
