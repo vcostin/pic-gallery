@@ -15,6 +15,15 @@ export function log(...args: unknown[]): void {
 }
 
 /**
+ * Log debug messages (only in development)
+ */
+export function debug(...args: unknown[]): void {
+  if (isDevelopment) {
+    console.debug(...args);
+  }
+}
+
+/**
  * Log warning messages (only in development) 
  */
 export function warn(...args: unknown[]): void {
@@ -57,6 +66,7 @@ export function handleError(error: unknown, context?: string): string {
 
 const logger = {
   log,
+  debug,
   warn,
   error,
   handleError

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { SelectImagesDialog } from '@/components/SelectImagesDialog';
 import '@testing-library/jest-dom';
 
@@ -49,10 +49,17 @@ describe('SelectImagesDialog Component', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    // Setup the default mock response
-    (global.fetch as jest.Mock).mockResolvedValue({
+    
+    // Create a synchronous mock that resolves immediately
+    const mockJsonResponse = jest.fn().mockResolvedValue(mockResponse);
+    const mockFetchResponse = {
       ok: true,
-      json: async () => mockResponse
+      json: mockJsonResponse
+    };
+    
+    // Use mockImplementation to control the timing
+    (global.fetch as jest.Mock).mockImplementation(() => {
+      return Promise.resolve(mockFetchResponse);
     });
   });
 
@@ -102,23 +109,25 @@ describe('SelectImagesDialog Component', () => {
       />
     );
     
-    // Wait for images to load
+    // Wait for the component to finish loading and all async operations to complete
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalled();
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
     });
 
     // Find and click the first image card
-    // Note: This is a simplified test. In a real test, you would need to wait
-    // for the images to load and then find the correct elements to click
     const imageCard = await screen.findByText('Image 1');
     const imageCardContainer = imageCard.closest('.cursor-pointer');
     if (imageCardContainer) {
-      fireEvent.click(imageCardContainer);
+      await act(async () => {
+        fireEvent.click(imageCardContainer);
+      });
     }
     
     // Click the Add button
     const addButton = await screen.findByText(/Add 1 Image/);
-    fireEvent.click(addButton);
+    await act(async () => {
+      fireEvent.click(addButton);
+    });
     
     // Verify onImagesSelected was called with the correct image ID
     expect(onImagesSelected).toHaveBeenCalledWith(['image-1']);
@@ -139,9 +148,9 @@ describe('SelectImagesDialog Component', () => {
       />
     );
     
-    // Wait for images to load
+    // Wait for the component to finish loading and all async operations to complete
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalled();
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
     });
     
     // Should only show Image 2 (not Image 1)

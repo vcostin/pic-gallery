@@ -8,8 +8,9 @@ import {
   mapGalleryImageToDisplayImage,
   mapGalleryImagesToDisplayImages
 } from '@/lib/utils/typeMappers';
-import { GalleryCarousel } from '@/components/gallery-display/GalleryCarousel';
-import { ImageGrid } from '@/components/ImageGrid'; 
+import { EnhancedCarousel } from '@/components/gallery-display/EnhancedCarousel';
+import { EnhancedGalleryGrid } from '@/components/gallery-display/EnhancedGalleryGrid';
+import { EnhancedSlideshow } from '@/components/gallery-display/EnhancedSlideshow';
 import { GalleryFullscreen } from '@/components/gallery-display/GalleryFullscreen';
 
 interface ThemedGalleryViewProps {
@@ -71,10 +72,13 @@ export function ThemedGalleryView({ gallery, isOwner = false }: ThemedGalleryVie
     switch (displayMode) {
       case 'carousel':
         return (
-          <GalleryCarousel
+          <EnhancedCarousel
             images={imagesForDisplay}
+            autoPlay={true}
+            showThumbnails={true}
+            themeColor={gallery.themeColor || '#6366f1'}
+            accentColor={gallery.accentColor || '#10b981'}
             onImageClick={(image) => {
-              // Find the original image in gallery by ID
               const imageId = image.id;
               const galleryImageIndex = gallery.images.findIndex(img => img.image && img.image.id === imageId);
               if (galleryImageIndex >= 0) {
@@ -82,26 +86,53 @@ export function ThemedGalleryView({ gallery, isOwner = false }: ThemedGalleryVie
                 openFullscreen(imageInGallery, galleryImageIndex);
               }
             }}
-            themeColor={gallery.themeColor}
-            accentColor={gallery.accentColor}
           />
+        );
+      case 'slideshow':
+        return (
+          <div>
+            <EnhancedGalleryGrid
+              images={imagesForDisplay}
+              layout="uniform"
+              themeColor={gallery.themeColor || '#6366f1'}
+              onImageClick={(image) => {
+                const imageId = image.id;
+                const galleryImageIndex = gallery.images.findIndex(img => img.image && img.image.id === imageId);
+                if (galleryImageIndex >= 0) {
+                  const imageInGallery = gallery.images[galleryImageIndex];
+                  openFullscreen(imageInGallery, galleryImageIndex);
+                }
+              }}
+            />
+            {fullscreenImageInfo && (
+              <EnhancedSlideshow
+                images={imagesForDisplay}
+                initialIndex={fullscreenImageInfo.originalIndex}
+                isOpen={!!fullscreenImageInfo}
+                onClose={closeFullscreen}
+                autoPlay={false}
+                themeColor={gallery.themeColor || '#6366f1'}
+              />
+            )}
+          </div>
         );
       case 'grid':
-        return (
-          <ImageGrid
-            images={imagesForDisplay.map(img => ({
-              id: img.id,
-              url: img.url,
-              title: img.title || 'Untitled', // Ensure title is always a string
-              description: img.description || null, // Ensure description is string | null
-              tags: img.tags || []
-            }))}
-          />
-        );
       default:
+        // Determine layout type based on gallery settings
+        const gridLayout = (() => {
+          switch (layoutType) {
+            case 'masonry': return 'masonry';
+            case 'uniform': return 'uniform';
+            case 'compact': return 'compact';
+            default: return 'masonry';
+          }
+        })();
+        
         return (
-          <GalleryCarousel
+          <EnhancedGalleryGrid
             images={imagesForDisplay}
+            layout={gridLayout}
+            themeColor={gallery.themeColor || '#6366f1'}
             onImageClick={(image) => {
               const imageId = image.id;
               const galleryImageIndex = gallery.images.findIndex(img => img.image && img.image.id === imageId);
@@ -110,8 +141,6 @@ export function ThemedGalleryView({ gallery, isOwner = false }: ThemedGalleryVie
                 openFullscreen(imageInGallery, galleryImageIndex);
               }
             }}
-            themeColor={gallery.themeColor}
-            accentColor={gallery.accentColor}
           />
         );
     }

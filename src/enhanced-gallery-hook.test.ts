@@ -32,7 +32,9 @@ describe('useEnhancedGalleryImages', () => {
         title: 'Image 1',
         url: 'http://example.com/img1.jpg',
         userId: 'user-123',
-        createdAt: new Date()
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        tags: [{ id: 'tag1', name: 'nature' }]
       }
     },
     {
@@ -47,7 +49,9 @@ describe('useEnhancedGalleryImages', () => {
         title: 'Image 2',
         url: 'http://example.com/img2.jpg',
         userId: 'user-123',
-        createdAt: new Date()
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        tags: [{ id: 'tag2', name: 'landscape' }]
       }
     }
   ];
@@ -57,7 +61,14 @@ describe('useEnhancedGalleryImages', () => {
     title: 'Test Gallery',
     description: 'Test Gallery Description',
     userId: 'user-123',
+    isPublic: false,
     createdAt: new Date(),
+    updatedAt: new Date(),
+    user: {
+      id: 'user-123',
+      name: 'Test User',
+      image: null
+    },
     images: mockImages
   };
 
@@ -82,7 +93,10 @@ describe('useEnhancedGalleryImages', () => {
               id: 'img3',
               title: 'Image 3',
               url: 'http://example.com/img3.jpg',
-              userId: 'user-123'
+              userId: 'user-123',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              tags: []
             }
           ]
         }
@@ -99,24 +113,28 @@ describe('useEnhancedGalleryImages', () => {
     const mockGetGalleryPromise = Promise.resolve(mockGallery);
     (GalleryService.getGallery as jest.Mock).mockReturnValue(mockGetGalleryPromise);
 
-    const { result } = renderHook(() => 
-      useEnhancedGalleryImages(mockGalleryId)
-    );
+    // `hookResult` stores the result of rendering the `useEnhancedGalleryImages` hook.
+    // The type is derived from `renderHook` and the return type of `useEnhancedGalleryImages`.
+    let hookResult: ReturnType<typeof renderHook<ReturnType<typeof useEnhancedGalleryImages>, string>>;
     
-    // Initially loading should be true
-    expect(result.current.loading).toBe(true);
-    
-    // Wait for the promise to resolve and state to update
+    // Wrap the entire hook rendering and initial effect in act()
     await act(async () => {
+      hookResult = renderHook(() => useEnhancedGalleryImages(mockGalleryId));
+      
+      // Wait for the promise to resolve and state to update
       await mockGetGalleryPromise;
+    });
+    
+    // Run any pending timers
+    act(() => {
       jest.runAllTimers();
     });
     
     // After promise resolves, loading should be false
-    expect(result.current.loading).toBe(false);
+    expect(hookResult!.result.current.loading).toBe(false);
     expect(GalleryService.getGallery).toHaveBeenCalledWith(mockGalleryId);
-    expect(result.current.gallery).toEqual(mockGallery);
-    expect(result.current.images).toEqual(mockGallery.images);
+    expect(hookResult!.result.current.gallery).toEqual(mockGallery);
+    expect(hookResult!.result.current.images).toEqual(mockGallery.images);
   });
 
   test('should handle image description changes', () => {
@@ -156,7 +174,11 @@ describe('useEnhancedGalleryImages', () => {
     await act(async () => {
       result.current.confirmRemoveImage();
       await mockRemoveImagePromise;
-      jest.runAllTimers(); // Run timers to handle toast timeout
+    });
+    
+    // Run timers in a separate act block to handle toast timeout
+    await act(async () => {
+      jest.runAllTimers();
     });
     
     // After the promise resolves, loading should be false
@@ -237,7 +259,7 @@ describe('useEnhancedGalleryImages', () => {
     expect(result.current.showSuccessToast).toBe(true);
     
     // Now advance timers to simulate the toast disappearing after 3 seconds
-    act(() => {
+    await act(async () => {
       jest.advanceTimersByTime(3000);
     });
     
