@@ -487,7 +487,10 @@ export class TestHelpers {
             if (response.ok()) {
               break; // Success, exit retry loop
             } else if (response.status() === 429 && attempt < maxRetries) {
-              console.log(`Rate limited (429), retrying in ${Math.pow(2, attempt) * 1000}ms...`);
+              // Calculate the delay that will be used for the next attempt
+              // This matches the formula used in the delay calculation: Math.pow(2, (attempt+1) - 1) * 1000
+              const nextDelay = Math.pow(2, attempt) * 1000;
+              console.log(`Rate limited (429), retrying in ${nextDelay}ms...`);
               continue; // Retry on rate limit
             }
             
