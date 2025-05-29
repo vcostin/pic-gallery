@@ -17,7 +17,7 @@ import logger from '@/lib/logger';
 import { FullGallerySchema, FullGallery } from '@/lib/schemas'; 
 
 // Import gallery components from feature directory
-import { GalleryDetailsForm } from '@/components/GalleryDetails';
+import { ImprovedGalleryDetailsForm } from '@/components/GalleryDetails';
 import { GalleryViewSelector } from '@/components/GalleryViewSelector';
 import { GallerySortable, ViewMode } from '@/components/GallerySortable';
 
@@ -306,8 +306,8 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         )}
         
         <form onSubmit={onSubmit} className="space-y-6">
-          {/* Use the modern Zod-validated form component */}
-          <GalleryDetailsForm 
+          {/* Use the improved user-friendly form component */}
+          <ImprovedGalleryDetailsForm 
             register={form.register}
             errors={form.formState.errors}
             isSubmitting={isSubmitting}
