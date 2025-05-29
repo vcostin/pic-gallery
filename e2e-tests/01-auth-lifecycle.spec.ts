@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { TEST_USER } from './auth-config';
-import { SimpleHelpers } from './simple-helpers';
+import { TestHelpers } from './test-helpers';
 
 // Auth tests using the single test user - user persists after these tests
 // Prerequisites: Global setup has deleted any existing test user and created a fresh one
@@ -14,7 +14,7 @@ test.describe('Authentication Lifecycle (User Persists)', () => {
     await page.waitForLoadState('networkidle');
     
     // Try to login - should work since user was created in global setup
-    const loginResult = await SimpleHelpers.quickLogin(page, TEST_USER.email, TEST_USER.password);
+    const loginResult = await TestHelpers.quickLogin(page, TEST_USER.email, TEST_USER.password);
     
     if (loginResult) {
       console.log('✅ User exists and can login');
@@ -25,7 +25,7 @@ test.describe('Authentication Lifecycle (User Persists)', () => {
       expect(currentUrl).not.toContain('/auth/');
       
       // Logout for next test
-      await SimpleHelpers.quickLogout(page);
+      await TestHelpers.quickLogout(page);
     } else {
       throw new Error('❌ User should exist from global setup but login failed');
     }
@@ -42,7 +42,7 @@ test.describe('Authentication Lifecycle (User Persists)', () => {
     await page.waitForLoadState('networkidle');
     
     // Login
-    const loginSuccess = await SimpleHelpers.quickLogin(page, TEST_USER.email, TEST_USER.password);
+    const loginSuccess = await TestHelpers.quickLogin(page, TEST_USER.email, TEST_USER.password);
     expect(loginSuccess).toBe(true);
     
     // Verify login worked
@@ -53,7 +53,7 @@ test.describe('Authentication Lifecycle (User Persists)', () => {
     console.log('✅ Login successful');
     
     // Now logout
-    const logoutSuccess = await SimpleHelpers.quickLogout(page);
+    const logoutSuccess = await TestHelpers.quickLogout(page);
     expect(logoutSuccess).toBe(true);
     
     console.log('✅ Logout successful');
@@ -66,7 +66,7 @@ test.describe('Authentication Lifecycle (User Persists)', () => {
     await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
     
-    const loginSuccess = await SimpleHelpers.quickLogin(page, TEST_USER.email, TEST_USER.password);
+    const loginSuccess = await TestHelpers.quickLogin(page, TEST_USER.email, TEST_USER.password);
     expect(loginSuccess).toBe(true);
     
     // Save authentication state for other tests to use

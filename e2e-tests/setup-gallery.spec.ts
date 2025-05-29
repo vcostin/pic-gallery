@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { TestHelpers } from './helpers';
+import { TestHelpers } from './test-helpers';
 
 // This test creates a test gallery with images for E2E testing
 test.describe('Setup Test Gallery', () => {

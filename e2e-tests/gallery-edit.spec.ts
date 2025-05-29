@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { TestHelpers } from './helpers';
+import { TestHelpers } from './test-helpers';
 
 // Tests for gallery editing functionality - including toast notifications
 test.describe('Gallery Edit Functionality', () => {

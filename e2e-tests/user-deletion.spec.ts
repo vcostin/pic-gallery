@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { TestHelpers } from './helpers';
+import { TestHelpers } from './test-helpers';
 
 /**
  * Test for User Deletion in E2E Cleanup

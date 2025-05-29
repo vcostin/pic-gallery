@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { TestHelpers } from './helpers';
+import { TestHelpers } from './test-helpers';
 
 // This is a simplified test that focuses only on the toast notification behavior
 test('toast notifications should disappear completely', async ({ page }) => {
