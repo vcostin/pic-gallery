@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { DisplayImage } from '@/lib/utils/typeMappers';
@@ -317,62 +317,62 @@ export function EnhancedGalleryGrid({
     </motion.div>
   );
 
-  const renderPolaroidLayout = () => {
-    const initialRotations = useMemo(() => 
-      images.map(() => Math.random() * 6 - 3), 
-      [images]
-    );
-
-    return (
-      <motion.div 
-        ref={gridRef}
-        className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 ${className}`}
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {images.map((image, index) => (
-          <motion.div
-            key={image.id}
-            variants={itemVariants}
-            className="group cursor-pointer"
-            onClick={() => onImageClick?.(image, index)}
-            whileHover={{ 
-              rotate: Math.random() * 6 - 3,
-              scale: 1.05,
-              y: -10
-            }}
-            whileTap={{ scale: 0.95 }}
-            style={{
-              rotate: initialRotations[index] // Memoized initial rotation
-            }}
-          >
-          <div className="bg-white dark:bg-gray-100 p-4 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300">
-            <div className="aspect-square overflow-hidden rounded-sm mb-4">
-              <Image
-                src={image.url}
-                alt={image.title || 'Gallery image'}
-                width={300}
-                height={300}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              />
-            </div>
-            <div className="text-center">
-              <h3 className="font-handwriting text-lg text-gray-800 dark:text-gray-700">
-                {image.title || 'Untitled'}
-              </h3>
-              {image.description && (
-                <p className="text-sm text-gray-600 dark:text-gray-500 mt-1 line-clamp-2">
-                  {image.description}
-                </p>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      ))}
-    </motion.div>
+  // Generate initial rotations for polaroid layout
+  const initialRotations = useMemo(() => 
+    images.map(() => Math.random() * 6 - 3), 
+    [images]
   );
+
+  const renderPolaroidLayout = () => (
+    <motion.div 
+      ref={gridRef}
+      className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 ${className}`}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {images.map((image, index) => (
+        <motion.div
+          key={image.id}
+          variants={itemVariants}
+          className="group cursor-pointer"
+          onClick={() => onImageClick?.(image, index)}
+          whileHover={{ 
+            rotate: Math.random() * 6 - 3,
+            scale: 1.05,
+            y: -10
+          }}
+          whileTap={{ scale: 0.95 }}
+          style={{
+            rotate: initialRotations[index] // Memoized initial rotation
+          }}
+        >
+        <div className="bg-white dark:bg-gray-100 p-4 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300">
+          <div className="aspect-square overflow-hidden rounded-sm mb-4">
+            <Image
+              src={image.url}
+              alt={image.title || 'Gallery image'}
+              width={300}
+              height={300}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            />
+          </div>
+          <div className="text-center">
+            <h3 className="font-handwriting text-lg text-gray-800 dark:text-gray-700">
+              {image.title || 'Untitled'}
+            </h3>
+            {image.description && (
+              <p className="text-sm text-gray-600 dark:text-gray-500 mt-1 line-clamp-2">
+                {image.description}
+              </p>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    ))}
+  </motion.div>
+); // Added missing closing brace for renderPolaroidLayout
 
   // Render based on layout type
   switch (layout) {

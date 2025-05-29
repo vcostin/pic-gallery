@@ -177,7 +177,8 @@ export function ThemedGalleryView({ gallery, isOwner = false }: ThemedGalleryVie
 
       {renderGalleryContent()}
 
-      {fullscreenImageInfo && gallery.images[fullscreenImageInfo.originalIndex] && (
+      {/* Only show GalleryFullscreen when NOT in slideshow mode */}
+      {fullscreenImageInfo && displayMode !== 'slideshow' && gallery.images[fullscreenImageInfo.originalIndex] && (
         <GalleryFullscreen
           image={fullscreenImageInfo.image}
           onClose={closeFullscreen}
