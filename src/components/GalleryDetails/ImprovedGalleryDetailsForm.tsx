@@ -42,10 +42,16 @@ export function ImprovedGalleryDetailsForm({
 }: ImprovedGalleryDetailsFormProps) {
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [selectedDisplayMode, setSelectedDisplayMode] = useState('grid');
+  const [selectedLayoutType, setSelectedLayoutType] = useState('masonry');
 
   const handleDisplayModeChange = (mode: string) => {
     setSelectedDisplayMode(mode);
     onChange?.('displayMode', mode);
+  };
+
+  const handleLayoutTypeChange = (layoutType: string) => {
+    setSelectedLayoutType(layoutType);
+    onChange?.('layoutType', layoutType);
   };
 
   return (
@@ -251,14 +257,18 @@ export function ImprovedGalleryDetailsForm({
                       type="radio"
                       {...register('layoutType', {
                         onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                          onChange?.('layoutType', e.target.value);
+                          handleLayoutTypeChange(e.target.value);
                         }
                       })}
                       value="masonry"
                       className="sr-only"
                       defaultChecked
                     />
-                    <div className="p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-all">
+                    <div className={`p-3 border-2 rounded-lg transition-all ${
+                      selectedLayoutType === 'masonry' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}>
                       <div className="flex items-center justify-center h-12 bg-white rounded mb-2">
                         <div className="grid grid-cols-3 gap-1">
                           <div className="w-2 h-3 bg-blue-400 rounded-sm"></div>
@@ -279,13 +289,17 @@ export function ImprovedGalleryDetailsForm({
                       type="radio"
                       {...register('layoutType', {
                         onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                          onChange?.('layoutType', e.target.value);
+                          handleLayoutTypeChange(e.target.value);
                         }
                       })}
                       value="uniform"
                       className="sr-only"
                     />
-                    <div className="p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-all">
+                    <div className={`p-3 border-2 rounded-lg transition-all ${
+                      selectedLayoutType === 'uniform' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}>
                       <div className="flex items-center justify-center h-12 bg-white rounded mb-2">
                         <div className="grid grid-cols-3 gap-1">
                           {[...Array(6)].map((_, i) => (
@@ -303,13 +317,17 @@ export function ImprovedGalleryDetailsForm({
                       type="radio"
                       {...register('layoutType', {
                         onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                          onChange?.('layoutType', e.target.value);
+                          handleLayoutTypeChange(e.target.value);
                         }
                       })}
                       value="compact"
                       className="sr-only"
                     />
-                    <div className="p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-all">
+                    <div className={`p-3 border-2 rounded-lg transition-all ${
+                      selectedLayoutType === 'compact' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}>
                       <div className="flex items-center justify-center h-12 bg-white rounded mb-2">
                         <div className="grid grid-cols-4 gap-0.5">
                           {[...Array(8)].map((_, i) => (
