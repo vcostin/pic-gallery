@@ -125,157 +125,100 @@ test.describe('Gallery Edit Functionality', () => {
 
 // Helper function to simulate a toast notification for testing
 async function simulateToastNotification(page: import('@playwright/test').Page) {
-  // Use a very short timeout value for testing
-  const timeoutDuration = 500; // Just 0.5 seconds for faster tests
+  console.log('Simulating toast notification for testing...');
   
-  await page.evaluate((timeout) => {
+  await page.evaluate(() => {
     // Ensure any existing toast containers are removed first
     const existingToasts = document.querySelectorAll('[data-testid="toast-container"]');
     existingToasts.forEach(toast => toast.remove());
     
-    // Simulate toast notification
+    // Create toast that will auto-remove after 1 second
     const toastContainer = document.createElement('div');
     toastContainer.className = 'fixed bottom-4 right-4 pointer-events-none';
     toastContainer.setAttribute('data-testid', 'toast-container');
     toastContainer.id = 'test-toast-container';
     
     const toast = document.createElement('div');
-    toast.className = 'p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded-md pointer-events-auto';
+    toast.className = 'p-3 bg-green-50 border border-green-200 text-green-700 rounded-md';
     toast.setAttribute('data-testid', 'toast-notification');
+    toast.textContent = 'Test notification for removing image';
     
-    const message = document.createElement('p');
-    message.className = 'font-medium';
-    message.setAttribute('data-testid', 'toast-message');
-    message.textContent = 'Test notification for removing image';
-    
-    toast.appendChild(message);
     toastContainer.appendChild(toast);
     document.body.appendChild(toastContainer);
     
-    // Auto-remove after specified timeout
-    window.setTimeout(() => {
+    // Auto-remove after 1 second
+    setTimeout(() => {
       const container = document.getElementById('test-toast-container');
       if (container) {
         container.remove();
       }
-    }, timeout);
-  }, timeoutDuration);
+    }, 1000);
+  });
   
-  // Verify toast notification appears
+  // Verify toast appears
   const toast = page.locator('[data-testid="toast-container"]');
   await expect(toast).toBeVisible();
+  console.log('Toast is visible');
   
-  // Wait for the toast to disappear
-  console.log(`Waiting ${timeoutDuration + 500}ms for toast to disappear...`);
-  await page.waitForTimeout(timeoutDuration + 500); // Additional time to ensure the toast is gone
+  // Wait for toast to disappear automatically
+  console.log('Waiting 1500ms for toast to disappear...');
+  await page.waitForTimeout(1500);
   
-  // Now check that the toast is gone
-  await page.waitForSelector('[data-testid="toast-container"]', { state: 'detached', timeout: 5000 })
-    .catch(() => console.log('Timeout waiting for toast to be detached from DOM'));
-  
+  // Verify toast disappeared
+  await expect(toast).not.toBeVisible();
   console.log('Successfully tested toast notification with simulated toast');
 }
 
 // Helper function to simulate a toast notification with close button for testing
 async function simulateToastNotificationWithCloseButton(page: import('@playwright/test').Page) {
+  console.log('Simulating toast notification with close button...');
+  
   await page.evaluate(() => {
     // Ensure any existing toast containers are removed first
     const existingToasts = document.querySelectorAll('[data-testid="toast-container"]');
     existingToasts.forEach(toast => toast.remove());
     
-    // Simulate toast notification with close button
+    // Create toast with close button
     const toastContainer = document.createElement('div');
     toastContainer.className = 'fixed bottom-4 right-4 pointer-events-none';
     toastContainer.setAttribute('data-testid', 'toast-container');
     toastContainer.id = 'test-toast-container-with-close';
     
     const toast = document.createElement('div');
-    toast.className = 'p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded-md pointer-events-auto';
+    toast.className = 'p-3 bg-green-50 border border-green-200 text-green-700 rounded-md pointer-events-auto flex items-center justify-between';
     toast.setAttribute('data-testid', 'toast-notification');
     
-    const content = document.createElement('div');
-    content.className = 'flex items-start';
-    
-    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    icon.setAttribute('class', 'h-5 w-5 mr-2 mt-0.5 flex-shrink-0');
-    icon.setAttribute('viewBox', '0 0 20 20');
-    icon.setAttribute('fill', 'currentColor');
-    
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('fill-rule', 'evenodd');
-    path.setAttribute('d', 'M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z');
-    path.setAttribute('clip-rule', 'evenodd');
-    
-    icon.appendChild(path);
-    
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'flex-grow';
-    
-    const message = document.createElement('p');
-    message.className = 'font-medium';
-    message.setAttribute('data-testid', 'toast-message');
+    const message = document.createElement('span');
     message.textContent = 'Test notification with close button';
     
-    messageDiv.appendChild(message);
-    
-    // Create close button
     const closeButton = document.createElement('button');
     closeButton.setAttribute('data-testid', 'toast-close-button');
-    closeButton.setAttribute('aria-label', 'Close notification');
-    closeButton.className = 'text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100';
+    closeButton.className = 'ml-2 text-green-700 hover:text-green-900';
+    closeButton.innerHTML = '✕';
     
-    const closeIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    closeIcon.setAttribute('class', 'h-5 w-5');
-    closeIcon.setAttribute('viewBox', '0 0 20 20');
-    closeIcon.setAttribute('fill', 'currentColor');
-    
-    const closePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    closePath.setAttribute('fill-rule', 'evenodd');
-    closePath.setAttribute('d', 'M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z');
-    closePath.setAttribute('clip-rule', 'evenodd');
-    
-    closeIcon.appendChild(closePath);
-    closeButton.appendChild(closeIcon);
-    
-    // Add click handler to close button - ensure the toast is fully removed
-    closeButton.addEventListener('click', (event) => {
-      event.stopPropagation();
+    closeButton.addEventListener('click', () => {
       if (document.body.contains(toastContainer)) {
         toastContainer.remove();
       }
     });
     
-    content.appendChild(icon);
-    content.appendChild(messageDiv);
-    content.appendChild(closeButton);
-    
-    toast.appendChild(content);
+    toast.appendChild(message);
+    toast.appendChild(closeButton);
     toastContainer.appendChild(toast);
     document.body.appendChild(toastContainer);
   });
   
-  // Verify toast notification appears
+  // Verify toast appears
   const toast = page.locator('[data-testid="toast-container"]');
   await expect(toast).toBeVisible();
+  console.log('Toast with close button is visible');
   
-  // Click the X button on the toast
+  // Click the close button
   const closeButton = page.locator('[data-testid="toast-close-button"]');
   await closeButton.click();
+  console.log('Clicked close button');
   
-  // Verify toast disappears after clicking close button
-  try {
-    await page.waitForSelector('[data-testid="toast-container"]', { state: 'detached', timeout: 5000 });
-    console.log('Successfully tested toast notification with close button');
-  } catch {
-    console.log('❌ Warning: Toast notification did not disappear after clicking close button');
-    
-    // Fallback: manually remove the toast if it still exists
-    await page.evaluate(() => {
-      const container = document.getElementById('test-toast-container-with-close');
-      if (container) {
-        container.remove();
-        console.log('Manually removed toast container that didn\'t disappear');
-      }
-    });
-  }
+  // Verify toast disappears
+  await expect(toast).not.toBeVisible();
+  console.log('Successfully tested toast notification with close button');
 }

@@ -86,7 +86,7 @@ export function ImprovedGalleryDetailsForm({
                 errors.title ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Give your gallery a memorable name..."
-              data-testid="gallery-title-input"
+              data-testid="gallery-title"
             />
             {errors.title && (
               <p className="mt-1 text-sm text-red-500">{errors.title.message?.toString()}</p>
@@ -109,7 +109,7 @@ export function ImprovedGalleryDetailsForm({
               }`}
               rows={3}
               placeholder="Tell people what this gallery is about..."
-              data-testid="gallery-description-input"
+              data-testid="gallery-description"
             />
             {errors.description && (
               <p className="mt-1 text-sm text-red-500">{errors.description.message?.toString()}</p>
