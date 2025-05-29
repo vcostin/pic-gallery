@@ -21,8 +21,8 @@ import {
 } from '@dnd-kit/sortable';
 import { arrayMove } from '@dnd-kit/sortable';
 
-import { CompactGalleryCard, GridGalleryCard, DragOverlayCard } from './GalleryImageCards';
-import { EmptyState } from './StatusMessages';
+import { CompactGalleryCard, GridGalleryCard, DragOverlayCard } from '@/components/GalleryImageCards';
+import { EmptyState } from '@/components/StatusMessages';
 import { FullImageInGallery } from '@/lib/schemas';
 
 // Define view mode type

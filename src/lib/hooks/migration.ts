@@ -36,4 +36,4 @@
  */
 
 // Export types for backwards compatibility
-export * from '../schemas';
+export * from '@/lib/schemas';

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserRole } from '@/lib/types';
+import logger from '@/lib/logger';
 
 interface AdminControlsProps {
   userId: string;
@@ -41,7 +42,7 @@ export function AdminControls({ userId, userRole }: AdminControlsProps) {
       
       // Show success message (could use a toast here)
       const result = await response.json();
-      console.log(result.message);
+      logger.log(result.message);
       
       // Refresh the page to show updated status
       router.refresh();

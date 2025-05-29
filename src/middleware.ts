@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { UserRole } from '@prisma/client';
-import { e2eRateLimiter } from './lib/rateLimit';
+import { e2eRateLimiter } from '@/lib/rateLimit';
 
 export async function middleware(request: NextRequest) {
   // Get the pathname of the request

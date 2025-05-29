@@ -9,7 +9,7 @@
  * portion to simplify usage in components.
  */
 import { z } from 'zod';
-import { fetchApi } from '../apiUtils';
+import { fetchApi } from '@/lib/apiUtils';
 import { 
   ImageSchema,
   CreateImageSchema, 
@@ -17,7 +17,7 @@ import {
   PaginatedImagesResponseSchema,
   FlexibleImagesResponseSchema,
   ImageResponseSchema 
-} from '../schemas';
+} from '@/lib/schemas';
 
 // Type definitions derived from schemas
 export type Image = z.infer<typeof ImageSchema>;

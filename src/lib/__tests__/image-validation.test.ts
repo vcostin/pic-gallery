@@ -1,6 +1,5 @@
-import { SelectableImageSchema, mapToSelectableImage } from './lib/utils/imageSelectionMappers';
-import { ImageSchema } from './lib/schemas';
-import { z } from 'zod';
+import { SelectableImageSchema, mapToSelectableImage } from '@/lib/utils/imageSelectionMappers';
+import { ImageSchema } from '@/lib/schemas';
 
 describe('Image Validation Tests', () => {
   
@@ -71,7 +70,6 @@ describe('Image Validation Tests', () => {
       
       // Missing title
       invalidImage = {
-        id: 'test-image-1',
         description: 'A test image',
         url: '/test.jpg'
       };
@@ -81,7 +79,6 @@ describe('Image Validation Tests', () => {
       
       // Missing url
       invalidImage = {
-        id: 'test-image-1',
         title: 'Test Image',
         description: 'A test image'
       };
@@ -138,7 +135,7 @@ describe('Image Validation Tests', () => {
       };
       
       // Should not throw an error
-      const result = mapToSelectableImage(partialImage as any);
+      const result = mapToSelectableImage(partialImage as Partial<{ id: string; title: string; url: string }>);
       
       expect(result.id).toBe('test-image-1');
       expect(result.title).toBe(''); // Should provide default empty string

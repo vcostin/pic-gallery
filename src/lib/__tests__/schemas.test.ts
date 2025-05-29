@@ -6,7 +6,7 @@ import {
   FlexibleImagesResponseSchema, 
   ImageSchema, 
   PaginatedImagesResponseSchema 
-} from '../schemas';
+} from '@/lib/schemas';
 import { z } from 'zod';
 
 describe('FlexibleImagesResponseSchema', () => {

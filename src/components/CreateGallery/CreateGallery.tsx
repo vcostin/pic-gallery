@@ -73,7 +73,6 @@ export function CreateGallery(): React.ReactElement {
   // Update the form with selected images
   const handleImagesSelected = useCallback(async (selectedImageIds: string[]) => {
     logger.log('Selected image IDs:', selectedImageIds);
-    console.log('[CreateGallery] Images selected:', selectedImageIds);
     if (!selectedImageIds || selectedImageIds.length === 0) return;
     // Fetch full image data from API
     const response = await fetch(`/api/images?ids=${selectedImageIds.join(',')}`);
