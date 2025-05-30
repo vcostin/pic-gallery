@@ -40,6 +40,13 @@ jobs:
       PLAYWRIGHT_FAST_MODE: true
       PLAYWRIGHT_PERF_LOG: true
       CI: true
+      # Database configuration for CI
+      DATABASE_URL: "file:./test.db"
+      E2E_TEST_USER_EMAIL: "e2e-test@example.com"
+      E2E_TEST_USER_PASSWORD: "TestPassword123!"
+      E2E_TEST_USER_NAME: "E2E Test User"
+      NEXTAUTH_SECRET: "test-secret-for-ci-e2e-fast"
+      NEXTAUTH_URL: "http://localhost:3000"
     
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +59,9 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
+      
+      - name: Setup SQLite database for E2E tests
+        run: ./scripts/setup-database-ci.sh
       
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -81,6 +91,13 @@ jobs:
     needs: validate-config
     env:
       CI: true
+      # Database configuration for CI
+      DATABASE_URL: "file:./test.db"
+      E2E_TEST_USER_EMAIL: "e2e-test@example.com"
+      E2E_TEST_USER_PASSWORD: "TestPassword123!"
+      E2E_TEST_USER_NAME: "E2E Test User"
+      NEXTAUTH_SECRET: "test-secret-for-ci-e2e-standard"
+      NEXTAUTH_URL: "http://localhost:3000"
     
     steps:
       - uses: actions/checkout@v4
@@ -93,6 +110,9 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
+      
+      - name: Setup SQLite database for E2E tests
+        run: ./scripts/setup-database-ci.sh
       
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -117,6 +137,13 @@ jobs:
       PLAYWRIGHT_FAST_MODE: true
       PLAYWRIGHT_PERF_LOG: true
       CI: true
+      # Database configuration for CI
+      DATABASE_URL: "file:./test.db"
+      E2E_TEST_USER_EMAIL: "e2e-test@example.com"
+      E2E_TEST_USER_PASSWORD: "TestPassword123!"
+      E2E_TEST_USER_NAME: "E2E Test User"
+      NEXTAUTH_SECRET: "test-secret-for-ci-performance"
+      NEXTAUTH_URL: "http://localhost:3000"
     
     steps:
       - uses: actions/checkout@v4
@@ -129,6 +156,9 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
+      
+      - name: Setup SQLite database for E2E tests
+        run: ./scripts/setup-database-ci.sh
       
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -225,6 +255,13 @@ jobs:
     env:
       CI: true
       PLAYWRIGHT_PERF_LOG: true
+      # Database configuration for CI
+      DATABASE_URL: "file:./test.db"
+      E2E_TEST_USER_EMAIL: "e2e-test@example.com"
+      E2E_TEST_USER_PASSWORD: "TestPassword123!"
+      E2E_TEST_USER_NAME: "E2E Test User"
+      NEXTAUTH_SECRET: "test-secret-for-ci-matrix-${{ matrix.os }}-${{ matrix.node-version }}"
+      NEXTAUTH_URL: "http://localhost:3000"
     
     steps:
       - uses: actions/checkout@v4
@@ -237,6 +274,9 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
+      
+      - name: Setup SQLite database for E2E tests
+        run: ./scripts/setup-database-ci.sh
       
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
