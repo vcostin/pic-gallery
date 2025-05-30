@@ -88,8 +88,18 @@ run_test_suite() {
     local start_time=$(date +%s)
     local start_time_ms=$(date +%s%3N)
     
-    # Run the test suite with timeout protection
-    if timeout 1800 npm run "$npm_script" > "$log_file" 2>&1; then
+    # Run the test suite with timeout protection (macOS compatible)
+    if command -v timeout >/dev/null 2>&1; then
+        # GNU timeout (Linux or installed via coreutils)
+        timeout 1800 npm run "$npm_script" > "$log_file" 2>&1
+    elif command -v gtimeout >/dev/null 2>&1; then
+        # GNU timeout installed via brew install coreutils
+        gtimeout 1800 npm run "$npm_script" > "$log_file" 2>&1
+    else
+        # Fallback: run without timeout (with warning)
+        echo -e "${YELLOW}⚠️  No timeout command available, running without timeout protection${NC}"
+        npm run "$npm_script" > "$log_file" 2>&1
+    fi
         local end_time=$(date +%s)
         local end_time_ms=$(date +%s%3N)
         local duration=$((end_time - start_time))
