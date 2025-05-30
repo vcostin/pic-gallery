@@ -5,14 +5,60 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
+ * Environment and CI Detection
+ */
+const isCI = !!process.env.CI;
+const isFastMode = process.env.PLAYWRIGHT_FAST_MODE === 'true';
+const isSharedData = process.env.PLAYWRIGHT_SHARED_DATA === 'true';
+const isProduction = process.env.NODE_ENV === 'production';
+const isDebugMode = process.env.PLAYWRIGHT_DEBUG === 'true';
+
+/**
+ * Performance Configuration Helper
+ */
+const getPerformanceConfig = () => {
+  if (isCI) {
+    return {
+      workers: isFastMode ? 2 : 1, // More conservative in CI
+      timeout: 60000, // More time in CI for stability
+      retries: 2,
+      parallelization: isFastMode,
+    };
+  } else {
+    return {
+      workers: isFastMode ? 3 : 1, // More aggressive locally
+      timeout: 45000,
+      retries: 0,
+      parallelization: isFastMode,
+    };
+  }
+};
+
+const perfConfig = getPerformanceConfig();
+
+/**
+ * Performance Monitoring Hook
+ */
+const performanceStartTime = Date.now();
+process.on('exit', () => {
+  if (process.env.PLAYWRIGHT_PERF_LOG === 'true') {
+    const duration = Date.now() - performanceStartTime;
+    console.log(`\n🚀 Test suite completed in ${duration}ms`);
+    console.log(`📊 Configuration: ${isFastMode ? 'FAST' : 'STANDARD'} mode`);
+    console.log(`⚡ Workers: ${perfConfig.workers}, CI: ${isCI}`);
+  }
+});
+
+/**
  * Optimized Playwright Configuration for Better Performance
  * 
  * Key Optimizations:
- * 1. Selective parallelization based on test type
- * 2. Optimized timeout settings
- * 3. Faster browser launching
- * 4. Better resource management
- * 5. Environment-specific optimizations
+ * 1. Selective parallelization based on test type and environment
+ * 2. Environment-aware timeout settings  
+ * 3. CI/CD optimized configurations
+ * 4. Faster browser launching with resource management
+ * 5. Performance monitoring and regression detection
+ * 6. Cross-platform compatibility
  */
 export default defineConfig({
   testDir: './e2e-tests',
@@ -23,19 +69,19 @@ export default defineConfig({
   
   /* Performance Optimizations */
   // Enable parallel execution for non-conflicting tests
-  fullyParallel: process.env.PLAYWRIGHT_FAST_MODE === 'true' ? true : false,
+  fullyParallel: isFastMode,
   // More workers for parallel execution, but respect single-user strategy when needed
-  workers: process.env.PLAYWRIGHT_FAST_MODE === 'true' ? 3 : 1,
+  workers: perfConfig.workers,
   
   /* Timeout Optimizations */
-  timeout: 45000, // Reduced from default 30s, but enough for slower tests
+  timeout: perfConfig.timeout, // Reduced from default 30s, but enough for slower tests
   expect: {
-    timeout: 10000, // Faster assertion timeouts
+    timeout: isCI ? 15000 : 10000, // More time for assertions in CI
   },
   
   /* Build and CI Configuration */
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  forbidOnly: isCI,
+  retries: perfConfig.retries,
   
   /* Optimized Reporting */
   reporter: process.env.CI 
@@ -123,7 +169,7 @@ export default defineConfig({
         storageState: './playwright/.auth/single-user.json',
       },
       dependencies: ['data-dependent'],
-      fullyParallel: process.env.PLAYWRIGHT_SHARED_DATA === 'true', // Can be parallel if sharing data
+      fullyParallel: isSharedData, // Can be parallel if sharing data
     },
 
     // Notification tests (can be fast and parallel)

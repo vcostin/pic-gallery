@@ -19,6 +19,8 @@
     "test:e2e:fast": "PLAYWRIGHT_FAST_MODE=true playwright test --config=playwright.config.optimized.ts",
     "test:e2e:parallel": "PLAYWRIGHT_FAST_MODE=true PLAYWRIGHT_SHARED_DATA=true playwright test --config=playwright.config.optimized.ts",
     "test:e2e:profile": "PLAYWRIGHT_FAST_MODE=true playwright test --config=playwright.config.optimized.ts --reporter=line",
+    "test:e2e:validate": "node scripts/validate-config.js",
+    "test:e2e:perf": "PLAYWRIGHT_PERF_LOG=true npm run test:e2e:fast",
     "test:e2e:all": "npm run test:e2e:gallery && npm run test:e2e:authenticated",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
