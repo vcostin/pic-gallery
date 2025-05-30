@@ -10,14 +10,6 @@ echo "🚀 E2E Test Performance Optimization Comparison"
 echo "================================================"
 echo ""
 
-# Initialize and validate environment
-echo "🔍 Validating environment..."
-validate_dependencies
-validate_npm_scripts
-
-# Setup cleanup on script exit
-trap cleanup_temp_files EXIT
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -163,6 +155,16 @@ calculate_improvement() {
 }
 
 echo "🔧 Starting performance comparison..."
+echo ""
+
+# Initialize and validate environment
+echo "🔍 Validating environment..."
+validate_dependencies
+validate_npm_scripts
+
+# Setup cleanup on script exit
+trap cleanup_temp_files EXIT
+
 echo ""
 
 # Test 1: Original Configuration
