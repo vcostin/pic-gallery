@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { TestHelpers } from './test-helpers';
+import { TEST_ASSETS } from './test-assets';
 
 // This test creates a test gallery with images for E2E testing
 test.describe('Setup Test Gallery', () => {
@@ -158,17 +159,17 @@ test.describe('Setup Test Gallery', () => {
     // Try multiple selectors for the file input
     const fileInput = page.getByTestId('upload-file');
     if (await fileInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await fileInput.setInputFiles('./public/uploads/1746721541274-454864497-----8856477.jpeg');
+      await fileInput.setInputFiles(TEST_ASSETS.images.testImage1);
       console.log('Set file using test ID');
     } else {
       console.log('Upload file input not found by test ID, trying alternate selector');
       const altFileInput = page.locator('input[type="file"]');
       if (await altFileInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await altFileInput.setInputFiles('./public/uploads/1746721541274-454864497-----8856477.jpeg');
+        await altFileInput.setInputFiles(TEST_ASSETS.images.testImage1);
         console.log('Set file using generic file input selector');
       } else {
         // The file input might be hidden, try to force it
-        await page.locator('input[type="file"]').dispatchEvent('change', { files: ['./public/uploads/1746721541274-454864497-----8856477.jpeg'] });
+        await page.locator('input[type="file"]').dispatchEvent('change', { files: [TEST_ASSETS.images.testImage1] });
         console.log('Tried to set file using dispatch event');
       }
     }
@@ -260,15 +261,15 @@ test.describe('Setup Test Gallery', () => {
     // Try multiple selectors for the file input
     const fileInput = page.getByTestId('upload-file');
     if (await fileInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await fileInput.setInputFiles('./public/uploads/1746721666749-415981397-----8856477.jpeg');
+      await fileInput.setInputFiles(TEST_ASSETS.images.testImage2);
     } else {
       console.log('Upload file input not found by test ID, trying alternate selector');
       const altFileInput = page.locator('input[type="file"]');
       if (await altFileInput.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await altFileInput.setInputFiles('./public/uploads/1746721666749-415981397-----8856477.jpeg');
+        await altFileInput.setInputFiles(TEST_ASSETS.images.testImage2);
       } else {
         // The file input might be hidden, try to force it
-        await page.locator('input[type="file"]').dispatchEvent('change', { files: ['./public/uploads/1746721666749-415981397-----8856477.jpeg'] });
+        await page.locator('input[type="file"]').dispatchEvent('change', { files: [TEST_ASSETS.images.testImage2] });
       }
     }
     

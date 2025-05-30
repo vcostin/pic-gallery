@@ -74,3 +74,5 @@ node_modules/
 # Development and testing utilities
 src/app/debug-gallery/
 src/app/simple-test/
+
+# Note: test-data/ is intentionally tracked for reliable E2E testing in CI
