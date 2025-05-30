@@ -50,6 +50,9 @@ jobs:
       - name: Setup SQLite database for E2E tests
         run: ./scripts/setup-database-ci.sh
       
+      - name: Setup test assets for CI
+        run: ./scripts/setup-test-assets-ci.sh
+      
       # Use cache for builds to speed up repeated runs
       - name: Cache Next.js build
         uses: actions/cache@v4
