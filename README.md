@@ -41,10 +41,17 @@ A modern, responsive image gallery application built with Next.js that allows us
 
 For developers working on this project, we maintain comprehensive documentation:
 
+### 🗄️ Database & Environment Setup
+- [🔧 Database Environment Setup](/docs/database-environment-setup.md) - Comprehensive guide for dual database configuration (PostgreSQL/SQLite)
+- [⚡ Database Quick Reference](/docs/database-quick-reference.md) - Quick commands and troubleshooting for database operations
+
+### 🔄 Development & Architecture
 - [📊 Refactoring Documentation Index](/docs/refactoring-documentation-index.md) - Central hub for all refactoring documentation
 - [🔄 Consolidated Refactoring Strategy](/docs/refactoring-strategy-consolidated.md) - Overview of component and schema migration strategy
 - [📈 Component Refactoring Progress](/docs/component-refactoring-progress.md) - Current status of the refactoring effort
 - [📜 Component Migrations History](/docs/component-migrations-history.md) - Historical record of completed migrations
+
+### 🧪 Testing & Quality
 - [🧪 E2E Testing Guide](/docs/e2e-testing-guide.md) - Comprehensive testing documentation
 - [✅ Enhanced Gallery Completion Report](/ENHANCED_GALLERY_COMPLETION_REPORT.md) - Latest enhancement documentation
 
@@ -58,7 +65,7 @@ For developers working on this project, we maintain comprehensive documentation:
 ### Backend & Database
 - **Prisma 6.8** - Modern database ORM with type safety
 - **NextAuth.js 4.24** - Authentication solution
-- **PostgreSQL/SQLite** - Flexible database support
+- **PostgreSQL/SQLite** - Dual database support (PostgreSQL for production, SQLite for CI/testing)
 
 ### UI & Styling
 - **Tailwind CSS 4** - Utility-first CSS framework
@@ -84,7 +91,9 @@ For developers working on this project, we maintain comprehensive documentation:
 
 ### Prerequisites
 - Node.js 18+ and npm
-- Database (PostgreSQL recommended, SQLite for development)
+- Database (PostgreSQL recommended, SQLite for development/CI)
+
+> 💡 **Database Setup**: For detailed database configuration including dual PostgreSQL/SQLite setup for different environments, see our [Database Environment Setup Guide](/docs/database-environment-setup.md).
 
 ### Environment Setup
 
@@ -136,6 +145,7 @@ npm start
 # Database operations
 npm run updatedb          # Push schema changes
 npx prisma studio        # Open database GUI
+# See Database Quick Reference (/docs/database-quick-reference.md) for more commands
 
 # Code quality
 npm run lint             # Check for linting errors
@@ -358,7 +368,9 @@ NEXTAUTH_URL="https://yourdomain.com"
 
 ## 🗄️ Database Schema
 
-The application uses **Prisma ORM** with PostgreSQL to manage the database schema. The schema includes comprehensive relationships and supports advanced features like theming and gallery customization.
+The application uses **Prisma ORM** with dual database support (PostgreSQL for production, SQLite for CI/testing) to manage the database schema. The schema includes comprehensive relationships and supports advanced features like theming and gallery customization.
+
+> 📚 **Database Setup**: For detailed information about our dual database configuration, environment switching, and setup procedures, see the [Database Environment Setup Guide](/docs/database-environment-setup.md).
 
 ### Core Entities
 
