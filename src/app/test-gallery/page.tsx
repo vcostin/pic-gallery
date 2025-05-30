@@ -65,7 +65,9 @@ export default function TestGalleryPage() {
   const [showSlideshow, setShowSlideshow] = React.useState(false);
 
   const handleImageClick = (image: DisplayImage) => {
-    console.log('Image clicked:', image.title);
+    if (process.env.NODE_ENV === 'development') {
+      logger.log('Image clicked:', image.title);
+    }
     if (currentView === 'grid') {
       setShowSlideshow(true);
     }

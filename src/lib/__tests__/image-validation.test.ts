@@ -49,14 +49,15 @@ describe('Image Validation Tests', () => {
       
       const result = SelectableImageSchema.safeParse(incompleteImage);
       expect(result.success).toBe(false);
+      
       let invalidImage = {
         title: 'Test Image',
         description: 'A test image',
         url: '/test.jpg'
       };
       
-      let result = SelectableImageSchema.safeParse(invalidImage);
-      expect(result.success).toBe(false);
+      let validationResult = SelectableImageSchema.safeParse(invalidImage);
+      expect(validationResult.success).toBe(false);
       
       // Missing title
       invalidImage = {
@@ -64,8 +65,8 @@ describe('Image Validation Tests', () => {
         url: '/test.jpg'
       };
       
-      result = SelectableImageSchema.safeParse(invalidImage);
-      expect(result.success).toBe(false);
+      validationResult = SelectableImageSchema.safeParse(invalidImage);
+      expect(validationResult.success).toBe(false);
       
       // Missing url
       invalidImage = {
@@ -73,8 +74,8 @@ describe('Image Validation Tests', () => {
         description: 'A test image'
       };
       
-      result = SelectableImageSchema.safeParse(invalidImage);
-      expect(result.success).toBe(false);
+      validationResult = SelectableImageSchema.safeParse(invalidImage);
+      expect(validationResult.success).toBe(false);
     });
   });
   
@@ -102,34 +103,46 @@ describe('Image Validation Tests', () => {
     });
     
     it('should handle missing optional fields', () => {
-      const incompleteImage = {
+      const imageWithMinimalOptionals = {
         id: 'test-image-1',
         title: 'Test Image',
-        url: '/test.jpg'
+        url: '/test.jpg',
+        userId: 'user-123',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        // description and tags are optional
       };
       
-      const result = mapToSelectableImage(incompleteImage);
+      const result = mapToSelectableImage(imageWithMinimalOptionals);
       
-      expect(result.id).toBe(incompleteImage.id);
-      expect(result.title).toBe(incompleteImage.title);
-      expect(result.url).toBe(incompleteImage.url);
+      expect(result.id).toBe(imageWithMinimalOptionals.id);
+      expect(result.title).toBe(imageWithMinimalOptionals.title);
+      expect(result.url).toBe(imageWithMinimalOptionals.url);
+      expect(result.userId).toBe(imageWithMinimalOptionals.userId);
       expect(result.description).toBeUndefined();
-      expect(result.userId).toBeUndefined();
       expect(result.tags).toEqual([]);
     });
     
-    it('should handle partial image objects safely', () => {
-      // This image is missing required fields according to the main schema
-      const partialImage = {
-        id: 'test-image-1'
+    it('should handle complete image objects correctly', () => {
+      const completeImage = {
+        id: 'test-image-1',
+        title: 'Test Image',
+        description: 'A test image',
+        url: '/test.jpg',
+        userId: 'user-123',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        tags: [{ id: 'tag-1', name: 'test' }]
       };
       
-      // Should not throw an error
-      const result = mapToSelectableImage(partialImage as Partial<{ id: string; title: string; url: string }>);
+      const result = mapToSelectableImage(completeImage);
       
-      expect(result.id).toBe('test-image-1');
-      expect(result.title).toBe(''); // Should provide default empty string
-      expect(result.url).toBe(''); // Should provide default empty string
+      expect(result.id).toBe(completeImage.id);
+      expect(result.title).toBe(completeImage.title);
+      expect(result.description).toBe(completeImage.description);
+      expect(result.url).toBe(completeImage.url);
+      expect(result.userId).toBe(completeImage.userId);
+      expect(result.tags).toEqual(completeImage.tags);
     });
   });
   

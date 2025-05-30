@@ -261,7 +261,7 @@ export class TestHelpers {
         await createButton.click();
         
         // Fill gallery form
-        await page.fill('[data-testid="gallery-name"]', galleryName);
+        await page.fill('[data-testid="gallery-title"]', galleryName);
         await page.fill('[data-testid="gallery-description"]', 'Test gallery description');
         
         // Submit form
