@@ -8,7 +8,7 @@ import { FullGallery } from "@/lib/types"; // Assuming FullGallery is defined he
 export default async function GalleryPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   // Await params to solve the Next.js dynamic route parameters issue
   const { id } = await params;

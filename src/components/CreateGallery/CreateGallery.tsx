@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod'; 
 import { useGalleryForm } from '@/lib/form-hooks';
 import { ErrorMessage, SuccessMessage } from '@/components/StatusMessages';
@@ -30,9 +31,10 @@ export function CreateGallery(): React.ReactElement {
   const [isImagesDialogOpen, setIsImagesDialogOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   
-  // Form setup
-  const formMethods = useGalleryForm({
+  // Form setup - use useForm directly like useGalleryEditForm does
+  const formMethods = useForm<GalleryFormData>({
     resolver: zodResolver(CreateGallerySchema),
+    mode: 'onBlur',
     defaultValues: {
       title: '',
       description: '',
@@ -61,11 +63,31 @@ export function CreateGallery(): React.ReactElement {
   const imageCount = watchedImages ? watchedImages.length : 0;
   
   // Get enhanced image functionality (re-ordering, etc.)
+  // Convert the simple image format to FullImageInGallery format for the UI components
+  const fullImages: FullImageInGallery[] = watchedImages?.map(img => ({
+    id: img.id,
+    imageId: img.id,
+    galleryId: '',
+    description: img.description || null,
+    order: img.order || 0,
+    createdAt: new Date(),
+    image: {
+      id: img.id,
+      title: 'Temp Title', // This will be replaced when we fetch real data
+      url: 'temp-url',
+      userId: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      tags: [],
+      description: img.description || null,
+    }
+  })) || [];
+  
   const { 
     images: orderedImages, 
     setImages: updateImages, 
     removeImage
-  } = useEnhancedGalleryImages(undefined, watchedImages || []);
+  } = useEnhancedGalleryImages(undefined, fullImages);
   
   // Cover image state
   const [coverImageId, setCoverImageId] = useState<string | null>(null);
@@ -152,7 +174,7 @@ export function CreateGallery(): React.ReactElement {
   // Handle cancel / reset
   const handleCancelCreate = () => {
     // If there are images or form values, confirm before resetting
-    if (imageCount > 0 || (watchedImages && watchedImages.some((img: FullImageInGallery) => img))) {
+    if (imageCount > 0 || (watchedImages && watchedImages.some(img => img))) {
       setIsConfirmDialogOpen(true);
     } else {
       // Otherwise just reset immediately
@@ -180,7 +202,7 @@ export function CreateGallery(): React.ReactElement {
           isOpen={isImagesDialogOpen}
           onClose={() => setIsImagesDialogOpen(false)}
           onImagesSelected={handleImagesSelected}
-          existingImageIds={watchedImages ? watchedImages.map((img: FullImageInGallery) => img.id) : []}
+          existingImageIds={watchedImages ? watchedImages.map(img => img.id) : []}
         />
         
         <Card>

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { TestHelpers } from './test-helpers';
+import { TEST_ASSETS } from './test-assets';
 
 test.describe('Gallery Management E2E', () => {
   test.beforeEach(async ({ page }) => {
@@ -142,9 +143,9 @@ test.describe('Gallery Management E2E', () => {
       await page.getByTestId('upload-image-description-input').fill('Test image description');
       await page.getByTestId('upload-image-tags-input').fill('test, e2e, automation');
 
-      // Note: File upload requires actual file, which we'll skip in this test
-      // await page.getByTestId('upload-image-file-input').setInputFiles('path/to/test/image.jpg');
-      // await page.getByTestId('upload-image-submit-button').click();
+      // Upload a test image using reliable test assets
+      await page.getByTestId('upload-image-file-input').setInputFiles(TEST_ASSETS.images.testImage1);
+      await page.getByTestId('upload-image-submit-button').click();
     }
 
     // Navigate to gallery creation to test image selection

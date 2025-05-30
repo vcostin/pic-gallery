@@ -82,7 +82,6 @@ export function ProfileForm({ initialData, onProfileUpdate, className = '', read
   const extendedUser = initialData as ExtendedUser;
 
   // Setup form with zod validation
-  // @ts-expect-error Types for react-hook-form don't match exactly but this works
   const { register, handleSubmit, setValue, reset, formState } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -97,7 +96,6 @@ export function ProfileForm({ initialData, onProfileUpdate, className = '', read
 
   // Get errors and isDirty from form state
   const errors = formState.errors as FormErrors;
-  // @ts-expect-error formState has isDirty property
   const isDirty = Boolean(formState.isDirty);
 
   // Reset form when user data changes

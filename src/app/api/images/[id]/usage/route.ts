@@ -13,7 +13,7 @@ interface GalleryWithCoverImage extends Gallery {
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;

@@ -89,23 +89,11 @@ export function TagsManagement({
   const fetchTags = async () => {
     setIsLoading(true);
     try {
-      const response = await ImageService.getTags();
-      if (response.success) {
-        setTags(response.data);
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to load tags',
-          variant: 'destructive',
-        });
-      }
+      const tags = await ImageService.getTags();
+      setTags(tags);
     } catch (error) {
       console.error('Error fetching tags:', error);
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      });
+      toast.error('Failed to load tags');
     } finally {
       setIsLoading(false);
     }
@@ -115,29 +103,13 @@ export function TagsManagement({
   const createTag = async (data: TagManagementFormData) => {
     setIsSubmitting(true);
     try {
-      const response = await ImageService.createTag({ name: data.newTagName });
-      if (response.success) {
-        setTags(prevTags => [...prevTags, response.data]);
-        toast({
-          title: 'Success',
-          description: 'Tag created successfully',
-          variant: 'default',
-        });
-        reset();
-      } else {
-        toast({
-          title: 'Error',
-          description: response.message || 'Failed to create tag',
-          variant: 'destructive',
-        });
-      }
+      const newTag = await ImageService.createTag(data.newTagName);
+      setTags(prevTags => [...prevTags, newTag]);
+      toast.success('Tag created successfully');
+      reset();
     } catch (error) {
       console.error('Error creating tag:', error);
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      });
+      toast.error('Failed to create tag');
     } finally {
       setIsSubmitting(false);
     }
@@ -146,29 +118,13 @@ export function TagsManagement({
   // Delete a tag
   const deleteTag = async (tagId: string) => {
     try {
-      const response = await ImageService.deleteTag(tagId);
-      if (response.success) {
-        setTags(prevTags => prevTags.filter(tag => tag.id !== tagId));
-        setSelectedTagIds(prevSelected => prevSelected.filter(id => id !== tagId));
-        toast({
-          title: 'Success',
-          description: 'Tag deleted successfully',
-          variant: 'default',
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: response.message || 'Failed to delete tag',
-          variant: 'destructive',
-        });
-      }
+      await ImageService.deleteTag(tagId);
+      setTags(prevTags => prevTags.filter(tag => tag.id !== tagId));
+      setSelectedTagIds(prevSelected => prevSelected.filter(id => id !== tagId));
+      toast.success('Tag deleted successfully');
     } catch (error) {
       console.error('Error deleting tag:', error);
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      });
+      toast.error('Failed to delete tag');
     }
   };
 
@@ -183,32 +139,14 @@ export function TagsManagement({
     
     if (imageId) {
       try {
-        const response = await ImageService.updateImageTags(imageId, newSelectedTags);
-        if (response.success) {
-          onTagsUpdated?.(response.data.tags);
-          toast({
-            title: 'Success',
-            description: 'Tags updated successfully',
-            variant: 'default',
-          });
-        } else {
-          // Revert selection if update fails
-          setSelectedTagIds(selectedTagIds);
-          toast({
-            title: 'Error',
-            description: response.message || 'Failed to update tags',
-            variant: 'destructive',
-          });
-        }
+        const updatedImage = await ImageService.updateImageTags(imageId, newSelectedTags);
+        onTagsUpdated?.(updatedImage.tags || []);
+        toast.success('Tags updated successfully');
       } catch (error) {
         console.error('Error updating image tags:', error);
         // Revert selection if update fails
         setSelectedTagIds(selectedTagIds);
-        toast({
-          title: 'Error',
-          description: 'An unexpected error occurred',
-          variant: 'destructive',
-        });
+        toast.error('Failed to update tags');
       }
     } else {
       // If no imageId, just notify parent component
@@ -277,7 +215,7 @@ export function TagsManagement({
                       
                       {mode === 'admin' && (
                         <Button
-                          size="icon"
+                          size="sm"
                           variant="ghost"
                           className="h-5 w-5 p-0 ml-1 hover:bg-red-100 hover:text-red-600"
                           onClick={(e) => {

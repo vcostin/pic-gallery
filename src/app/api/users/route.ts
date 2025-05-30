@@ -45,8 +45,8 @@ export async function GET(req: Request) {
     const skip = (queryParams.page - 1) * queryParams.limit;
     const where = queryParams.search ? {
       OR: [
-        { name: { contains: queryParams.search, mode: Prisma.QueryMode.insensitive } },
-        { email: { contains: queryParams.search, mode: Prisma.QueryMode.insensitive } },
+        { name: { contains: queryParams.search } },
+        { email: { contains: queryParams.search } },
       ],
     } : {};
     const [users, totalUsers] = await Promise.all([

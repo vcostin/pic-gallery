@@ -5,6 +5,7 @@ import { EnhancedCarousel } from '@/components/gallery-display/EnhancedCarousel'
 import { EnhancedGalleryGrid } from '@/components/gallery-display/EnhancedGalleryGrid';
 import { EnhancedSlideshow } from '@/components/gallery-display/EnhancedSlideshow';
 import { DisplayImage } from '@/lib/utils/typeMappers';
+import logger from '@/lib/logger';
 
 // Sample test images
 const testImages: DisplayImage[] = [

@@ -7,7 +7,10 @@ This project is a modern photo gallery application built with Next.js, TypeScrip
 
 ### Active Guides
 - [API Format Handling](./api-format-handling.md) - Current API response handling patterns
+- [CI Troubleshooting Guide](./ci-troubleshooting.md) - Solutions for GitHub Actions and CI issues
 - [Component Directory Guide](./component-directory-guide.md) - How to organize components
+- [Database Environment Setup](./database-environment-setup.md) - Comprehensive database configuration guide
+- [Database Quick Reference](./database-quick-reference.md) - Quick database commands and troubleshooting
 - [Environment Variables](./environment-variables.md) - Required environment setup
 - [Hooks Refactor](./hooks-refactor.md) - Modern hook patterns and usage
 - [Import Conventions](./import-conventions.md) - Standardized import patterns using @ aliases

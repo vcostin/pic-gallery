@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { TEST_USER } from './auth-config';
-import { SimpleHelpers } from './simple-helpers';
+import { TestHelpers } from './test-helpers';
 
 // Feature tests using the authenticated single user
 // Prerequisites: Global setup has created a clean test user, auth tests have verified login

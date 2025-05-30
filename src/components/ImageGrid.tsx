@@ -7,18 +7,11 @@ import { EmptyState, SkeletonLoader } from '@/components/StatusMessages';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import logger from '@/lib/logger';
 import { ImageTags } from '@/components/ui/ImageTags';
+import { type Image as ImageType } from '@/lib/services/imageService';
 
 interface Tag {
   id: string;
   name: string;
-}
-
-interface ImageType {
-  id: string;
-  title: string;
-  description: string | null;
-  url: string;
-  tags: Tag[];
 }
 
 interface ImageGridProps {
@@ -56,7 +49,7 @@ const ImageCard = memo(({ image, onEdit }: { image: ImageType; onEdit: (image: I
             {image.description}
           </p>
         )}
-        <ImageTags tags={image.tags} max={3} />
+        <ImageTags tags={image.tags || []} max={3} />
       </div>
     </div>
   );
@@ -108,7 +101,7 @@ export function ImageGrid({ images }: ImageGridProps) {
     const tagSet = new Set<string>();
     if (imagesData) {
       imagesData.forEach(image => {
-        image.tags.forEach(tag => tagSet.add(tag.name));
+        (image.tags || []).forEach(tag => tagSet.add(tag.name));
       });
     }
     return Array.from(tagSet).sort();
@@ -119,7 +112,7 @@ export function ImageGrid({ images }: ImageGridProps) {
     if (!imagesData) return [];
     if (!selectedTag) return imagesData;
     return imagesData.filter(image => 
-      image.tags.some(tag => tag.name === selectedTag)
+      (image.tags || []).some(tag => tag.name === selectedTag)
     );
   }, [imagesData, selectedTag]);
 
