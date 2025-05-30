@@ -4,8 +4,7 @@
 name: E2E Tests (Cost Optimized)
 
 on:
-  push:
-    branches: [main, develop]
+  # Only run on PRs to save costs - ensures quality before merge
   pull_request:
     branches: [main, develop]
   # Remove scheduled runs to save costs - run manually when needed
