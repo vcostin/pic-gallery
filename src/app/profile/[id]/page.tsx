@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect, notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { ProfileForm } from "@/components/ProfileForm";
+import { ProfileForm } from "@/components/Profile";
 import { UserStats } from "@/components/UserStats";
 import { AdminControls } from "@/components/AdminControls";
 import { authOptions } from "@/lib/auth";
@@ -101,6 +101,7 @@ export default async function UserProfilePage({ params }: { params: { id: string
                 name: user.name || "",
                 email: user.email || "",
                 image: user.image || "",
+                role: user.role,
               }}
               readOnly={!isOwnProfile && !isAdmin}
             />
