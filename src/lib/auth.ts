@@ -33,6 +33,7 @@ declare module 'next-auth/jwt' {
 }
 
 export const authOptions: NextAuthOptions = {
+  // @ts-ignore - Type compatibility issue between custom Prisma client and adapter
   adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",

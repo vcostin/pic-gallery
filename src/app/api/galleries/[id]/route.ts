@@ -6,7 +6,7 @@ import logger from "@/lib/logger";
 import { apiSuccess, apiError, apiValidationError, apiUnauthorized, apiNotFound } from "@/lib/apiResponse";
 import { UpdateGallerySchema } from "@/lib/schemas";
 
-import { ImageInGallery, Image, Prisma } from "@prisma/client";
+import { ImageInGallery, Image, Prisma } from "@/lib/generated/prisma-client";
 
 type ImageInGalleryWithImage = ImageInGallery & {
   image: Image;
@@ -22,7 +22,7 @@ const getGalleryImagesQuerySchema = z.object({
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Await params to solve the Next.js dynamic route parameters issue
@@ -48,8 +48,8 @@ export async function GET(
 
     if (imageFilters.imageSearchQuery) {
       imageSubQuery.OR = [
-        { title: { contains: imageFilters.imageSearchQuery, mode: 'insensitive' } },
-        { description: { contains: imageFilters.imageSearchQuery, mode: 'insensitive' } },
+        { title: { contains: imageFilters.imageSearchQuery } },
+        { description: { contains: imageFilters.imageSearchQuery } },
       ];
     }
 
@@ -132,7 +132,7 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } } // Corrected type for params
+  { params }: { params: Promise<{ id: string }> } // Corrected type for params
 ) {
   const session = await getServerSession(authOptions);
   const { id } = await params; // Added await here
@@ -458,7 +458,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Await params to solve the Next.js dynamic route parameters issue
@@ -494,7 +494,7 @@ export async function DELETE(
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Await params to solve the Next.js dynamic route parameters issue

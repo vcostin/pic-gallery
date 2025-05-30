@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { z } from 'zod';
-import { Controller, useController, Control } from 'react-hook-form';
+import { Controller, useController, Control, FieldValues } from 'react-hook-form';
 import { Badge } from '@/components/ui/Badge';
 import { X } from 'lucide-react';
 
@@ -13,9 +13,9 @@ const TagSchema = z.object({
 });
 
 // Define valid form control types
-type TagsInputProps<T = any> = {
+type TagsInputProps = {
   name: string;
-  control: Control<T>;
+  control: Control<FieldValues>;
   label?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -24,7 +24,7 @@ type TagsInputProps<T = any> = {
   maxTags?: number;
 };
 
-export function TagsInput<T>({
+export function TagsInput({
   name,
   control,
   label = 'Tags',
@@ -33,7 +33,7 @@ export function TagsInput<T>({
   className = '',
   initialTags = [],
   maxTags = 20
-}: TagsInputProps<T>) {
+}: TagsInputProps) {
   // Local state for the input field
   const [inputValue, setInputValue] = useState('');
   

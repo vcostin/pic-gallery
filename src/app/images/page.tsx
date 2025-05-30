@@ -209,13 +209,7 @@ export default function ImagesPage() {
       {!isLoading && !error && images && images.length > 0 && (
         <>
           <ImageGrid 
-            images={images.map(img => ({
-              id: img.id,
-              title: img.title,
-              url: img.url,
-              description: img.description || null,
-              tags: img.tags || []
-            }))} 
+            images={images}
             data-testid="image-grid"
           />
           {pagination && pagination.lastPage > 1 && (

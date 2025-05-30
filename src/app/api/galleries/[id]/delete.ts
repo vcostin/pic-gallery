@@ -6,7 +6,7 @@ import { apiSuccess, apiError, apiUnauthorized, apiNotFound } from "@/lib/apiRes
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Await params to solve the Next.js dynamic route parameters issue

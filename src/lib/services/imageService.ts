@@ -19,11 +19,31 @@ import {
   ImageResponseSchema 
 } from '@/lib/schemas';
 
+// Additional tag-related schemas
+const TagSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  _count: z.object({
+    images: z.number()
+  }).optional()
+});
+
+const TagsResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.array(TagSchema)
+});
+
+const TagResponseSchema = z.object({
+  success: z.literal(true),
+  data: TagSchema
+});
+
 // Type definitions derived from schemas
 export type Image = z.infer<typeof ImageSchema>;
 export type CreateImageData = z.infer<typeof CreateImageSchema>;
 export type UpdateImageData = z.infer<typeof UpdateImageSchema>;
 export type PaginatedImages = z.infer<typeof PaginatedImagesResponseSchema>['data'];
+export type Tag = z.infer<typeof TagSchema>;
 
 // Upload response schema
 const UploadResponseSchema = z.object({
@@ -166,10 +186,52 @@ export const ImageService = {
   },
 
   /**
-   * Get images for a specific user
+   * Get user images by user ID (requires auth)
    */
   async getUserImages(userId: string, signal?: AbortSignal): Promise<Image[]> {
     const response = await fetchApi(`/api/users/${userId}/images`, { signal }, UserImagesResponseSchema);
+    return response.data;
+  },
+
+  /**
+   * Get all tags used by the current user
+   */
+  async getTags(signal?: AbortSignal): Promise<Tag[]> {
+    const response = await fetchApi('/api/tags', { signal }, TagsResponseSchema);
+    return response.data;
+  },
+
+  /**
+   * Create a new tag
+   */
+  async createTag(name: string, signal?: AbortSignal): Promise<Tag> {
+    const response = await fetchApi('/api/tags', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+      signal
+    }, TagResponseSchema);
+    return response.data;
+  },
+
+  /**
+   * Delete a tag
+   */
+  async deleteTag(id: string, signal?: AbortSignal): Promise<void> {
+    await fetch(`/api/tags/${id}`, {
+      method: 'DELETE',
+      signal
+    });
+  },
+
+  /**
+   * Update image tags
+   */
+  async updateImageTags(imageId: string, tagIds: string[], signal?: AbortSignal): Promise<Image> {
+    const response = await fetchApi(`/api/images/${imageId}/tags`, {
+      method: 'PATCH',
+      body: JSON.stringify({ tagIds }),
+      signal
+    }, ImageResponseSchema);
     return response.data;
   }
 };

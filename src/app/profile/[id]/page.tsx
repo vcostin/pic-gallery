@@ -22,7 +22,8 @@ interface PrismaUser {
   }
 }
 
-export default async function UserProfilePage({ params }: { params: { id: string } }) {
+export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   
   if (!session?.user) {
@@ -35,7 +36,7 @@ export default async function UserProfilePage({ params }: { params: { id: string
   }) as unknown as { role: UserRole } | null;
 
   const isAdmin = currentUser?.role === UserRole.ADMIN;
-  const isOwnProfile = session.user.id === params.id;
+  const isOwnProfile = session.user.id === id;
 
   // Only allow admins to view other profiles
   if (!isAdmin && !isOwnProfile) {
@@ -44,7 +45,7 @@ export default async function UserProfilePage({ params }: { params: { id: string
 
   // Get user information including counts
   const user = await prisma.user.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       _count: {
         select: {

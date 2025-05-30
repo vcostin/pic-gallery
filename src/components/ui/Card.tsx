@@ -54,6 +54,38 @@ export function CardHeader({ children, className = '' }: CardHeaderProps) {
   );
 }
 
+export interface CardTitleProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * CardTitle component for card titles
+ */
+export function CardTitle({ children, className = '' }: CardTitleProps) {
+  return (
+    <h3 className={`text-lg font-semibold text-gray-900 dark:text-white ${className}`}>
+      {children}
+    </h3>
+  );
+}
+
+export interface CardDescriptionProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * CardDescription component for card descriptions
+ */
+export function CardDescription({ children, className = '' }: CardDescriptionProps) {
+  return (
+    <p className={`text-sm text-gray-600 dark:text-gray-400 ${className}`}>
+      {children}
+    </p>
+  );
+}
+
 export interface CardContentProps {
   children: React.ReactNode;
   className?: string;

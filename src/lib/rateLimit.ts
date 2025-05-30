@@ -13,8 +13,8 @@ const AUTH_RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
  * for sensitive operations like auth and API operations
  */
 export function rateLimiter(req: NextRequest, limit: number = AUTH_RATE_LIMIT, windowMs: number = AUTH_RATE_LIMIT_WINDOW) {
-  // Get IP - in a real app, use X-Forwarded-For or similar
-  const ip = req.ip || req.headers.get("x-real-ip") || "unknown";
+  // Get IP from headers - NextRequest doesn't have ip property directly
+  const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
   
   const now = Date.now();
   const windowStart = now - windowMs;
