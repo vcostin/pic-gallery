@@ -53,6 +53,7 @@ For developers working on this project, we maintain comprehensive documentation:
 
 ### 🧪 Testing & Quality
 - [🧪 E2E Testing Guide](/docs/e2e-testing-guide.md) - Comprehensive testing documentation
+- [🚨 CI Troubleshooting Guide](/docs/ci-troubleshooting.md) - Solutions for common GitHub Actions and CI issues
 - [✅ Enhanced Gallery Completion Report](/ENHANCED_GALLERY_COMPLETION_REPORT.md) - Latest enhancement documentation
 
 ## 🛠️ Tech Stack

@@ -85,8 +85,8 @@ export default defineConfig({
   
   /* Optimized Reporting */
   reporter: process.env.CI 
-    ? [['github'], ['html']] 
-    : [['list'], ['html']],
+    ? [['github'], ['html', { outputFolder: 'playwright-report' }]] 
+    : [['list'], ['html', { outputFolder: 'playwright-report' }]],
   
   /* Artifact Management */
   outputDir: './test-screenshots',
@@ -219,12 +219,13 @@ export default defineConfig({
   ],
 
   /* Optimized Web Server Configuration */
-  webServer: {
+  // Only start server locally - in CI, server is started manually in workflow
+  webServer: !process.env.CI ? {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 120000, // Give more time for server startup
     stdout: 'pipe', // Reduce noise in CI
     stderr: 'pipe',
-  },
+  } : undefined,
 });
