@@ -40,6 +40,8 @@ describe('SelectImagesDialog', () => {
               description: 'A test image',
               url: '/images/test1.jpg',
               userId: 'user1',
+              createdAt: new Date('2023-01-01'),
+              updatedAt: new Date('2023-01-01'),
               tags: [{ id: 'tag1', name: 'nature' }]
             },
             {
@@ -48,6 +50,8 @@ describe('SelectImagesDialog', () => {
               description: 'Another test image',
               url: '/images/test2.jpg',
               userId: 'user1',
+              createdAt: new Date('2023-01-02'),
+              updatedAt: new Date('2023-01-02'),
               tags: [{ id: 'tag2', name: 'city' }]
             }
           ],

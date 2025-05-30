@@ -3,14 +3,14 @@
  * Using Zod schemas for validation
  */
 import { z } from 'zod';
-import { fetchApi } from '../apiUtils';
+import { fetchApi } from '@/lib/apiUtils';
 import { 
   GallerySchema,
   CreateGallerySchema,
   UpdateGallerySchema,
   FullGallerySchema,
   createPaginatedResponseSchema
-} from '../schemas';
+} from '@/lib/schemas';
 
 // Types derived from schemas
 type GalleryCreationData = z.infer<typeof CreateGallerySchema>;

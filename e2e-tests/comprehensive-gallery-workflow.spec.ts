@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { TestHelpers } from './helpers';
+import { TestHelpers } from './test-helpers';
 
 /**
  * Comprehensive E2E test for the complete gallery workflow

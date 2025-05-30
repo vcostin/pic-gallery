@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { TEST_USER } from './auth-config';
-import { SimpleHelpers } from './simple-helpers';
+import { TestHelpers } from './test-helpers';
 
 // Final test - delete the user profile and verify deletion
 // Prerequisites: Global setup created clean user, all previous tests used same user
@@ -69,10 +69,10 @@ test.describe('Final User Profile Deletion', () => {
         console.log('✅ User profile deletion attempted via UI');
       } else {
         console.log('⚠️ Delete account button not found, attempting API deletion...');
-        await SimpleHelpers.deleteUser(page, TEST_USER.email);
+        await TestHelpers.deleteUser(page, TEST_USER.email);
       }      } catch {
         console.log('⚠️ UI deletion failed, attempting API deletion...');
-        await SimpleHelpers.deleteUser(page, TEST_USER.email);
+        await TestHelpers.deleteUser(page, TEST_USER.email);
       }
   });
 

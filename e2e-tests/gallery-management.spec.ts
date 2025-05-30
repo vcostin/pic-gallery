@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { TestHelpers } from './helpers';
+import { TestHelpers } from './test-helpers';
 
 test.describe('Gallery Management E2E', () => {
   test.beforeEach(async ({ page }) => {

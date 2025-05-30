@@ -3,7 +3,7 @@
  */
 import { useState, useCallback } from 'react';
 import { z } from 'zod';
-import { fetchApi } from '../apiUtils';
+import { fetchApi } from '@/lib/apiUtils';
 
 interface UseApiOptions<T = unknown> {
   onSuccess?: (data: T) => void;

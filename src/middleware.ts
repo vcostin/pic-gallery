@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { UserRole } from '@prisma/client';
-import { e2eRateLimiter } from './lib/rateLimit';
+import { e2eRateLimiter } from '@/lib/rateLimit';
 
 export async function middleware(request: NextRequest) {
   // Get the pathname of the request
@@ -51,8 +51,7 @@ export async function middleware(request: NextRequest) {
       
       const userData = await res.json();
       // If the user is not an admin, redirect to the home page with an error
-      // Support both { role } and { data: { role } } API responses
-      const userRole = userData.data?.role ?? userData.role;
+      const userRole = userData.role;
       if (userRole !== UserRole.ADMIN) {
         return NextResponse.redirect(
           new URL('/?error=admin_access_required', request.url)

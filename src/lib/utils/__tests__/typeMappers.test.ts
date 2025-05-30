@@ -5,9 +5,9 @@ import {
   findImageInGallery,
   findImageInGalleryIndex,
   DisplayGallery
-} from '../typeMappers';
+} from '@/lib/utils/typeMappers';
 import { z } from 'zod';
-import { ImageInGallerySchema } from '../../schemas';
+import { ImageInGallerySchema } from '@/lib/schemas';
 
 describe('Type Mapper Utils', () => {
   // Sample data for testing

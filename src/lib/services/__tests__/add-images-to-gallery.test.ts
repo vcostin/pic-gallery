@@ -1,13 +1,13 @@
-import { GalleryService } from './lib/services/galleryService';
-import { FullGallery } from './lib/schemas';
+import { GalleryService } from '@/lib/services/galleryService';
+import { FullGallery } from '@/lib/schemas';
 
 // Mock fetchApi function that's used by GalleryService
-jest.mock('./lib/apiUtils', () => ({
+jest.mock('@/lib/apiUtils', () => ({
   fetchApi: jest.fn()
 }));
 
 // Import the mocked fetchApi directly
-import { fetchApi } from './lib/apiUtils';
+import { fetchApi } from '@/lib/apiUtils';
 
 describe('Add Images to Gallery Functionality', () => {
   // Reset mocks before each test

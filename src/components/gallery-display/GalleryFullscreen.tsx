@@ -20,7 +20,7 @@ interface GalleryFullscreenProps {
   backgroundColor?: string | null;
 }
 
-export const GalleryFullscreen: React.FC<GalleryFullscreenProps> = ({
+export function GalleryFullscreen({
   image,
   onClose,
   onNext,
@@ -28,7 +28,7 @@ export const GalleryFullscreen: React.FC<GalleryFullscreenProps> = ({
   themeColor,
   accentColor,
   backgroundColor
-}) => {
+}: GalleryFullscreenProps) {
   if (!image) {
     return null;
   }
@@ -79,4 +79,4 @@ export const GalleryFullscreen: React.FC<GalleryFullscreenProps> = ({
       </div>
     </div>
   );
-};
+}

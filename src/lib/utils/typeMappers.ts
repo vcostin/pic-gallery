@@ -7,7 +7,7 @@ import {
   ImageSchema, 
   ImageInGallerySchema,
   GallerySchema
-} from '../schemas';
+} from '@/lib/schemas';
 
 /**
  * Schema for display images (used by UI components)

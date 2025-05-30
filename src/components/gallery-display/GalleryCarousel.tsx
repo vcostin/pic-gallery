@@ -17,7 +17,7 @@ interface GalleryCarouselProps {
   accentColor?: string | null;
 }
 
-export const GalleryCarousel: React.FC<GalleryCarouselProps> = ({ images, onImageClick, themeColor, accentColor }) => {
+export function GalleryCarousel({ images, onImageClick, themeColor, accentColor }: GalleryCarouselProps) {
   if (!images || images.length === 0) {
     return <div style={{color: themeColor || 'inherit'}}>No images to display in carousel.</div>;
   }
@@ -40,4 +40,4 @@ export const GalleryCarousel: React.FC<GalleryCarouselProps> = ({ images, onImag
       </div>
     </div>
   );
-};
+}

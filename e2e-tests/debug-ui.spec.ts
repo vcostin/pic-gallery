@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { SimpleHelpers } from './simple-helpers';
+import { TestHelpers } from './test-helpers';
 
 test('debug UI elements after login', async ({ page }) => {
   // Perform login
