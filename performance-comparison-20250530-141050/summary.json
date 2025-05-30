@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-05-30T14:11:09+03:00",
+  "test": "e2e-tests/toast-component.spec.ts",
+  "runsPerConfig": 1,
+  "testTimeout": 60,
+  "results": {
+    "phase1-optimized": {
+      "averageTime": 8,
+      "totalTime": 8,
+      "successfulRuns": 1
+    },
+    "phase2-lite": {
+      "averageTime": 7,
+      "totalTime": 7,
+      "successfulRuns": 1
+    }
+  },
+  "bestConfig": "phase2-lite",
+  "bestTime": 7
+}

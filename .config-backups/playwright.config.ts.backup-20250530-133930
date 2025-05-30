@@ -226,7 +226,5 @@ export default defineConfig({
     timeout: 120000, // Give more time for server startup
     stdout: 'pipe', // Reduce noise in CI
     stderr: 'pipe',
-    // Try alternate ports if 3000 is busy
-    port: process.env.PORT ? parseInt(process.env.PORT) : undefined,
   },
 });
