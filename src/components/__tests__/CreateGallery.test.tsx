@@ -59,7 +59,6 @@ jest.mock('@/lib/hooks/useEnhancedGallery', () => ({
 // Mock the actual CreateGallery component directly
 jest.mock('@/components/CreateGallery/CreateGallery', () => ({
   CreateGallery: () => {
-    const React = require('react');
     return React.createElement('div', { 'data-testid': 'mock-create-gallery' }, [
       React.createElement('h2', { key: 'title' }, 'Create New Gallery'),
       React.createElement('button', { key: 'add-images', 'data-testid': 'add-images-button' }, 'Add Images'),

@@ -11,6 +11,8 @@ describe('Image Validation Tests', () => {
         description: 'A test image',
         url: '/test.jpg',
         userId: 'user-123',
+        createdAt: new Date(),
+        updatedAt: new Date(),
         tags: [{ id: 'tag-1', name: 'test' }]
       };
       
@@ -18,47 +20,35 @@ describe('Image Validation Tests', () => {
       expect(result.success).toBe(true);
     });
     
-    it('should validate image objects without userId', () => {
-      const incompleteImage = {
-        id: 'test-image-1',
-        title: 'Test Image',
-        description: 'A test image',
-        url: '/test.jpg',
-        tags: [{ id: 'tag-1', name: 'test' }]
-      };
-      
-      const result = SelectableImageSchema.safeParse(incompleteImage);
-      expect(result.success).toBe(true);
-    });
-    
-    it('should validate image objects without createdAt/updatedAt', () => {
-      const incompleteImage = {
-        id: 'test-image-1',
-        title: 'Test Image',
-        description: 'A test image',
-        url: '/test.jpg',
-        userId: 'user-123'
-      };
-      
-      const result = SelectableImageSchema.safeParse(incompleteImage);
-      expect(result.success).toBe(true);
-    });
-    
     it('should validate image objects without tags', () => {
-      const incompleteImage = {
+      const validImage = {
         id: 'test-image-1',
         title: 'Test Image',
         description: 'A test image',
         url: '/test.jpg',
-        userId: 'user-123'
+        userId: 'user-123',
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
-      const result = SelectableImageSchema.safeParse(incompleteImage);
+      const result = SelectableImageSchema.safeParse(validImage);
       expect(result.success).toBe(true);
     });
     
     it('should reject image objects without required fields', () => {
-      // Missing id
+      // Missing userId - should fail
+      const incompleteImage = {
+        id: 'test-image-1',
+        title: 'Test Image',
+        description: 'A test image',
+        url: '/test.jpg',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        tags: [{ id: 'tag-1', name: 'test' }]
+      };
+      
+      const result = SelectableImageSchema.safeParse(incompleteImage);
+      expect(result.success).toBe(false);
       let invalidImage = {
         title: 'Test Image',
         description: 'A test image',

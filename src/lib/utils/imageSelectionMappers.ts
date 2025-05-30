@@ -11,17 +11,11 @@ export const SelectableImageSchema = ImageSchema.pick({
   id: true,
   title: true,
   description: true,
-  url: true
+  url: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true
 }).extend({
-  userId: z.string().optional(), // Make userId optional for backward compatibility
-  createdAt: z.preprocess(
-    (val) => (val instanceof Date ? val : new Date()),
-    z.date()
-  ).optional(),
-  updatedAt: z.preprocess(
-    (val) => (val instanceof Date ? val : new Date()),
-    z.date()
-  ).optional(),
   tags: z.array(TagSchema).optional()
 });
 
@@ -30,16 +24,16 @@ export type SelectableImage = z.infer<typeof SelectableImageSchema>;
 /**
  * Maps full image data to a format compatible with image selection UI components
  */
-export function mapToSelectableImage(image: z.infer<typeof ImageSchema> | Partial<z.infer<typeof ImageSchema>>): SelectableImage {
+export function mapToSelectableImage(image: z.infer<typeof ImageSchema>): SelectableImage {
   return {
-    id: image.id || '', // Required
-    title: image.title || '', // Required
-    description: image.description, // Optional, can be null
-    url: image.url || '', // Required
-    userId: image.userId, // Optional now
-    createdAt: image.createdAt, // Optional now
-    updatedAt: image.updatedAt, // Optional now
-    tags: image.tags || [] // Optional
+    id: image.id,
+    title: image.title,
+    description: image.description,
+    url: image.url,
+    userId: image.userId,
+    createdAt: image.createdAt,
+    updatedAt: image.updatedAt,
+    tags: image.tags || []
   };
 }
 
