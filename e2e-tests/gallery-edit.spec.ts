@@ -2,15 +2,21 @@ import { test, expect } from '@playwright/test';
 import { TestHelpers } from './test-helpers';
 
 // Tests for gallery editing functionality - including toast notifications
+// Configure to run serially to avoid race conditions with shared user data
+test.describe.configure({ mode: 'serial' });
 test.describe('Gallery Edit Functionality', () => {
   test.beforeEach(async ({ page }) => {
     // Go to the galleries page
     await page.goto('/galleries');
   });
   
-  // Clean up after all tests are completed
-  test.afterEach(async ({ page }) => {
+  // Clean up only after all tests in this suite are completed
+  test.afterAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto('/galleries');
     await TestHelpers.cleanupTestData(page);
+    await context.close();
   });
 
   test('toast notifications should appear and disappear correctly when removing an image', async ({ page }) => {

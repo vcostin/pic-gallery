@@ -415,7 +415,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
           isOpen={showSelectImagesDialog}
           onClose={() => setShowSelectImagesDialog(false)}
           onImagesSelected={handleAddImages}
-          existingImageIds={images.map(img => img.imageId || '')}
+          existingImageIds={images.map(img => img.imageId).filter(Boolean)}
         />
         
         <ConfirmDialog
