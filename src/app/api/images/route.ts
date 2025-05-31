@@ -4,9 +4,8 @@ import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import { apiSuccess, apiUnauthorized, withApiHandler } from "@/lib/apiResponse";
 import { getPaginationOptions, formatPaginatedResponse } from "@/lib/dataFetching";
-import { Image } from "@prisma/client";
+import { Image, Prisma } from "@/lib/generated/prisma-client";
 import logger from "@/lib/logger";
-import { Prisma } from "@prisma/client";
 import { CreateImageSchema } from "@/lib/schemas";
 
 // Schema validation for query parameters
@@ -70,6 +69,7 @@ export const GET = withApiHandler(async (req) => {
   
   if (process.env.NODE_ENV === 'development') {
     logger.log('GET /api/images query params:', queryParams);
+    logger.log('GET /api/images session userId:', session.user.id);
   }
   const where: Prisma.ImageWhereInput = { userId: session.user.id };
   
@@ -81,8 +81,8 @@ export const GET = withApiHandler(async (req) => {
   // Filter by search query if provided
   if (queryParams.searchQuery) {
     where.OR = [
-      { title: { contains: queryParams.searchQuery, mode: 'insensitive' } },
-      { description: { contains: queryParams.searchQuery, mode: 'insensitive' } },
+      { title: { contains: queryParams.searchQuery } },
+      { description: { contains: queryParams.searchQuery } },
     ];
   }
   
@@ -102,6 +102,11 @@ export const GET = withApiHandler(async (req) => {
     orderBy: { [queryParams.sortBy]: queryParams.sortDir },
     ...getPaginationOptions({ page: queryParams.page, limit: queryParams.limit }),
   });
+  
+  if (process.env.NODE_ENV === 'development') {
+    logger.log('GET /api/images result - total:', total, 'images count:', images.length);
+  }
+  
   const response = formatPaginatedResponse<Image>(images, total, { page: queryParams.page, limit: queryParams.limit });
   return apiSuccess(response);
 });

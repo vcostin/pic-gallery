@@ -138,7 +138,7 @@ export type FullGallery = z.infer<typeof FullGallerySchema>;
 export const CreateGallerySchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  isPublic: z.boolean().default(false),
+  isPublic: z.boolean(),  // Remove default to make it required
   images: z.array(z.object({
     id: z.string(),
     description: z.string().nullable().optional(),

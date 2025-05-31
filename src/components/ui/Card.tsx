@@ -2,7 +2,7 @@
 
 import React, { forwardRef } from 'react';
 
-export interface CardProps {
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
@@ -19,6 +19,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(({
   onClick,
   hover = false,
   border = false,
+  ...otherProps
 }, ref) => {
   const baseClasses = 'bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden';
   const hoverClasses = hover ? 'hover:shadow-md transition-shadow' : '';
@@ -30,6 +31,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(({
       ref={ref}
       onClick={onClick}
       className={`${baseClasses} ${hoverClasses} ${borderClasses} ${clickableClasses} ${className}`}
+      {...otherProps}
     >
       {children}
     </div>
@@ -51,6 +53,38 @@ export function CardHeader({ children, className = '' }: CardHeaderProps) {
     <div className={`p-4 border-b border-gray-200 dark:border-gray-700 ${className}`}>
       {children}
     </div>
+  );
+}
+
+export interface CardTitleProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * CardTitle component for card titles
+ */
+export function CardTitle({ children, className = '' }: CardTitleProps) {
+  return (
+    <h3 className={`text-lg font-semibold text-gray-900 dark:text-white ${className}`}>
+      {children}
+    </h3>
+  );
+}
+
+export interface CardDescriptionProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * CardDescription component for card descriptions
+ */
+export function CardDescription({ children, className = '' }: CardDescriptionProps) {
+  return (
+    <p className={`text-sm text-gray-600 dark:text-gray-400 ${className}`}>
+      {children}
+    </p>
   );
 }
 

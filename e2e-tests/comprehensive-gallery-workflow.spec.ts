@@ -13,6 +13,8 @@ import { TestHelpers } from './test-helpers';
  * 5. Image operations within gallery (setting cover, descriptions, removal)
  * 6. Gallery deletion and cleanup
  */
+// Configure to run serially to avoid race conditions with shared user data
+test.describe.configure({ mode: 'serial' });
 test.describe('Comprehensive Gallery Workflow', () => {
   let createdGalleryId: string | null = null;
   const testGalleryName = `E2E Test Gallery ${Date.now()}`;
@@ -31,12 +33,27 @@ test.describe('Comprehensive Gallery Workflow', () => {
     await expect(page).toHaveURL(/\/galleries/);
   });
   
-  // Clean up after all tests are completed
-  test.afterEach(async ({ page }) => {
+  // Clean up only after all tests in this suite are completed
+  test.afterAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto('/galleries');
     await TestHelpers.cleanupTestData(page);
+    await context.close();
   });
 
   test('complete gallery workflow: create, customize, manage images, edit, and delete', async ({ page }) => {
+    // ========== PHASE 0: UPLOAD TEST IMAGES ==========
+    console.log('Phase 0: Uploading test images...');
+    
+    // First, upload some test images so we have images to select from
+    const uploadedImages = await TestHelpers.uploadTestImages(page, 3);
+    console.log(`Successfully uploaded ${uploadedImages.length} test images:`, uploadedImages);
+    
+    // Navigate back to galleries page
+    await page.goto('/galleries');
+    await expect(page).toHaveURL(/\/galleries/);
+    
     // ========== PHASE 1: GALLERY CREATION ==========
     console.log('Phase 1: Creating new gallery...');
     
@@ -295,6 +312,9 @@ test.describe('Comprehensive Gallery Workflow', () => {
         // Wait for dialog and test quick close
         await expect(page.getByTestId('select-images-search-input')).toBeVisible();
         await page.getByTestId('select-images-close-button').click();
+        
+        // Wait for dialog to be fully closed
+        await expect(page.getByTestId('select-images-modal-overlay')).not.toBeVisible();
       }
 
       // ========== PHASE 7: IMAGE MANAGEMENT WITHIN GALLERY ==========
@@ -344,6 +364,23 @@ test.describe('Comprehensive Gallery Workflow', () => {
 
       // ========== PHASE 8: SAVE CHANGES ==========
       console.log('Phase 8: Saving gallery changes...');
+      
+      // Ensure any confirmation dialogs are handled
+      const confirmationModal = page.locator('.fixed.inset-0.bg-black.bg-opacity-50');
+      const modalCount = await confirmationModal.count();
+      
+      if (modalCount > 0) {
+        // Handle any open confirmation dialogs
+        for (let i = 0; i < modalCount; i++) {
+          const modal = confirmationModal.nth(i);
+          if (await modal.isVisible()) {
+            const cancelButton = modal.locator('button').filter({ hasText: 'Cancel' });
+            if (await cancelButton.isVisible()) {
+              await cancelButton.click();
+            }
+          }
+        }
+      }
       
       // Save gallery changes
       const saveButton = page.getByTestId('edit-gallery-save-button');

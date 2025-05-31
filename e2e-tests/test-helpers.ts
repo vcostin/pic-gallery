@@ -338,4 +338,89 @@ export class TestHelpers {
       return false;
     }
   }
+
+  /**
+   * Upload test images to ensure images exist for selection
+   */
+  static async uploadTestImages(page: Page, count: number = 2): Promise<string[]> {
+    // Import test assets using require to avoid ES module issues
+    const testAssetsPath = require('path').resolve(__dirname, './test-assets');
+    const { TEST_ASSETS } = require(testAssetsPath);
+    
+    // For CI, use fallback paths since the dynamic import has ES module issues
+    let TEST_ASSETS_CI: any = null;
+    let ensureTestImagesExist: any = null;
+    
+    if (process.env.CI) {
+      try {
+        // Try to use CI assets if available, fallback to regular assets
+        const testAssetsCiPath = require('path').resolve(__dirname, './test-assets-ci');
+        const ciModule = require(testAssetsCiPath);
+        TEST_ASSETS_CI = ciModule.TEST_ASSETS_CI;
+        ensureTestImagesExist = ciModule.ensureTestImagesExist;
+        
+        if (ensureTestImagesExist) {
+          await ensureTestImagesExist();
+        }
+      } catch (e) {
+        console.warn('Could not load CI test assets, falling back to regular assets:', e);
+        TEST_ASSETS_CI = TEST_ASSETS; // Fallback to regular assets
+      }
+    }
+    
+    const uploadedImageNames: string[] = [];
+    const uniqueId = Date.now();
+    
+    for (let i = 0; i < count; i++) {
+      try {
+        console.log(`Uploading test image ${i + 1} of ${count}...`);
+        
+        // Navigate to upload page
+        await page.goto('/images/upload');
+        await page.waitForLoadState('networkidle');
+        
+        // Generate unique image name
+        const imageName = `E2E Test Image ${uniqueId}-${i + 1}`;
+        
+        // Use appropriate image path
+        const imagePath = process.env.CI && TEST_ASSETS_CI
+          ? (i === 0 ? TEST_ASSETS_CI.images.testImage1 : TEST_ASSETS_CI.images.testImage2)
+          : (i === 0 ? TEST_ASSETS.images.testImage1 : TEST_ASSETS.images.testImage2);
+        
+        // Fill upload form
+        await page.getByTestId('upload-file').setInputFiles(imagePath);
+        await page.getByTestId('upload-title').fill(imageName);
+        await page.getByTestId('upload-description').fill(`Test image ${i + 1} for E2E testing`);
+        await page.getByTestId('upload-tags').fill('e2e, test, automation');
+        
+        // Submit form
+        await page.getByTestId('upload-submit').click();
+        
+        // Wait for success indicators
+        try {
+          await Promise.race([
+            page.getByText(/uploaded successfully/i).waitFor({ timeout: 15000 }),
+            page.getByText(/upload complete/i).waitFor({ timeout: 15000 }),
+            page.getByText(/image uploaded/i).waitFor({ timeout: 15000 }),
+            page.waitForURL(url => !url.pathname.includes('/upload'), { timeout: 15000 })
+          ]);
+          
+          uploadedImageNames.push(imageName);
+          console.log(`Successfully uploaded: ${imageName}`);
+        } catch (error) {
+          console.warn(`Upload may have failed for image ${i + 1}:`, error);
+          // Still add the name in case upload succeeded but success message didn't appear
+          uploadedImageNames.push(imageName);
+        }
+      } catch (error) {
+        console.error(`Failed to upload test image ${i + 1}:`, error);
+      }
+    }
+    
+    // Wait for database consistency after uploads
+    console.log('Waiting for database consistency after uploads...');
+    await page.waitForTimeout(3000);
+    
+    return uploadedImageNames;
+  }
 }

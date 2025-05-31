@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { TestHelpers } from './test-helpers';
+import { TEST_ASSETS } from './test-assets';
 
+// Configure to run serially to avoid race conditions with shared user data
+test.describe.configure({ mode: 'serial' });
 test.describe('Gallery Management E2E', () => {
   test.beforeEach(async ({ page }) => {
     // Go directly to galleries page - should already be authenticated
@@ -10,12 +13,27 @@ test.describe('Gallery Management E2E', () => {
     await expect(page).toHaveURL(/\/galleries/);
   });
   
-  // Clean up after all tests are completed
-  test.afterEach(async ({ page }) => {
+  // Clean up only after all tests in this suite are completed
+  test.afterAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto('/galleries');
     await TestHelpers.cleanupTestData(page);
+    await context.close();
   });
 
   test('complete gallery workflow: create, add images, edit, and manage', async ({ page }) => {
+    // Step 0: Upload test images first
+    console.log('Step 0: Uploading test images...');
+    
+    // Upload some test images so we have images to select from
+    const uploadedImages = await TestHelpers.uploadTestImages(page, 3);
+    console.log(`Successfully uploaded ${uploadedImages.length} test images:`, uploadedImages);
+    
+    // Navigate back to galleries page
+    await page.goto('/galleries');
+    await expect(page).toHaveURL(/\/galleries/);
+    
     // Step 1: Navigate to gallery creation
     const createGalleryButton = page.getByTestId('create-gallery-link');
     await expect(createGalleryButton).toBeVisible();
@@ -142,9 +160,9 @@ test.describe('Gallery Management E2E', () => {
       await page.getByTestId('upload-image-description-input').fill('Test image description');
       await page.getByTestId('upload-image-tags-input').fill('test, e2e, automation');
 
-      // Note: File upload requires actual file, which we'll skip in this test
-      // await page.getByTestId('upload-image-file-input').setInputFiles('path/to/test/image.jpg');
-      // await page.getByTestId('upload-image-submit-button').click();
+      // Upload a test image using reliable test assets
+      await page.getByTestId('upload-image-file-input').setInputFiles(TEST_ASSETS.images.testImage1);
+      await page.getByTestId('upload-image-submit-button').click();
     }
 
     // Navigate to gallery creation to test image selection
