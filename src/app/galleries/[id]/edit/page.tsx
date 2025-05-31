@@ -61,6 +61,10 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
   const [showSelectImagesDialog, setShowSelectImagesDialog] = useState(false);
   const router = useRouter();
 
+  // Debug logging for dialog state changes
+  useEffect(() => {
+  }, [showSelectImagesDialog]);
+
   // Set up form with our custom hook
   const {
     reset: resetForm,
@@ -318,9 +322,12 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
               <h2 className="text-xl font-semibold">Images ({images.length})</h2>
               <button
                 type="button"
-                onClick={() => setShowSelectImagesDialog(true)}
+                onClick={() => {
+                  setShowSelectImagesDialog(true);
+                }}
                 className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                disabled={isSubmitting} 
+                disabled={isSubmitting}
+                data-testid="select-images-button"
               >
                 Select Images
               </button>
@@ -413,7 +420,9 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         
         <SelectImagesDialog
           isOpen={showSelectImagesDialog}
-          onClose={() => setShowSelectImagesDialog(false)}
+          onClose={() => {
+            setShowSelectImagesDialog(false);
+          }}
           onImagesSelected={handleAddImages}
           existingImageIds={images.map(img => img.imageId).filter(Boolean)}
         />

@@ -312,6 +312,9 @@ test.describe('Comprehensive Gallery Workflow', () => {
         // Wait for dialog and test quick close
         await expect(page.getByTestId('select-images-search-input')).toBeVisible();
         await page.getByTestId('select-images-close-button').click();
+        
+        // Wait for dialog to be fully closed
+        await expect(page.getByTestId('select-images-modal-overlay')).not.toBeVisible();
       }
 
       // ========== PHASE 7: IMAGE MANAGEMENT WITHIN GALLERY ==========
@@ -361,6 +364,23 @@ test.describe('Comprehensive Gallery Workflow', () => {
 
       // ========== PHASE 8: SAVE CHANGES ==========
       console.log('Phase 8: Saving gallery changes...');
+      
+      // Ensure any confirmation dialogs are handled
+      const confirmationModal = page.locator('.fixed.inset-0.bg-black.bg-opacity-50');
+      const modalCount = await confirmationModal.count();
+      
+      if (modalCount > 0) {
+        // Handle any open confirmation dialogs
+        for (let i = 0; i < modalCount; i++) {
+          const modal = confirmationModal.nth(i);
+          if (await modal.isVisible()) {
+            const cancelButton = modal.locator('button').filter({ hasText: 'Cancel' });
+            if (await cancelButton.isVisible()) {
+              await cancelButton.click();
+            }
+          }
+        }
+      }
       
       // Save gallery changes
       const saveButton = page.getByTestId('edit-gallery-save-button');

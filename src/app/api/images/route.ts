@@ -69,6 +69,7 @@ export const GET = withApiHandler(async (req) => {
   
   if (process.env.NODE_ENV === 'development') {
     logger.log('GET /api/images query params:', queryParams);
+    logger.log('GET /api/images session userId:', session.user.id);
   }
   const where: Prisma.ImageWhereInput = { userId: session.user.id };
   
@@ -101,6 +102,11 @@ export const GET = withApiHandler(async (req) => {
     orderBy: { [queryParams.sortBy]: queryParams.sortDir },
     ...getPaginationOptions({ page: queryParams.page, limit: queryParams.limit }),
   });
+  
+  if (process.env.NODE_ENV === 'development') {
+    logger.log('GET /api/images result - total:', total, 'images count:', images.length);
+  }
+  
   const response = formatPaginatedResponse<Image>(images, total, { page: queryParams.page, limit: queryParams.limit });
   return apiSuccess(response);
 });

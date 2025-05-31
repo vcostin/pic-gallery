@@ -31,7 +31,6 @@ export function SelectImagesDialog({
   const [currentTagFilter, setCurrentTagFilter] = useState('');
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
-  // No need for a filter ref as we're using the current state values directly
   
   // Reference to track if this is the first render
   const didFetchRef = useRef(false);
@@ -70,10 +69,19 @@ export function SelectImagesDialog({
     }
     
     try {
-      // Make the API request with abort signal
-      const response = await fetch(url, { signal: controller.signal });
+      // Make the API request with abort signal and credentials
+      const response = await fetch(url, { 
+        signal: controller.signal,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
       
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API error: ${response.status}`);
+      }
       
       const data = await response.json();
       
@@ -86,7 +94,9 @@ export function SelectImagesDialog({
     } 
     catch (err: unknown) {
       // Skip setting error if request was aborted (need type assertion for unknown)
-      if (err instanceof Error && err.name === 'AbortError') return;
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
       
       logger.error('Error loading images:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
@@ -154,8 +164,6 @@ export function SelectImagesDialog({
     };
   }, [isOpen, debounceTimeout]);
 
-  // The inputValue state is already declared above
-  
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     
@@ -213,7 +221,7 @@ export function SelectImagesDialog({
     if (selectedImageIds.length > 0) {
       // Debug logging for development
       if (process.env.NODE_ENV === 'development') {
-        console.log('SelectImagesDialog - Selected IDs to add:', selectedImageIds);
+
       }
       // Call the callback with selected image IDs
       onImagesSelected(selectedImageIds);
@@ -223,14 +231,12 @@ export function SelectImagesDialog({
     onClose();
   };
 
-  // Add logging to track selected images state
+  // Add logging to track selected images state in development
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && process.env.NODE_ENV === 'development') {
       logger.debug('[SelectImagesDialog] Selected images:', Array.from(selectedImages));
     }
   }, [selectedImages, isOpen]);
-
-  if (!isOpen) return null;
 
   // Extract all tags from images for filter options
   const allTags = Array.from(
@@ -243,6 +249,9 @@ export function SelectImagesDialog({
   
   // Filter out images that are already in the gallery
   const availableImages = images.filter(img => !existingImageIds.includes(img.id));
+
+  // Early return after all hooks have been called
+  if (!isOpen) return null;
 
   return (
     <div 
@@ -337,13 +346,15 @@ export function SelectImagesDialog({
                     }`}
                     onClick={() => handleSelectImage(image.id)}
                     data-testid={`select-images-image-card-${image.id}`}
+                    data-selected={isSelected.toString()}
                   >
-                    <div className="aspect-square relative">
+                    <div className="aspect-square relative bg-gray-200 dark:bg-gray-700">
                       <Image
                         src={image.url}
                         alt={image.title}
                         fill
                         className="object-cover"
+                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                         data-testid={`select-images-image-thumbnail-${image.id}`}
                       />
                       {isSelected && (

@@ -2,7 +2,7 @@
 
 import React, { forwardRef } from 'react';
 
-export interface CardProps {
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
@@ -19,6 +19,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(({
   onClick,
   hover = false,
   border = false,
+  ...otherProps
 }, ref) => {
   const baseClasses = 'bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden';
   const hoverClasses = hover ? 'hover:shadow-md transition-shadow' : '';
@@ -30,6 +31,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(({
       ref={ref}
       onClick={onClick}
       className={`${baseClasses} ${hoverClasses} ${borderClasses} ${clickableClasses} ${className}`}
+      {...otherProps}
     >
       {children}
     </div>

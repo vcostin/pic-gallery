@@ -75,6 +75,7 @@ export default defineConfig({
   
   /* Timeout Optimizations */
   timeout: perfConfig.timeout, // Reduced from default 30s, but enough for slower tests
+  globalTimeout: isCI ? 15 * 60 * 1000 : 10 * 60 * 1000, // Global timeout: 15min CI, 10min local
   expect: {
     timeout: isCI ? 15000 : 10000, // More time for assertions in CI
   },
