@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import fs from 'fs';
 import path from 'path';
-import { Gallery } from "@/lib/generated/prisma-client";
+import { Gallery } from "@prisma/client";
 import logger from "@/lib/logger";
 import { apiSuccess, apiError, apiValidationError, apiUnauthorized, apiNotFound } from "@/lib/apiResponse";
 import { UpdateImageSchema } from "@/lib/schemas";

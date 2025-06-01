@@ -6,7 +6,7 @@ import { apiSuccess, apiUnauthorized, withApiHandler } from "@/lib/apiResponse";
 /**
  * Debug endpoint to check what images exist in the database
  */
-export const GET = withApiHandler(async (req) => {
+export const GET = withApiHandler(async () => {
   const session = await getServerSession(authOptions);
   if (!session?.user.id) {
     return apiUnauthorized();

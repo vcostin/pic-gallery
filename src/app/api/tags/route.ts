@@ -7,7 +7,7 @@ import logger from "@/lib/logger";
 /**
  * GET /api/tags - Get all tags used by the current user
  */
-export const GET = withApiHandler(async (req) => {
+export const GET = withApiHandler(async () => {
   const session = await getServerSession(authOptions);
   if (!session?.user.id) {
     return apiUnauthorized();

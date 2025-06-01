@@ -49,7 +49,7 @@ export default function LoginPage() {
         router.push('/'); // Redirect to home page after successful login
         router.refresh(); // Refresh to update auth state
       }
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);

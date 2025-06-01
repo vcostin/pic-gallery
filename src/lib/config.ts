@@ -17,6 +17,12 @@ export const auth = {
   sessionMaxAge: process.env.SESSION_MAX_AGE ? parseInt(process.env.SESSION_MAX_AGE, 10) : 30 * 24 * 60 * 60, // 30 days
 };
 
+// Database settings
+export const database = {
+  // Enable Prisma query logging
+  queryLogging: process.env.PRISMA_QUERY_LOG === 'true',
+};
+
 // API settings
 export const api = {
   // Request size limits

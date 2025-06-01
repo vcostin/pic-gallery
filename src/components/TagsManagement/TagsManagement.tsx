@@ -13,7 +13,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/components/ui/Toast';
 import { ImageService } from '@/lib/services/imageService';
-import { TagsInput } from '@/components/TagsManagement/TagsInput';
 import { X } from 'lucide-react';
 
 // Import UI components
@@ -57,8 +56,7 @@ export function TagsManagement({
   onTagsUpdated,
   selectedTags = [],
   mode = 'admin',
-  galleryId,
-}: TagsManagementProps) {
+}: Omit<TagsManagementProps, 'galleryId'>) {
   // State management
   const [tags, setTags] = useState<Tag[]>(initialTags);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(selectedTags);

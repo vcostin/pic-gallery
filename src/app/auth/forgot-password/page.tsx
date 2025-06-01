@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
     },
   });
   
-  const onSubmit = async (data: ForgotPasswordFormValues) => {
+  const onSubmit = async () => {
     setIsLoading(true);
     setError(null);
     
@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
       // For now, we'll just simulate a successful submission
       await new Promise(resolve => setTimeout(resolve, 1000));
       setSubmitted(true);
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
               Check your email
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
-              If an account exists with that email, we've sent instructions to reset your password.
+              If an account exists with that email, we&apos;ve sent instructions to reset your password.
             </p>
           </div>
           <div className="text-center mt-4">
@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
             Forgot Password
           </h1>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your email and we'll send instructions to reset your password.
+            Enter your email and we&apos;ll send instructions to reset your password.
           </p>
         </div>
         

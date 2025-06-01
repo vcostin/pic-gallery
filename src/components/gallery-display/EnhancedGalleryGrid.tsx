@@ -95,7 +95,8 @@ export function EnhancedGalleryGrid({
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
+        staggerChildren: images.length > 0 ? 0.1 : 0,
+        duration: images.length > 0 ? 0.3 : 0.2
       }
     }
   };

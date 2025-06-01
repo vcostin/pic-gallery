@@ -19,7 +19,6 @@ Object.defineProperty(window, 'uploadThing', {
 
 jest.mock('next/image', () => ({
   __esModule: true,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   default: (props: { src: string; alt: string; width?: number; height?: number; [key: string]: any }) => {
     // eslint-disable-next-line @next/next/no-img-element
     return <img {...props} alt={props.alt} />;

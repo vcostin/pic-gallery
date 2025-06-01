@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { TestHelpers } from './test-helpers';
+import { OptimizedWaitHelpers } from './optimized-wait-helpers';
 
 /**
  * Comprehensive E2E test for the complete gallery workflow
@@ -120,22 +121,18 @@ test.describe('Comprehensive Gallery Workflow', () => {
     // ========== PHASE 3: IMAGE SELECTION AND MANAGEMENT ==========
     console.log('Phase 3: Adding images to gallery...');
     
-    // Open image selection dialog
-    const selectImagesButton = page.getByTestId('select-images-button');
-    await expect(selectImagesButton).toBeVisible();
-    await selectImagesButton.click();
+    // Open image selection dialog with optimized modal wait
+    await OptimizedWaitHelpers.waitForModalOpen(
+      page, 
+      '[data-testid="select-images-button"]', 
+      '[data-testid="select-images-modal-overlay"]'
+    );
 
-    // Wait for Select Images Dialog to open
-    const searchInput = page.getByTestId('select-images-search-input');
-    await expect(searchInput).toBeVisible({ timeout: 10000 });
-
-    // Test search functionality
-    await searchInput.fill('test');
-    await page.waitForTimeout(1000); // Wait for debounced search
+    // Test search functionality with optimized wait
+    await OptimizedWaitHelpers.waitForSearchResults(page, '[data-testid="select-images-search-input"]', 'test', '[data-testid^="select-images-image-card-"]');
 
     // Clear search to see all available images
-    await searchInput.clear();
-    await page.waitForTimeout(500);
+    await OptimizedWaitHelpers.waitForSearchResults(page, '[data-testid="select-images-search-input"]', '', '[data-testid^="select-images-image-card-"]');
 
     // Select available images
     const imageCards = page.locator('[data-testid^="select-images-image-card-"]');
@@ -168,7 +165,7 @@ test.describe('Comprehensive Gallery Workflow', () => {
       await addButton.click();
 
       // Verify dialog closes
-      await expect(searchInput).not.toBeVisible();
+      await expect(page.getByTestId('select-images-search-input')).not.toBeVisible();
 
       // After adding images, verify they appear in the gallery images section
       if (selectedImageCount > 0) {
@@ -179,8 +176,12 @@ test.describe('Comprehensive Gallery Workflow', () => {
       }
     } else {
       console.log('No images available for selection');
-      // Close dialog if no images available
-      await page.getByTestId('select-images-close-button').click();
+      // Close modal with optimized method
+      await OptimizedWaitHelpers.safeModalClose(
+        page, 
+        '[data-testid="select-images-modal-overlay"]', 
+        '[data-testid="select-images-close-button"]'
+      );
     }
 
     // ========== PHASE 3.1: COVER IMAGE SELECTION DURING CREATION ==========
@@ -304,17 +305,21 @@ test.describe('Comprehensive Gallery Workflow', () => {
       const updatedTitle = `${testGalleryName} (Updated)`;
       await titleInput.fill(updatedTitle);
 
-      // Test adding additional images in edit mode
+      // Test adding additional images in edit mode with optimized modal handling
       const editSelectImagesButton = page.getByTestId('select-images-button');
       if (await editSelectImagesButton.isVisible()) {
-        await editSelectImagesButton.click();
+        await OptimizedWaitHelpers.waitForModalOpen(
+          page, 
+          '[data-testid="select-images-button"]', 
+          '[data-testid="select-images-modal-overlay"]'
+        );
         
-        // Wait for dialog and test quick close
-        await expect(page.getByTestId('select-images-search-input')).toBeVisible();
-        await page.getByTestId('select-images-close-button').click();
-        
-        // Wait for dialog to be fully closed
-        await expect(page.getByTestId('select-images-modal-overlay')).not.toBeVisible();
+        // Test quick close with optimized method
+        await OptimizedWaitHelpers.safeModalClose(
+          page, 
+          '[data-testid="select-images-modal-overlay"]', 
+          '[data-testid="select-images-close-button"]'
+        );
       }
 
       // ========== PHASE 7: IMAGE MANAGEMENT WITHIN GALLERY ==========
@@ -355,6 +360,9 @@ test.describe('Comprehensive Gallery Workflow', () => {
             const confirmButton = page.getByTestId('confirm-remove-image');
             if (await confirmButton.isVisible()) {
               await confirmButton.click();
+              
+              // Wait for confirmation modal to close before proceeding
+              await expect(page.getByTestId('confirm-remove-image')).toBeHidden();
             }
           }
         }
@@ -365,27 +373,15 @@ test.describe('Comprehensive Gallery Workflow', () => {
       // ========== PHASE 8: SAVE CHANGES ==========
       console.log('Phase 8: Saving gallery changes...');
       
-      // Ensure any confirmation dialogs are handled
-      const confirmationModal = page.locator('.fixed.inset-0.bg-black.bg-opacity-50');
-      const modalCount = await confirmationModal.count();
+      // Ensure no modals are blocking the save action using improved modal handling
+      await OptimizedWaitHelpers.closeModalIfPresent(page, 5000);
       
-      if (modalCount > 0) {
-        // Handle any open confirmation dialogs
-        for (let i = 0; i < modalCount; i++) {
-          const modal = confirmationModal.nth(i);
-          if (await modal.isVisible()) {
-            const cancelButton = modal.locator('button').filter({ hasText: 'Cancel' });
-            if (await cancelButton.isVisible()) {
-              await cancelButton.click();
-            }
-          }
-        }
-      }
-      
-      // Save gallery changes
+      // Save gallery changes with proper modal handling
       const saveButton = page.getByTestId('edit-gallery-save-button');
       await expect(saveButton).toBeVisible();
-      await saveButton.click();
+      
+      // Use optimized form submission handler to avoid modal overlay issues
+      await OptimizedWaitHelpers.waitForFormSubmission(page, '[data-testid="edit-gallery-save-button"]');
 
       // Wait for save to complete and redirect back to gallery view
       await expect(page).toHaveURL(/\/galleries\/[a-zA-Z0-9-]+$/, { timeout: 10000 });
@@ -418,12 +414,12 @@ test.describe('Comprehensive Gallery Workflow', () => {
 
     if (await compactViewButton.isVisible()) {
       await compactViewButton.click();
-      await page.waitForTimeout(500);
+      await OptimizedWaitHelpers.waitForDynamicContent(page, '[data-testid="gallery-item"]');
     }
 
     if (await gridViewButton.isVisible()) {
       await gridViewButton.click();
-      await page.waitForTimeout(500);
+      await OptimizedWaitHelpers.waitForDynamicContent(page, '[data-testid="gallery-item"]');
     }
 
     console.log('Comprehensive gallery workflow test completed successfully!');
@@ -462,26 +458,25 @@ test.describe('Comprehensive Gallery Workflow', () => {
     // Navigate to galleries page
     await page.goto('/galleries');
 
-    // Test search functionality if available
+    // Test search functionality if available with optimized waiting
     const searchInput = page.getByTestId('gallery-search-input');
     if (await searchInput.isVisible()) {
-      await searchInput.fill('test');
-      await page.waitForTimeout(1000);
-      await searchInput.clear();
+      await OptimizedWaitHelpers.waitForSearchResults(page, '[data-testid="gallery-search-input"]', 'test', '[data-testid="gallery-item"]');
+      await OptimizedWaitHelpers.waitForSearchResults(page, '[data-testid="gallery-search-input"]', '', '[data-testid="gallery-item"]');
     }
 
-    // Test tag filtering if available
+    // Test tag filtering if available with optimized waiting
     const tagFilters = page.locator('[data-testid^="gallery-tag-filter-"]');
     if (await tagFilters.count() > 0) {
       await tagFilters.first().click();
-      await page.waitForTimeout(500);
+      await OptimizedWaitHelpers.waitForDynamicContent(page, '[data-testid="gallery-item"]');
     }
 
-    // Test sorting options if available
+    // Test sorting options if available with optimized waiting
     const sortSelect = page.getByTestId('gallery-sort-select');
     if (await sortSelect.isVisible()) {
       await sortSelect.selectOption('created_desc');
-      await page.waitForTimeout(500);
+      await OptimizedWaitHelpers.waitForDynamicContent(page, '[data-testid="gallery-item"]');
       await sortSelect.selectOption('title_asc');
     }
   });

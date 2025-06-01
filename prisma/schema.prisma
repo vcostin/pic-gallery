@@ -6,7 +6,8 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/lib/generated/prisma-client"
+  // Remove custom output path to use standard @prisma/client location
+  // This eliminates import warnings and improves compatibility
 }
 
 // Define available user roles

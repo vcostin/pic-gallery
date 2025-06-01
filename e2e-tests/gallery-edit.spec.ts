@@ -166,9 +166,9 @@ async function simulateToastNotification(page: import('@playwright/test').Page) 
   await expect(toast).toBeVisible();
   console.log('Toast is visible');
   
-  // Wait for toast to disappear automatically
-  console.log('Waiting 1500ms for toast to disappear...');
-  await page.waitForTimeout(1500);
+  // Wait for toast to disappear automatically using proper selector waiting
+  console.log('Waiting for toast to disappear...');
+  await expect(toast).not.toBeVisible();
   
   // Verify toast disappeared
   await expect(toast).not.toBeVisible();

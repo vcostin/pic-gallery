@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/Button';
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
 
 interface ImprovedGalleryDetailsFormProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   register: UseFormRegister<any>;
-  errors: FieldErrors;
-  onChange?: (field: string, value: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  errors: FieldErrors<any>;
+  onChange?: (field: string, value: unknown) => void;
   submitText?: string;
   showSubmitButton?: boolean;
   showCancelButton?: boolean;
@@ -115,7 +117,7 @@ export function ImprovedGalleryDetailsForm({
               <p className="mt-1 text-sm text-red-500">{errors.description.message?.toString()}</p>
             )}
             <p className="mt-1 text-xs text-gray-500">
-              Optional: Help visitors understand what they'll see in this gallery
+              Optional: Help visitors understand what they&apos;ll see in this gallery
             </p>
           </div>
 

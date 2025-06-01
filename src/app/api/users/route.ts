@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import logger from "@/lib/logger";
-import { UserRole, Prisma } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 import { apiSuccess, apiError, apiValidationError, apiUnauthorized } from "@/lib/apiResponse";
 
 const getUsersQuerySchema = z.object({

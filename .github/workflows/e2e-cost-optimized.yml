@@ -1,0 +1,130 @@
+# Cost-Optimized E2E Tests
+# Minimal GitHub Actions workflow to reduce costs while maintaining quality
+
+name: E2E Tests (Cost Optimized)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  # Remove scheduled runs to save costs - run manually when needed
+  workflow_dispatch:
+
+# Cancel previous runs if new commit comes in
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Single optimized job that combines validation and testing
+  e2e-standard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20  # Set timeout to prevent runaway costs
+    
+    env:
+      CI: true
+      # Database configuration for CI
+      DATABASE_URL: "file:./test.db"
+      E2E_TEST_USER_EMAIL: "e2e-test@example.com"
+      E2E_TEST_USER_PASSWORD: "TestPassword123!"
+      E2E_TEST_USER_NAME: "E2E Test User"
+      NEXTAUTH_SECRET: "test-secret-for-ci-cost-optimized"
+      NEXTAUTH_URL: "http://localhost:3000"
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js with caching
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      # Combine dependency installation with validation to save time
+      - name: Install dependencies and validate config
+        run: |
+          npm ci
+          npm run test:e2e:validate
+      
+      - name: Setup SQLite database for E2E tests
+        run: ./scripts/setup-database-ci.sh
+      
+      # Use cache for builds to speed up repeated runs
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .next/cache
+            .next/standalone
+            .next/static
+          key: nextjs-build-${{ github.sha }}
+          restore-keys: |
+            nextjs-build-
+      
+      - name: Build Next.js application
+        run: npm run build
+      
+      - name: Start Next.js server in background
+        run: npm start &
+        
+      - name: Wait for server readiness (optimized)
+        run: |
+          echo "Waiting for Next.js server..."
+          for i in {1..20}; do  # Reduced from 30 to 20 attempts
+            if curl -s -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "✅ Server ready"
+              break
+            fi
+            echo "Attempt $i/20..."
+            sleep 2
+            if [ $i -eq 20 ]; then
+              echo "❌ Server timeout"
+              exit 1
+            fi
+          done
+      
+      # Only install Chromium to save download time and disk space
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install --with-deps chromium
+      
+      - name: Run E2E tests (standard mode)
+        run: npm run test:e2e
+        timeout-minutes: 15  # Specific timeout for tests
+      
+      # Only upload artifacts on failure to save storage costs
+      - name: Upload test results (failures only)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-failure-report-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+            test-screenshots/
+          retention-days: 3  # Reduced retention to save costs
+      
+      # Simple status comment for PR (no complex reporting)
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && (success() || failure())
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ job.status }}' === 'success' ? '✅ PASSED' : '❌ FAILED';
+            const comment = `## E2E Tests ${status}
+            
+            **Commit**: ${{ github.sha }}
+            **Run**: ${{ github.run_id }}
+            
+            ${status === '❌ FAILED' ? 'Check the workflow logs and artifacts for details.' : 'All tests passed successfully!'}
+            `;
+            
+            if (context.issue.number) {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }

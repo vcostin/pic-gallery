@@ -17,7 +17,6 @@ import { ErrorMessage, SuccessMessage } from '@/components/StatusMessages';
 import { UserService, type User } from '@/lib/services/userService';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { FieldErrors, UseFormRegister, Control } from '@/lib/form-types';
 import logger from '@/lib/logger';
 
 // Define augmented User type with profile fields

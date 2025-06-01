@@ -79,7 +79,7 @@ export function SelectImagesDialog({
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
+        await response.text();
         throw new Error(`API error: ${response.status}`);
       }
       

@@ -5,7 +5,9 @@
   "description": "A modern web application for artists to showcase and organize their artwork in customizable galleries",
   "scripts": {
     "dev": "prisma generate && next dev --turbopack",
-    "build": "prisma generate && next build",
+    "dev:trace": "NEXT_TURBOPACK_TRACING=1 prisma generate && next dev --turbopack",
+    "build": "prisma generate && next build --turbopack",
+    "build:webpack": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "lint:all": "eslint --ext .js,.jsx,.ts,.tsx ./src",
@@ -19,7 +21,6 @@
     "test:e2e:fast": "PLAYWRIGHT_FAST_MODE=true playwright test --config=playwright.config.optimized.ts",
     "test:e2e:parallel": "PLAYWRIGHT_FAST_MODE=true PLAYWRIGHT_SHARED_DATA=true playwright test --config=playwright.config.optimized.ts",
     "test:e2e:profile": "PLAYWRIGHT_FAST_MODE=true playwright test --config=playwright.config.optimized.ts --reporter=line",
-
     "test:e2e:validate": "node scripts/validate-config.js",
     "test:e2e:perf": "PLAYWRIGHT_PERF_LOG=true npm run test:e2e:fast",
     "test:e2e:all": "npm run test:e2e:gallery && npm run test:e2e:authenticated",
@@ -73,6 +74,7 @@
     "@types/react-dom": "^19",
     "dotenv": "^16.5.0",
     "eslint": "^9",
+    "eslint-config-next": "^15.3.3",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^30.0.0-beta.3",
     "prisma": "^6.8.2",

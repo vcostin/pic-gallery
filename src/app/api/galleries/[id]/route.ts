@@ -6,7 +6,7 @@ import logger from "@/lib/logger";
 import { apiSuccess, apiError, apiValidationError, apiUnauthorized, apiNotFound } from "@/lib/apiResponse";
 import { UpdateGallerySchema } from "@/lib/schemas";
 
-import { ImageInGallery, Image, Prisma } from "@/lib/generated/prisma-client";
+import { ImageInGallery, Image, Prisma } from "@prisma/client";
 
 type ImageInGalleryWithImage = ImageInGallery & {
   image: Image;

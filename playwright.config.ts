@@ -75,7 +75,6 @@ export default defineConfig({
   
   /* Timeout Optimizations */
   timeout: perfConfig.timeout, // Reduced from default 30s, but enough for slower tests
-  globalTimeout: isCI ? 15 * 60 * 1000 : 10 * 60 * 1000, // Global timeout: 15min CI, 10min local
   expect: {
     timeout: isCI ? 15000 : 10000, // More time for assertions in CI
   },
@@ -190,6 +189,24 @@ export default defineConfig({
       fullyParallel: true, // UI tests can run in parallel
     },
 
+    // Debugging and development tests (can run independently)
+    {
+      name: 'debugging-tests',
+      testMatch: [
+        '**/enhanced-debugging-demo.spec.ts',
+        '**/e2e-utils-demo.spec.ts',
+      ],
+      use: { 
+        ...devices['Desktop Chrome'],
+        storageState: './playwright/.auth/single-user.json',
+        // Extended timeouts for debugging output
+        actionTimeout: 15000,
+        navigationTimeout: 30000,
+      },
+      dependencies: ['fast-independent'],
+      fullyParallel: false, // Sequential for clear debugging output
+    },
+
     // Cleanup tests (must run last, sequential)
     {
       name: 'cleanup-tests',
@@ -200,7 +217,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: './playwright/.auth/single-user.json',
       },
-      dependencies: ['gallery-tests', 'notification-tests'],
+      dependencies: ['gallery-tests', 'notification-tests', 'debugging-tests'],
       fullyParallel: false,
     },
 

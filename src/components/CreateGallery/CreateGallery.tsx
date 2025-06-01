@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod'; 
-import { useGalleryForm } from '@/lib/form-hooks';
 import { ErrorMessage, SuccessMessage } from '@/components/StatusMessages';
 import logger from '@/lib/logger';
 import { Button } from '@/components/ui/Button';

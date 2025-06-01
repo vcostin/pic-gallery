@@ -31,8 +31,9 @@ test.describe('Final User Profile Deletion', () => {
       let deleteButton = null;
       for (const selector of deleteSelectors) {
         try {
-          deleteButton = await page.locator(selector).first();
-          if (await deleteButton.isVisible()) {
+          const candidate = page.locator(selector).first();
+          if (await candidate.isVisible()) {
+            deleteButton = candidate;
             break;
           }
         } catch {
@@ -43,8 +44,8 @@ test.describe('Final User Profile Deletion', () => {
       if (deleteButton) {
         await deleteButton.click();
         
-        // Handle confirmation if it exists
-        await page.waitForTimeout(1000);
+        // Wait for confirmation dialog to appear
+        await expect(page.locator('button:has-text("Confirm"), button:has-text("Yes"), button:has-text("Delete"), [data-testid="confirm-delete"]')).toBeVisible();
         
         const confirmSelectors = [
           'button:has-text("Confirm")',
@@ -65,7 +66,8 @@ test.describe('Final User Profile Deletion', () => {
           }
         }
         
-        await page.waitForTimeout(2000);
+        // Wait for deletion to complete by checking for redirect or success message
+        await expect(page.locator('text=/logged out|sign in|login/i, [data-testid="login-page"]')).toBeVisible();
         console.log('✅ User profile deletion attempted via UI');
       } else {
         console.log('⚠️ Delete account button not found, attempting API deletion...');
@@ -92,7 +94,11 @@ test.describe('Final User Profile Deletion', () => {
     await page.fill('[data-testid="login-password"]', TEST_USER.password);
     await page.click('[data-testid="login-submit"]');
     
-    await page.waitForTimeout(2000);
+    // Wait for either error message or staying on login page
+    await expect(page.locator('text=/invalid|error|failed/i, [data-testid="login-error"]')).toBeVisible().catch(async () => {
+      // If no error message, should still be on login page
+      await expect(page.locator('[data-testid="login-submit"], [data-testid="login-form"]')).toBeVisible();
+    });
     
     // Should still be on login page or see error message
     const currentUrl = page.url();
@@ -102,7 +108,7 @@ test.describe('Final User Profile Deletion', () => {
       console.log('✅ User deletion verified - login failed as expected');
     } else {
       // Check for error message
-      const errorExists = await page.locator('text=/invalid|error|failed/i').first().isVisible().catch(() => false);
+      const errorExists = await expect(page.locator('text=/invalid|error|failed/i')).toBeVisible().catch(() => false);
       if (errorExists) {
         console.log('✅ User deletion verified - login error displayed');
       } else {

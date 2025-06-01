@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { motion } from 'framer-motion';
 // Import schema-derived types and mappers
 import { 
   DisplayGallery, 
@@ -69,6 +70,44 @@ export function ThemedGalleryView({ gallery, isOwner = false }: ThemedGalleryVie
   const imagesForDisplay = mapGalleryImagesToDisplayImages(gallery.images);
 
   const renderGalleryContent = () => {
+    // Handle empty gallery state
+    if (gallery.images.length === 0) {
+      return (
+        <div className="text-center py-12" data-testid="empty-gallery-state">
+          <div className="text-gray-400 mb-4">
+            <svg 
+              className="w-16 h-16 mx-auto"
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={1.5} 
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
+              />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
+            No images yet
+          </h3>
+          <p className="text-gray-500 dark:text-gray-500">
+            This gallery doesn&apos;t have any images.
+          </p>
+          {isOwner && (
+            <button
+              onClick={() => window.location.href = `/galleries/${gallery.id}/edit`}
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              data-testid="add-images-cta-button"
+            >
+              Add Images
+            </button>
+          )}
+        </div>
+      );
+    }
+
     switch (displayMode) {
       case 'carousel':
         return (
@@ -175,7 +214,15 @@ export function ThemedGalleryView({ gallery, isOwner = false }: ThemedGalleryVie
         </p>
       </div>
 
-      {renderGalleryContent()}
+      <motion.div 
+        data-testid="gallery-content" 
+        className="gallery-content"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        {renderGalleryContent()}
+      </motion.div>
 
       {/* Only show GalleryFullscreen when NOT in slideshow mode */}
       {fullscreenImageInfo && displayMode !== 'slideshow' && gallery.images[fullscreenImageInfo.originalIndex] && (

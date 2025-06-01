@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { TestHelpers } from './test-helpers';
 import { TEST_ASSETS } from './test-assets';
+import { OptimizedWaitHelpers } from './optimized-wait-helpers';
 
 // Configure to run serially to avoid race conditions with shared user data
 test.describe.configure({ mode: 'serial' });
@@ -53,13 +54,12 @@ test.describe('Gallery Management E2E', () => {
     // Make gallery public
     await page.getByTestId('gallery-public').check();
 
-    // Step 3: Add images to gallery
-    const selectImagesButton = page.getByTestId('select-images-button');
-    await expect(selectImagesButton).toBeVisible();
-    await selectImagesButton.click();
-
-    // Wait for Select Images Dialog to open
-    await expect(page.getByTestId('select-images-search-input')).toBeVisible();
+    // Step 3: Add images to gallery with optimized modal handling
+    await OptimizedWaitHelpers.waitForModalOpen(
+      page, 
+      '[data-testid="select-images-button"]', 
+      '[data-testid="select-images-modal-overlay"]'
+    );
 
     // Search for images if any exist
     const imageCards = page.locator('[data-testid^="select-images-image-card-"]');
@@ -80,8 +80,12 @@ test.describe('Gallery Management E2E', () => {
       // Verify dialog closes
       await expect(page.getByTestId('select-images-search-input')).not.toBeVisible();
     } else {
-      // Close dialog if no images available
-      await page.getByTestId('select-images-close-button').click();
+      // Close modal if no images available with optimized method
+      await OptimizedWaitHelpers.safeModalClose(
+        page, 
+        '[data-testid="select-images-modal-overlay"]', 
+        '[data-testid="select-images-close-button"]'
+      );
     }
 
     // Step 4: Create the gallery
@@ -106,14 +110,21 @@ test.describe('Gallery Management E2E', () => {
       await expect(page.getByTestId('gallery-title')).toHaveValue(galleryTitle);
       await expect(page.getByTestId('gallery-description')).toHaveValue(galleryDescription);
 
-      // Step 7: Test adding more images in edit mode
+      // Step 7: Test adding more images in edit mode with optimized modal handling
       const editSelectImagesButton = page.getByTestId('select-images-button');
       if (await editSelectImagesButton.isVisible()) {
-        await editSelectImagesButton.click();
+        await OptimizedWaitHelpers.waitForModalOpen(
+          page, 
+          '[data-testid="select-images-button"]', 
+          '[data-testid="select-images-modal-overlay"]'
+        );
 
-        // Wait for dialog and close it (just testing the flow)
-        await expect(page.getByTestId('select-images-search-input')).toBeVisible();
-        await page.getByTestId('select-images-close-button').click();
+        // Test quick close with optimized method
+        await OptimizedWaitHelpers.safeModalClose(
+          page, 
+          '[data-testid="select-images-modal-overlay"]', 
+          '[data-testid="select-images-close-button"]'
+        );
       }
 
       // Step 8: Test image management (if images exist in gallery)
@@ -171,21 +182,23 @@ test.describe('Gallery Management E2E', () => {
     const selectImagesButton = page.getByTestId('select-images-button');
     await selectImagesButton.click();
 
-    // Test search functionality
-    const searchInput = page.getByTestId('select-images-search-input');
-    await searchInput.fill('test');
-    await page.waitForTimeout(1000); // Wait for debounced search
+    // Test search functionality with optimized search
+    await OptimizedWaitHelpers.waitForSearchResults(page, '[data-testid="select-images-search-input"]', 'test', '[data-testid^="select-images-image-card-"]');
 
     // Test tag filtering
     const tagFilters = page.locator('[data-testid^="select-images-tag-filter-"]');
     if (await tagFilters.count() > 0) {
       await tagFilters.first().click();
-      await page.waitForTimeout(500);
+      await OptimizedWaitHelpers.waitForDynamicContent(page, '[data-testid^="select-images-image-card-"]');
     }
 
-    // Clear search and close dialog
-    await searchInput.clear();
-    await page.getByTestId('select-images-close-button').click();
+    // Clear search and close modal with optimized method
+    await OptimizedWaitHelpers.waitForSearchResults(page, '[data-testid="select-images-search-input"]', '', '[data-testid^="select-images-image-card-"]');
+    await OptimizedWaitHelpers.safeModalClose(
+      page, 
+      '[data-testid="select-images-modal-overlay"]', 
+      '[data-testid="select-images-close-button"]'
+    );
   });
 
   test('gallery view selector and display modes', async ({ page }) => {
@@ -198,10 +211,12 @@ test.describe('Gallery Management E2E', () => {
 
     if (await compactViewButton.isVisible()) {
       await compactViewButton.click();
-      await page.waitForTimeout(500);
+      // Wait for view change to complete
+      await OptimizedWaitHelpers.waitForGalleryItems(page);
       
       await gridViewButton.click();
-      await page.waitForTimeout(500);
+      // Wait for view change to complete
+      await OptimizedWaitHelpers.waitForGalleryItems(page);
     }
   });
 
@@ -234,8 +249,8 @@ test.describe('Gallery Management E2E', () => {
     const logoutButton = page.getByTestId('logout-button');
     if (await logoutButton.isVisible()) {
       await logoutButton.click();
-      // Wait for logout to complete
-      await page.waitForTimeout(2000);
+      // Wait for logout to complete - check for redirect to home or login page
+      await page.waitForURL(/\/(auth\/login)?$/, { timeout: 5000 });
     }
   });
 
@@ -258,9 +273,14 @@ test.describe('Gallery Management E2E', () => {
         const saveButton = page.getByTestId('edit-gallery-save-button');
         await saveButton.click();
         
-        // Note: Toast notifications should disappear completely after timeout
-        // This tests the fix for the toast notification bug
-        await page.waitForTimeout(3000);
+        // Wait for save operation to complete
+        await OptimizedWaitHelpers.waitForSaveComplete(page);
+        
+        // Verify toast notification appears and then disappears
+        const toast = page.locator('[data-testid="toast-notification"]');
+        if (await toast.isVisible()) {
+          await toast.waitFor({ state: 'hidden', timeout: 5000 });
+        }
       }
     }
   });
@@ -275,12 +295,15 @@ test.describe('Gallery Management E2E', () => {
     if (await tagFilterButtons.count() > 0) {
       // Click on a tag filter
       await tagFilterButtons.first().click();
-      await page.waitForTimeout(500);
+      // Wait for filter to be applied and images to update
+      await OptimizedWaitHelpers.waitForImageGrid(page);
       
       // Click "All" to clear filter
       const allFilterButton = page.getByTestId('image-grid-tag-filter-all');
       if (await allFilterButton.isVisible()) {
         await allFilterButton.click();
+        // Wait for filter to be cleared
+        await OptimizedWaitHelpers.waitForImageGrid(page);
       }
     }
   });

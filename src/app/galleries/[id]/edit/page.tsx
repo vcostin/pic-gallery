@@ -41,6 +41,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
     confirmRemoveImage,    
     cancelRemoveImage,     
     showSuccessToast,      
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     setShowSuccessToast,
     toastMessage,
     hideToast           
@@ -437,7 +438,7 @@ export default function EditGalleryPage({ params }: { params: Promise<{ id: stri
         />
         
         {toastMessage && showSuccessToast && (
-          <div className="fixed bottom-4 right-4 pointer-events-none" data-testid="toast-container">
+          <div className="fixed bottom-4 left-4 pointer-events-none z-50" data-testid="toast-container">
             <SuccessMessage 
               message={toastMessage} 
               className="mb-4 pointer-events-auto" 

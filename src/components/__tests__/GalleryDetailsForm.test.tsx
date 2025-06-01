@@ -4,7 +4,6 @@ import { GalleryDetailsForm } from '@/components/GalleryDetails';
 
 // Mock react-hook-form
 jest.mock('react-hook-form', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
   Controller: ({ name, control, render }: { name: string; control: unknown; render: (props: any) => React.ReactNode }) => {
     // Simple mock implementation that calls render with mocked field props
     return render({

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { TEST_USER } from './auth-config';
+import { OptimizedWaitHelpers } from './optimized-wait-helpers';
 
 test.describe('Single User Strategy Test', () => {
   test('verify single user strategy setup', async ({ page }) => {
@@ -15,8 +16,8 @@ test.describe('Single User Strategy Test', () => {
     await page.fill('input[type="password"]', TEST_USER.password);
     await page.click('button[type="submit"]');
     
-    // Wait for navigation
-    await page.waitForTimeout(3000);
+    // Wait for navigation with optimized helper
+    await OptimizedWaitHelpers.waitForNavigation(page);
     
     // Check if we're logged in (not on auth page anymore)
     const currentUrl = page.url();

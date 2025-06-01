@@ -40,7 +40,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(({
 
 Card.displayName = 'Card';
 
-export interface CardHeaderProps {
+export interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
 }
@@ -48,15 +48,15 @@ export interface CardHeaderProps {
 /**
  * CardHeader component for card title area
  */
-export function CardHeader({ children, className = '' }: CardHeaderProps) {
+export function CardHeader({ children, className = '', ...otherProps }: CardHeaderProps) {
   return (
-    <div className={`p-4 border-b border-gray-200 dark:border-gray-700 ${className}`}>
+    <div className={`p-4 border-b border-gray-200 dark:border-gray-700 ${className}`} {...otherProps}>
       {children}
     </div>
   );
 }
 
-export interface CardTitleProps {
+export interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
   children: React.ReactNode;
   className?: string;
 }
@@ -64,15 +64,15 @@ export interface CardTitleProps {
 /**
  * CardTitle component for card titles
  */
-export function CardTitle({ children, className = '' }: CardTitleProps) {
+export function CardTitle({ children, className = '', ...otherProps }: CardTitleProps) {
   return (
-    <h3 className={`text-lg font-semibold text-gray-900 dark:text-white ${className}`}>
+    <h3 className={`text-lg font-semibold text-gray-900 dark:text-white ${className}`} {...otherProps}>
       {children}
     </h3>
   );
 }
 
-export interface CardDescriptionProps {
+export interface CardDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {
   children: React.ReactNode;
   className?: string;
 }
@@ -80,15 +80,15 @@ export interface CardDescriptionProps {
 /**
  * CardDescription component for card descriptions
  */
-export function CardDescription({ children, className = '' }: CardDescriptionProps) {
+export function CardDescription({ children, className = '', ...otherProps }: CardDescriptionProps) {
   return (
-    <p className={`text-sm text-gray-600 dark:text-gray-400 ${className}`}>
+    <p className={`text-sm text-gray-600 dark:text-gray-400 ${className}`} {...otherProps}>
       {children}
     </p>
   );
 }
 
-export interface CardContentProps {
+export interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
 }
@@ -96,15 +96,15 @@ export interface CardContentProps {
 /**
  * CardContent component for main card content
  */
-export function CardContent({ children, className = '' }: CardContentProps) {
+export function CardContent({ children, className = '', ...otherProps }: CardContentProps) {
   return (
-    <div className={`p-4 ${className}`}>
+    <div className={`p-4 ${className}`} {...otherProps}>
       {children}
     </div>
   );
 }
 
-export interface CardFooterProps {
+export interface CardFooterProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
 }
@@ -112,9 +112,9 @@ export interface CardFooterProps {
 /**
  * CardFooter component for card actions area
  */
-export function CardFooter({ children, className = '' }: CardFooterProps) {
+export function CardFooter({ children, className = '', ...otherProps }: CardFooterProps) {
   return (
-    <div className={`p-4 border-t border-gray-200 dark:border-gray-700 ${className}`}>
+    <div className={`p-4 border-t border-gray-200 dark:border-gray-700 ${className}`} {...otherProps}>
       {children}
     </div>
   );
@@ -123,14 +123,14 @@ export function CardFooter({ children, className = '' }: CardFooterProps) {
 /**
  * CardImage component for card image area
  */
-export interface CardImageProps {
+export interface CardImageProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
 }
 
-export function CardImage({ children, className = '' }: CardImageProps) {
+export function CardImage({ children, className = '', ...otherProps }: CardImageProps) {
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} {...otherProps}>
       {children}
     </div>
   );

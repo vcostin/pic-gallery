@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { z } from 'zod';
-import { Controller, useController, Control, FieldValues } from 'react-hook-form';
+import { useController, Control, FieldValues } from 'react-hook-form';
 import { Badge } from '@/components/ui/Badge';
 import { X } from 'lucide-react';
 
@@ -44,7 +44,7 @@ export function TagsInput({
   } = useController({
     name,
     control,
-    defaultValue: [] as any
+    defaultValue: [] as string[]
   });
   
   // Parse and detect tags from input field
@@ -82,7 +82,7 @@ export function TagsInput({
 
   // Handle remove tag action
   const removeTag = (indexToRemove: number) => {
-    onChange(value.filter((_: any, i: number) => i !== indexToRemove));
+    onChange(value.filter((_: string, i: number) => i !== indexToRemove));
   };
 
   // Handle initial tags (if provided)

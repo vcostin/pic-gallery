@@ -118,7 +118,7 @@ export async function fetchApi<T extends z.ZodTypeAny>(
   try {
     // Try to validate the whole response first (for ApiSuccessResponseSchema)
     return dataSchema.parse(responseData);
-  } catch (_) {
+  } catch {
     // If that fails, try to validate just the data field
     // This handles both directly using a schema for the data portion
     // and using a wrapped schema that expects the full API response format
