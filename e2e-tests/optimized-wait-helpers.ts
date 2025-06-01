@@ -257,6 +257,10 @@ export class OptimizedWaitHelpers {
       return false;
     }
   }
+  /**
+   * Wait for dynamic content to load and appear
+   * Uses adaptive retry strategy for better CI environment reliability  
+   */
   static async waitForDynamicContent(page: Page, containerSelector: string, minItems: number = 0) {
     try {
       // First check if container exists at all
@@ -274,23 +278,41 @@ export class OptimizedWaitHelpers {
         // Wait for at least minItems, not exactly minItems
         const locator = page.locator(itemSelector);
         
-        // Wait for elements to appear with a retry mechanism
+        // Adaptive retry strategy for CI environments
+        const isCI = process.env.CI === 'true';
+        const baseInterval = isCI ? 750 : 500; // Slower in CI
+        const maxTimeout = isCI ? 25000 : 15000; // Longer timeout in CI
+        const maxAttempts = Math.ceil(maxTimeout / baseInterval);
+        
         let attempts = 0;
-        const maxAttempts = 30; // 15 seconds with 500ms intervals
+        let lastCount = 0;
+        let stableCount = 0; // Track stable consecutive counts
         
         while (attempts < maxAttempts) {
           const count = await locator.count();
+          
+          // If we have enough items, check stability
           if (count >= minItems) {
-            break;
+            if (count === lastCount) {
+              stableCount++;
+              // Require 2 stable checks in CI, 1 in local
+              if (stableCount >= (isCI ? 2 : 1)) {
+                break;
+              }
+            } else {
+              stableCount = 0; // Reset stability counter
+            }
           }
-          await page.waitForTimeout(500);
+          
+          lastCount = count;
+          await page.waitForTimeout(baseInterval);
           attempts++;
         }
         
-        // Final check
+        // Final check with better error messaging
         const finalCount = await locator.count();
         if (finalCount < minItems) {
-          throw new Error(`Expected at least ${minItems} items, but found ${finalCount}`);
+          throw new Error(`Expected at least ${minItems} items, but found ${finalCount} after ${attempts} attempts (${maxTimeout}ms timeout)`);
         }
       }
       
