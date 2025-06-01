@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { TestHelpers } from './test-helpers';
+import { OptimizedWaitHelpers } from './optimized-wait-helpers';
 
 /**
  * Test for User Deletion in E2E Cleanup
@@ -64,8 +65,8 @@ test.describe('E2E User Deletion', () => {
       console.log('Performing complete cleanup with user deletion...');
       await TestHelpers.completeCleanup(page);
       
-      // Step 4: Wait for potential redirect and verify we're logged out
-      await page.waitForTimeout(3000); // Give time for any redirects or state changes
+      // Step 4: Wait for cleanup completion and verify we're logged out
+      await OptimizedWaitHelpers.waitForNavigation(page);
       
       // Either we're on the login page or we can navigate there and verify
       await page.goto('/auth/login');

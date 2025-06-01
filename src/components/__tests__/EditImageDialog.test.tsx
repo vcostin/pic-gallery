@@ -39,7 +39,6 @@ jest.mock('next/navigation', () => ({
 // Mock Next.js Image component
 jest.mock('next/image', () => ({
   __esModule: true,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   default: (props: any) => <div data-testid="mock-image" {...props} />
 }));
 
@@ -54,6 +53,9 @@ const mockImage = {
   title: 'Test Image',
   description: 'Test description',
   url: '/test.jpg',
+  userId: 'user-123',
+  createdAt: new Date(),
+  updatedAt: new Date(),
   tags: [
     { id: 'tag1', name: 'nature' },
     { id: 'tag2', name: 'landscape' }

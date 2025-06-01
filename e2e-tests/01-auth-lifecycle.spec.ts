@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { TEST_USER } from './auth-config';
 import { TestHelpers } from './test-helpers';
+import { OptimizedWaitHelpers } from './optimized-wait-helpers';
 
 // Auth tests using the single test user - user persists after these tests
 // Prerequisites: Global setup has deleted any existing test user and created a fresh one
@@ -20,7 +21,7 @@ test.describe('Authentication Lifecycle (User Persists)', () => {
       console.log('✅ User exists and can login');
       
       // Verify we're logged in by checking dashboard or user indicator
-      await page.waitForTimeout(1000);
+      await OptimizedWaitHelpers.waitForNavigation(page);
       const currentUrl = page.url();
       expect(currentUrl).not.toContain('/auth/');
       
@@ -45,8 +46,8 @@ test.describe('Authentication Lifecycle (User Persists)', () => {
     const loginSuccess = await TestHelpers.quickLogin(page, TEST_USER.email, TEST_USER.password);
     expect(loginSuccess).toBe(true);
     
-    // Verify login worked
-    await page.waitForTimeout(1000);
+    // Verify login worked with optimized navigation wait
+    await OptimizedWaitHelpers.waitForNavigation(page);
     const urlAfterLogin = page.url();
     expect(urlAfterLogin).not.toContain('/auth/');
     

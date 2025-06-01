@@ -13,6 +13,16 @@ const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     ignores: ["**/*.cjs", "node_modules/**", ".next/**"]
+  },
+  // Overrides for test files
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**/*.ts", "**/__tests__/**/*.tsx", "**/test-utils/**/*.ts", "**/test-utils/**/*.tsx"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/ban-ts-comment": "off"
+    }
   }
 ];
 

@@ -151,7 +151,7 @@ export function useEnhancedGalleryImages(
     } finally {
       setLoading(false);
     }
-  }, [galleryId, images.length]);
+  }, [galleryId, images.length, showToast]);
 
   // Remove image from gallery (local state only, not API)
   const removeImage = useCallback(async (imageInGalleryId: string) => {

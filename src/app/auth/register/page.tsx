@@ -53,9 +53,14 @@ export default function RegisterPage() {
       
       // Redirect to login page after successful registration
       router.push('/auth/login?registered=true');
-    } catch (error: any) {
-      if (error.response?.data?.error) {
-        setError(error.response.data.error);
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { error?: string } } };
+        if (axiosError.response?.data?.error) {
+          setError(axiosError.response.data.error);
+        } else {
+          setError('An error occurred during registration. Please try again.');
+        }
       } else {
         setError('An error occurred during registration. Please try again.');
       }

@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { PaginatedImagesResponseSchema } from '@/lib/schemas';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner, ErrorMessage, EmptyState } from '@/components/StatusMessages';
-import { ImageService, type PaginatedImages } from '@/lib/services/imageService';
+import { ImageService } from '@/lib/services/imageService';
 import logger from '@/lib/logger';
 
 // Define type for Image based on PaginatedImagesResponseSchema

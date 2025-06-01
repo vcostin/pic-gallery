@@ -18,6 +18,23 @@
 # next.js
 /.next/
 /out/
+/.next/cache
+/.next/server
+/.next/static
+/.next/standalone
+
+# Build cache optimization
+/.next/cache
+/.next/server
+/.next/static
+/.next/standalone
+
+# Turbopack specific
+/.next/trace-turbopack
+/.turbopack/
+
+# Webpack cache
+.webpack/
 
 # production
 /build
@@ -34,7 +51,7 @@
 
 # Prisma
 /prisma/*.db
-/src/lib/generated/prisma-client
+# Note: Prisma client now uses standard @prisma/client location in node_modules
 
 # macOS specific
 .DS_Store

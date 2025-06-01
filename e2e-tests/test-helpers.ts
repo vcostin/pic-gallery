@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { OptimizedWaitHelpers } from './optimized-wait-helpers';
 
 /**
  * Consolidated test helper functions combining the best of TestHelpers and SimpleHelpers
@@ -129,8 +130,8 @@ export class TestHelpers {
         return false;
       }
       
-      // Wait for navigation or error
-      await page.waitForTimeout(2000);
+      // Wait for navigation or error with optimized helper
+      await OptimizedWaitHelpers.waitForNavigation(page);
       
       return await this.isAuthenticated(page);
     } catch (error) {
@@ -158,7 +159,7 @@ export class TestHelpers {
           const element = page.locator(selector).first();
           if (await element.isVisible({ timeout: 2000 })) {
             await element.click();
-            await page.waitForTimeout(1000);
+            await OptimizedWaitHelpers.waitForNavigation(page);
             return true;
           }
         } catch {
@@ -264,9 +265,8 @@ export class TestHelpers {
         await page.fill('[data-testid="gallery-title"]', galleryName);
         await page.fill('[data-testid="gallery-description"]', 'Test gallery description');
         
-        // Submit form
-        await page.click('[data-testid="create-gallery-submit"]');
-        await page.waitForTimeout(2000);
+        // Submit form with optimized wait
+        await OptimizedWaitHelpers.waitForFormSubmission(page, '[data-testid="create-gallery-submit"]');
         
         // Get gallery ID from URL or response
         const url = page.url();
@@ -417,9 +417,9 @@ export class TestHelpers {
       }
     }
     
-    // Wait for database consistency after uploads
+    // Wait for database consistency after uploads with optimized wait
     console.log('Waiting for database consistency after uploads...');
-    await page.waitForTimeout(3000);
+    await OptimizedWaitHelpers.waitForNavigation(page);
     
     return uploadedImageNames;
   }

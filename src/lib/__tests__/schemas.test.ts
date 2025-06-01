@@ -3,11 +3,8 @@
  * Focus on testing the preprocessing logic in FlexibleImagesResponseSchema
  */
 import { 
-  FlexibleImagesResponseSchema, 
-  ImageSchema, 
-  PaginatedImagesResponseSchema 
+  FlexibleImagesResponseSchema
 } from '@/lib/schemas';
-import { z } from 'zod';
 
 describe('FlexibleImagesResponseSchema', () => {
   // Sample image data for tests
@@ -59,7 +56,7 @@ describe('FlexibleImagesResponseSchema', () => {
 
     it('should handle empty array', () => {
       // Arrange: An empty array response
-      const emptyArrayResponse = [];
+      const emptyArrayResponse: unknown[] = [];
       
       // Act: Parse with flexible schema
       const result = FlexibleImagesResponseSchema.parse(emptyArrayResponse);

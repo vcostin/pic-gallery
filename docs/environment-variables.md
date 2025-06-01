@@ -22,6 +22,7 @@ Most application settings can be overridden through environment variables. The d
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | Required |
+| `PRISMA_QUERY_LOG` | Enable Prisma query logging. Set to "true" to log all database queries to console | `false` |
 
 ### E2E Testing
 
@@ -71,6 +72,9 @@ NEXTAUTH_SECRET="your-secure-secret-key-here"
 NEXTAUTH_URL="http://localhost:3000"
 BCRYPT_SALT_ROUNDS=12
 ENABLE_REGISTRATION=true
+
+# Database configuration
+PRISMA_QUERY_LOG="false"  # Set to "true" to enable query logging for debugging
 
 # E2E Testing
 E2E_TEST_USER_EMAIL="test@example.com"

@@ -3,6 +3,29 @@ import path from 'path';
 import fs from 'fs';
 import { TEST_USER, TestUser } from './auth-config';
 
+/**
+ * Wait for registration completion - either success or error
+ * Encapsulates the complex waitForFunction logic for better reusability
+ */
+async function waitForRegistrationCompletion(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const url = window.location.href;
+    const hasError = document.querySelector('[data-testid="error-message"]') ||
+                    document.querySelector('.error') ||
+                    document.querySelector('[role="alert"]') ||
+                    document.body.textContent?.includes('already exists') ||
+                    document.body.textContent?.includes('User already registered');
+    
+    // Registration success: redirect to login page with registered=true OR direct to protected page
+    const registrationSuccess = url.includes('/auth/login?registered=true') ||
+                               url.includes('/dashboard') || 
+                               url.includes('/galleries') || 
+                               (!url.includes('/auth/') && url.includes('/'));
+    
+    return registrationSuccess || hasError;
+  }, { timeout: 15000 });
+}
+
 async function createUser(page: Page, user: TestUser): Promise<void> {
   console.log(`Creating user: ${user.email}`);
   
@@ -18,13 +41,17 @@ async function createUser(page: Page, user: TestUser): Promise<void> {
 
   // Submit registration
   await page.click('button[type="submit"]');
-  await page.waitForTimeout(2000);
+  
+  // Wait for either success redirect or error message with better error detection
+  await waitForRegistrationCompletion(page);
 
   // Check if registration was successful or user already exists
   const currentUrl = page.url();
+  const pageContent = await page.textContent('body');
+  
   if (currentUrl.includes('/dashboard') || currentUrl.includes('/galleries') || (currentUrl.includes('/') && !currentUrl.includes('/auth/'))) {
     console.log(`✅ User ${user.email} registered and logged in successfully`);
-  } else if (currentUrl.includes('/auth/login')) {
+  } else if (currentUrl.includes('/auth/login?registered=true') || currentUrl.includes('/auth/login')) {
     // Registration successful, now need to login
     console.log(`✅ User ${user.email} registered, now logging in...`);
     
@@ -35,6 +62,18 @@ async function createUser(page: Page, user: TestUser): Promise<void> {
     // Wait for successful login - check for redirect to protected page
     await page.waitForURL((url) => !url.toString().includes('/auth/'), { timeout: 10000 });
     
+    console.log(`✅ User ${user.email} logged in successfully`);
+  } else if (pageContent?.includes('already exists') || pageContent?.includes('User already registered')) {
+    console.log(`ℹ️  User ${user.email} already exists, attempting login...`);
+    
+    // Navigate to login page
+    await page.goto('/auth/login');
+    await page.fill('input[type="email"]', user.email);
+    await page.fill('input[type="password"]', user.password);
+    await page.click('button[type="submit"]');
+    
+    // Wait for successful login
+    await page.waitForURL((url) => !url.toString().includes('/auth/'), { timeout: 10000 });
     console.log(`✅ User ${user.email} logged in successfully`);
   } else {
     // User might already exist, try logging in

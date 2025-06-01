@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import { apiSuccess, apiUnauthorized, withApiHandler } from "@/lib/apiResponse";
 import { getPaginationOptions, formatPaginatedResponse } from "@/lib/dataFetching";
-import { Image, Prisma } from "@/lib/generated/prisma-client";
+import { Image, Prisma } from "@prisma/client";
 import logger from "@/lib/logger";
 import { CreateImageSchema } from "@/lib/schemas";
 

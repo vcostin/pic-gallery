@@ -1,5 +1,4 @@
 import { getServerSession } from "next-auth";
-import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import logger from "@/lib/logger";

@@ -1,17 +1,16 @@
 import { test, expect } from '@playwright/test';
+import { OptimizedWaitHelpers } from './optimized-wait-helpers';
 
 // This test simply creates a basic gallery for testing  
 test('create a basic gallery', async ({ page, context }) => {
-  console.log('Starting basic gallery creation...');
-  
-  // Try to load the authentication state if it exists
-  try {
-    await context.addCookies([]);
-    await page.goto('/galleries');
-    
-    // Check if we're redirected to login
-    await page.waitForTimeout(2000);
-    if (page.url().includes('/auth/login')) {
+  console.log('Starting basic gallery creation...');    // Try to load the authentication state if it exists
+    try {
+      await context.addCookies([]);
+      await page.goto('/galleries');
+      
+      // Wait for page to load and check authentication status
+      await page.waitForLoadState('networkidle');
+      if (page.url().includes('/auth/login')) {
       console.log('Not authenticated, performing login...');
       // Login
       await page.getByTestId('login-email').fill(process.env.E2E_TEST_USER_EMAIL || 'e2e-test@example.com');
@@ -52,8 +51,8 @@ test('create a basic gallery', async ({ page, context }) => {
   console.log('Creating a new gallery...');
   await page.goto('/galleries/create');
   
-  // Add a wait and log what we see
-  await page.waitForTimeout(3000);
+  // Wait for page to fully load and form to be ready
+  await OptimizedWaitHelpers.waitForFormReady(page);
   const title = await page.title();
   console.log('Page title:', title);
   

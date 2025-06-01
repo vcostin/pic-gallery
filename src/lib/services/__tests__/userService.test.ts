@@ -1,6 +1,4 @@
 import { UserService, type User } from '@/lib/services/userService';
-import * as schemas from '@/lib/schemas';
-import { z } from 'zod';
 import { fetchApi } from '@/lib/apiUtils';
 
 // Mock the fetchApi function

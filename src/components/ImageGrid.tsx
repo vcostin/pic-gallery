@@ -9,11 +9,6 @@ import logger from '@/lib/logger';
 import { ImageTags } from '@/components/ui/ImageTags';
 import { type Image as ImageType } from '@/lib/services/imageService';
 
-interface Tag {
-  id: string;
-  name: string;
-}
-
 interface ImageGridProps {
   images: ImageType[];
 }

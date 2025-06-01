@@ -102,11 +102,9 @@ test.describe('E2E Cleanup System', () => {
     // Clean up test data (but keep user account)
     await TestHelpers.cleanupTestData(page, false);
     
-    // Wait a moment for cleanup to complete
-    await page.waitForTimeout(1000);
-    
-    // Verify we're still authenticated (user account should still exist)
+    // Wait for cleanup to complete by checking that galleries page loads
     await page.goto('/galleries');
+    await expect(page.locator('[data-testid="galleries-page"], h1, [role="main"]')).toBeVisible();
     const stillAuthenticated = await TestHelpers.isAuthenticated(page);
     expect(stillAuthenticated).toBe(true);
     console.log('✅ User account preserved after data cleanup');
@@ -152,11 +150,9 @@ test.describe('E2E Cleanup System', () => {
     const cleanupSuccess = await TestHelpers.cleanupTestData(page, false);
     console.log('Cleanup result:', cleanupSuccess);
     
-    // Wait for cleanup to complete
-    await page.waitForTimeout(1000);
-    
-    // Verify we're still authenticated after data cleanup
+    // Wait for cleanup to complete by ensuring galleries page loads properly
     await page.goto('/galleries');
+    await expect(page.locator('[data-testid="galleries-page"], h1, [role="main"]')).toBeVisible();
     const userStillAuthenticated = await TestHelpers.isAuthenticated(page);
     expect(userStillAuthenticated).toBe(true);
     console.log('✅ User account preserved for final profile deletion test');

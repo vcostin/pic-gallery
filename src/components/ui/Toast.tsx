@@ -1,7 +1,8 @@
 // Mock Toast.tsx
+/* eslint-disable @typescript-eslint/no-unused-vars */
 export const toast = {
-  error: (message: string) => {},
-  success: (message: string) => {},
-  info: (message: string) => {},
-  warning: (message: string) => {},
+  error: (_message?: string) => {},
+  success: (_message?: string) => {},
+  info: (_message?: string) => {},
+  warning: (_message?: string) => {},
 };
