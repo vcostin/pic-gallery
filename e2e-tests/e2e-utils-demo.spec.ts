@@ -4,7 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { E2EUtils } from './enhanced-e2e-utils';
+import { E2EUtils } from './e2e-utils';
 
 test.describe('E2E Utilities Demo', () => {
   test.beforeEach(async ({ page }) => {

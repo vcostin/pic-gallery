@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Locator } from '@playwright/test';
 import { TEST_USER } from './auth-config';
 import { TestHelpers } from './test-helpers';
 
@@ -28,7 +28,7 @@ test.describe('Final User Profile Deletion', () => {
         '#delete-account'
       ];
       
-      let deleteButton = null;
+      let deleteButton: Locator | null = null;
       for (const selector of deleteSelectors) {
         try {
           const candidate = page.locator(selector).first();
@@ -94,11 +94,13 @@ test.describe('Final User Profile Deletion', () => {
     await page.fill('[data-testid="login-password"]', TEST_USER.password);
     await page.click('[data-testid="login-submit"]');
     
-    // Wait for either error message or staying on login page
-    await expect(page.locator('text=/invalid|error|failed/i, [data-testid="login-error"]')).toBeVisible().catch(async () => {
+    // Check if error message exists (using proper boolean check)
+    const errorExists = await page.locator('text=/invalid|error|failed/i, [data-testid="login-error"]').isVisible().catch(() => false);
+    
+    if (!errorExists) {
       // If no error message, should still be on login page
       await expect(page.locator('[data-testid="login-submit"], [data-testid="login-form"]')).toBeVisible();
-    });
+    }
     
     // Should still be on login page or see error message
     const currentUrl = page.url();
@@ -106,14 +108,10 @@ test.describe('Final User Profile Deletion', () => {
     
     if (isStillOnLogin) {
       console.log('✅ User deletion verified - login failed as expected');
+    } else if (errorExists) {
+      console.log('✅ User deletion verified - login error displayed');
     } else {
-      // Check for error message
-      const errorExists = await expect(page.locator('text=/invalid|error|failed/i')).toBeVisible().catch(() => false);
-      if (errorExists) {
-        console.log('✅ User deletion verified - login error displayed');
-      } else {
-        console.log('⚠️ User deletion verification inconclusive');
-      }
+      console.log('⚠️ User deletion verification inconclusive');
     }
   });
 });
