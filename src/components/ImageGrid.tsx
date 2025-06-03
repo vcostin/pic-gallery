@@ -11,6 +11,7 @@ import { type Image as ImageType } from '@/lib/services/imageService';
 
 interface ImageGridProps {
   images: ImageType[];
+  'data-testid'?: string;
 }
 
 // Memoized image card component to prevent unnecessary re-renders
@@ -77,7 +78,7 @@ const TagFilterButton = memo(({
 
 TagFilterButton.displayName = 'TagFilterButton';
 
-export function ImageGrid({ images }: ImageGridProps) {
+export function ImageGrid({ images, 'data-testid': testId }: ImageGridProps) {
   const [editingImage, setEditingImage] = useState<ImageType | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
   const [isInitializing, setIsInitializing] = useState(true);
@@ -178,7 +179,7 @@ export function ImageGrid({ images }: ImageGridProps) {
             description="Try selecting a different tag filter."
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" data-testid={testId}>
             {filteredImages.map(image => (
               <ImageCard 
                 key={image.id} 

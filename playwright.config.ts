@@ -145,6 +145,7 @@ export default defineConfig({
         '**/authenticated.spec.ts',
         '**/comprehensive-gallery-workflow.spec.ts',
         '**/gallery-management.spec.ts',
+        '**/enhanced-upload.spec.ts',
         '**/setup-basic-gallery.spec.ts',
         '**/setup-gallery.spec.ts',
       ],

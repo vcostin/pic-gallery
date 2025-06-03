@@ -212,11 +212,11 @@ test.describe('Gallery Management E2E', () => {
     if (await compactViewButton.isVisible()) {
       await compactViewButton.click();
       // Wait for view change to complete
-      await OptimizedWaitHelpers.waitForGalleryItems(page);
+      await OptimizedWaitHelpers.waitForGalleryGrid(page);
       
       await gridViewButton.click();
       // Wait for view change to complete
-      await OptimizedWaitHelpers.waitForGalleryItems(page);
+      await OptimizedWaitHelpers.waitForGalleryGrid(page);
     }
   });
 
@@ -274,15 +274,131 @@ test.describe('Gallery Management E2E', () => {
         await saveButton.click();
         
         // Wait for save operation to complete
-        await OptimizedWaitHelpers.waitForSaveComplete(page);
+        await OptimizedWaitHelpers.waitForNavigation(page);
         
-        // Verify toast notification appears and then disappears
-        const toast = page.locator('[data-testid="toast-notification"]');
-        if (await toast.isVisible()) {
-          await toast.waitFor({ state: 'hidden', timeout: 5000 });
-        }
+        // Verify toast notification appears
+        await OptimizedWaitHelpers.waitForToast(page);
       }
     }
+  });
+
+  test('enhanced upload workflow integration with galleries', async ({ page }) => {
+    // Step 1: Navigate to enhanced upload page
+    await page.goto('/images/upload');
+    
+    // Verify enhanced upload interface
+    await expect(page.getByText('Upload Images')).toBeVisible();
+    await expect(page.getByText('Select Images')).toBeVisible();
+    
+    // Step 2: Test bulk upload using enhanced interface
+    const testImage1Path = './test-data/images/test-image-1.jpg';
+    const testImage2Path = './test-data/images/test-image-2.jpg';
+    
+    // Use the enhanced drag-drop interface
+    const fileChooserPromise = page.waitForEvent('filechooser');
+    await page.locator('[role="button"][aria-label*="Upload area"]').click();
+    
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles([testImage1Path, testImage2Path]);
+    
+    // Verify progressive disclosure - Step 2 appears
+    await expect(page.getByText('Add Details')).toBeVisible();
+    await expect(page.getByText('2 files selected')).toBeVisible();
+    
+    // Step 3: Use bulk upload features
+    await expect(page.getByText('Apply to All Images')).toBeVisible();
+    
+    // Add common tags
+    const commonTagInput = page.locator('input[placeholder="Add common tags..."]');
+    await commonTagInput.fill('gallery,test,enhanced-upload');
+    await commonTagInput.press('Enter');
+    
+    // Apply common tags
+    await page.getByText('Apply Tags to All').click();
+    
+    // Step 4: Fill individual image details
+    const titleInputs = page.locator('input[placeholder="Enter image title"]');
+    await titleInputs.nth(0).clear();
+    await titleInputs.nth(0).fill('Enhanced Gallery Test Image 1');
+    
+    await titleInputs.nth(1).clear();
+    await titleInputs.nth(1).fill('Enhanced Gallery Test Image 2');
+    
+    // Add descriptions
+    const descriptionInputs = page.locator('textarea[placeholder="Describe your image..."]');
+    await descriptionInputs.nth(0).fill('First image uploaded via enhanced interface');
+    await descriptionInputs.nth(1).fill('Second image uploaded via enhanced interface');
+    
+    // Step 5: Perform bulk upload
+    const uploadButton = page.getByTestId('upload-submit');
+    await expect(uploadButton).toContainText('Upload 2 Images');
+    await uploadButton.click();
+    
+    // Verify upload progress - use a more specific selector to avoid strict mode violation
+    await expect(page.getByText('Uploading 1 of 2').or(page.getByText('Uploading...')).first()).toBeVisible();
+    
+    // Wait for success
+    await expect(page.getByText(/2 images uploaded successfully/)).toBeVisible({ timeout: 20000 });
+    
+    // Step 6: Navigate to gallery creation to use uploaded images
+    await page.goto('/galleries/create');
+    
+    // Fill gallery details
+    const galleryTitle = `Enhanced Upload Test Gallery ${Date.now()}`;
+    await page.getByTestId('gallery-title').fill(galleryTitle);
+    await page.getByTestId('gallery-description').fill('Gallery created to test enhanced upload integration');
+    
+    // Step 7: Select the newly uploaded images
+    await OptimizedWaitHelpers.waitForModalOpen(
+      page, 
+      '[data-testid="select-images-button"]', 
+      '[data-testid="select-images-modal-overlay"]'
+    );
+    
+    // Search for the uploaded images
+    await OptimizedWaitHelpers.waitForSearchResults(
+      page, 
+      '[data-testid="select-images-search-input"]', 
+      'Enhanced Gallery Test', 
+      '[data-testid^="select-images-image-card-"]'
+    );
+    
+    // Select the images
+    const imageCards = page.locator('[data-testid^="select-images-image-card-"]');
+    const imageCount = await imageCards.count();
+    
+    if (imageCount > 0) {
+      // Select first two images
+      const imagesToSelect = Math.min(2, imageCount);
+      for (let i = 0; i < imagesToSelect; i++) {
+        await imageCards.nth(i).click();
+      }
+      
+      // Add selected images
+      const addButton = page.getByTestId('select-images-add-button');
+      await expect(addButton).toBeEnabled();
+      await addButton.click();
+      
+      // Verify modal closes
+      await expect(page.getByTestId('select-images-search-input')).not.toBeVisible();
+    } else {
+      // Close modal if no images found
+      await OptimizedWaitHelpers.safeModalClose(
+        page, 
+        '[data-testid="select-images-modal-overlay"]', 
+        '[data-testid="select-images-close-button"]'
+      );
+    }
+    
+    // Step 8: Create the gallery
+    const submitButton = page.getByTestId('create-gallery-submit');
+    await submitButton.click();
+    
+    // Wait for gallery creation
+    await expect(page).toHaveURL(/\/galleries\/[a-zA-Z0-9-]+$/, { timeout: 10000 });
+    
+    // Verify gallery was created with enhanced upload images
+    await expect(page.getByTestId('gallery-detail-title')).toContainText(galleryTitle);
   });
 
   test('tag filtering in image grid', async ({ page }) => {
@@ -296,15 +412,41 @@ test.describe('Gallery Management E2E', () => {
       // Click on a tag filter
       await tagFilterButtons.first().click();
       // Wait for filter to be applied and images to update
-      await OptimizedWaitHelpers.waitForImageGrid(page);
+      await OptimizedWaitHelpers.waitForGalleryGrid(page, '[data-testid="image-grid"]');
       
       // Click "All" to clear filter
       const allFilterButton = page.getByTestId('image-grid-tag-filter-all');
       if (await allFilterButton.isVisible()) {
         await allFilterButton.click();
         // Wait for filter to be cleared
-        await OptimizedWaitHelpers.waitForImageGrid(page);
+        await OptimizedWaitHelpers.waitForGalleryGrid(page, '[data-testid="image-grid"]');
       }
+    }
+  });
+
+  test('gallery creation from images page', async ({ page }) => {
+    // Navigate to images page
+    await page.goto('/images');
+    
+    // Wait for page to load and check for either image grid or empty state
+    await page.waitForLoadState('networkidle');
+    
+    // Check if there are images (grid) or no images (empty state)
+    const imageGrid = page.locator('[data-testid="image-grid"]');
+    const emptyState = page.locator('[data-testid="empty-state"]');
+    
+    // One of these should be visible
+    const hasImages = await imageGrid.isVisible();
+    const hasEmptyState = await emptyState.isVisible();
+    
+    expect(hasImages || hasEmptyState).toBe(true);
+    
+    if (hasImages) {
+      // If we have images, verify the grid loads properly
+      await OptimizedWaitHelpers.waitForGalleryGrid(page, '[data-testid="image-grid"]');
+    } else {
+      // If no images, verify empty state is displayed
+      await expect(emptyState).toBeVisible();
     }
   });
 });

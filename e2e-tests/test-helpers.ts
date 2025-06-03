@@ -387,13 +387,13 @@ export class TestHelpers {
           ? (i === 0 ? TEST_ASSETS_CI.images.testImage1 : TEST_ASSETS_CI.images.testImage2)
           : (i === 0 ? TEST_ASSETS.images.testImage1 : TEST_ASSETS.images.testImage2);
         
-        // Fill upload form
-        await page.getByTestId('upload-file').setInputFiles(imagePath);
-        await page.getByTestId('upload-title').fill(imageName);
-        await page.getByTestId('upload-description').fill(`Test image ${i + 1} for E2E testing`);
-        await page.getByTestId('upload-tags').fill('e2e, test, automation');
+        // Fill upload form using enhanced upload component
+        await page.getByTestId('file-input').setInputFiles(imagePath);
+        await page.locator('input[placeholder="Enter image title"]').fill(imageName);
+        await page.locator('textarea[placeholder="Describe your image..."]').fill(`Test image ${i + 1} for E2E testing`);
+        await page.locator('[data-testid="tag-input"]').fill('e2e, test, automation');
         
-        // Submit form
+        // Submit form using enhanced upload component
         await page.getByTestId('upload-submit').click();
         
         // Wait for success indicators

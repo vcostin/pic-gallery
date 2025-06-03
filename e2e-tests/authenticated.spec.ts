@@ -49,9 +49,35 @@ test.describe('Authenticated Gallery Features', () => {
     // Verify we're on the upload page (no redirect to login)
     await expect(page).toHaveURL(/\/images\/upload/);
     
-    // Verify we can see the upload form
-    await expect(page.getByTestId('upload-form')).toBeVisible();
-    await expect(page.getByTestId('upload-title')).toBeVisible();
-    await expect(page.getByTestId('upload-submit')).toBeVisible();
+    // Verify we can see the enhanced upload interface
+    await expect(page.getByText('Upload Images')).toBeVisible();
+    await expect(page.getByText('Select Images')).toBeVisible();
+    await expect(page.getByText('Drag and drop your images here')).toBeVisible();
+    await expect(page.getByTestId('upload-submit')).not.toBeVisible(); // Should not be visible until files are selected
+  });
+
+  test('should be able to use enhanced upload with progressive disclosure', async ({ page }) => {
+    // Skip if we're not using the AUTH_ONLY environment variable
+    if (!process.env.AUTH_ONLY) {
+      console.log('Skipping test - requires authenticated project');
+      return;
+    }
+    
+    // Go to the images upload page
+    await page.goto('/images/upload');
+    
+    // Verify enhanced upload interface
+    await expect(page.getByText('1')).toBeVisible(); // Step indicator
+    await expect(page.getByText('Select Images')).toBeVisible();
+    await expect(page.locator('[role="button"][aria-label*="Upload area"]')).toBeVisible();
+    
+    // Verify drag and drop features
+    await expect(page.getByText('Drag and drop your images here')).toBeVisible();
+    await expect(page.getByText('or click to browse')).toBeVisible();
+    await expect(page.getByText(/Supports JPG, PNG, WebP/)).toBeVisible();
+    await expect(page.getByText(/Maximum 5 files/)).toBeVisible();
+    
+    // Step 2 should not be visible initially (progressive disclosure)
+    await expect(page.getByText('Add Details')).not.toBeVisible();
   });
 });
