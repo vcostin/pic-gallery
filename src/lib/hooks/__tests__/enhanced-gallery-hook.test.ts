@@ -117,17 +117,11 @@ describe('useEnhancedGalleryImages', () => {
     // The type is derived from `renderHook` and the return type of `useEnhancedGalleryImages`.
     let hookResult: ReturnType<typeof renderHook<ReturnType<typeof useEnhancedGalleryImages>, string>>;
     
-    // Wrap the entire hook rendering and initial effect in act()
+    // Wrap the entire hook rendering and wait for async effects to complete
     await act(async () => {
       hookResult = renderHook(() => useEnhancedGalleryImages(mockGalleryId));
-      
-      // Wait for the promise to resolve and state to update
+      // Wait for the promise resolution
       await mockGetGalleryPromise;
-    });
-    
-    // Run any pending timers
-    act(() => {
-      jest.runAllTimers();
     });
     
     // After promise resolves, loading should be false
@@ -137,10 +131,18 @@ describe('useEnhancedGalleryImages', () => {
     expect(hookResult!.result.current.images).toEqual(mockGallery.images);
   });
 
-  test('should handle image description changes', () => {
-    const { result } = renderHook(() => 
-      useEnhancedGalleryImages(mockGalleryId, mockImages)
-    );
+  test('should handle image description changes', async () => {
+    // Setup a mock promise for the initial gallery load
+    const mockGetGalleryPromise = Promise.resolve(mockGallery);
+    (GalleryService.getGallery as jest.Mock).mockReturnValue(mockGetGalleryPromise);
+    
+    let result: any;
+    await act(async () => {
+      const hookResult = renderHook(() => useEnhancedGalleryImages(mockGalleryId, mockImages));
+      result = hookResult.result;
+      // Wait for initial gallery load
+      await mockGetGalleryPromise;
+    });
     
     const newDescription = 'Updated description';
     
@@ -154,13 +156,19 @@ describe('useEnhancedGalleryImages', () => {
   });
 
   test('should handle removing an image from gallery', async () => {
-    // Create a mock for the API promise resolution
+    // Create a mock for the API promise resolution and initial gallery load
     const mockRemoveImagePromise = Promise.resolve(mockGallery);
+    const mockGetGalleryPromise = Promise.resolve(mockGallery);
     (GalleryService.removeImage as jest.Mock).mockReturnValue(mockRemoveImagePromise);
+    (GalleryService.getGallery as jest.Mock).mockReturnValue(mockGetGalleryPromise);
     
-    const { result } = renderHook(() => 
-      useEnhancedGalleryImages(mockGalleryId, mockImages)
-    );
+    let result: any;
+    await act(async () => {
+      const hookResult = renderHook(() => useEnhancedGalleryImages(mockGalleryId, mockImages));
+      result = hookResult.result;
+      // Wait for initial gallery load
+      await mockGetGalleryPromise;
+    });
     
     // Open the remove image dialog
     act(() => {
@@ -191,9 +199,17 @@ describe('useEnhancedGalleryImages', () => {
   });
   
   test('should handle drag and drop to reorder images', async () => {
-    const { result } = renderHook(() => 
-      useEnhancedGalleryImages(mockGalleryId, mockImages)
-    );
+    // Setup mock for initial gallery load
+    const mockGetGalleryPromise = Promise.resolve(mockGallery);
+    (GalleryService.getGallery as jest.Mock).mockReturnValue(mockGetGalleryPromise);
+    
+    let result: any;
+    await act(async () => {
+      const hookResult = renderHook(() => useEnhancedGalleryImages(mockGalleryId, mockImages));
+      result = hookResult.result;
+      // Wait for initial gallery load
+      await mockGetGalleryPromise;
+    });
     
     // Create mock events
     const dragStartEvent = {
