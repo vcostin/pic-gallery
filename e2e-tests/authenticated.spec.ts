@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import path from 'path';
+import { TEST_ASSETS } from './test-assets';
 
 // These tests will use the authenticated state
 // They're designed specifically for the authenticated project
@@ -59,11 +59,8 @@ test.describe('Authenticated Gallery Features', () => {
     // Test progressive disclosure: submit button should become visible after file selection
     const fileInput = page.getByTestId('file-input');
     
-    // Create a test image file path
-    const testImagePath = path.join(__dirname, '../test-data/test-image-1.jpg');
-    
-    // Simulate file selection
-    await fileInput.setInputFiles(testImagePath);
+    // Simulate file selection using reliable test asset
+    await fileInput.setInputFiles(TEST_ASSETS.images.testImage1);
     
     // Verify the submit button becomes visible after files are selected
     await expect(page.getByTestId('upload-submit')).toBeVisible();
