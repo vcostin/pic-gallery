@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import path from 'path';
 
 // These tests will use the authenticated state
 // They're designed specifically for the authenticated project
@@ -54,6 +55,18 @@ test.describe('Authenticated Gallery Features', () => {
     await expect(page.getByText('Select Images')).toBeVisible();
     await expect(page.getByText('Drag and drop your images here')).toBeVisible();
     await expect(page.getByTestId('upload-submit')).not.toBeVisible(); // Should not be visible until files are selected
+    
+    // Test progressive disclosure: submit button should become visible after file selection
+    const fileInput = page.getByTestId('file-input');
+    
+    // Create a test image file path
+    const testImagePath = path.join(__dirname, '../test-data/test-image-1.jpg');
+    
+    // Simulate file selection
+    await fileInput.setInputFiles(testImagePath);
+    
+    // Verify the submit button becomes visible after files are selected
+    await expect(page.getByTestId('upload-submit')).toBeVisible();
   });
 
   test('should be able to use enhanced upload with progressive disclosure', async ({ page }) => {

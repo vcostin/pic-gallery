@@ -274,7 +274,7 @@ test.describe('Gallery Management E2E', () => {
         await saveButton.click();
         
         // Wait for save operation to complete
-        await OptimizedWaitHelpers.waitForNavigation(page);
+        await OptimizedWaitHelpers.waitForFormSubmission(page, '[data-testid="edit-gallery-save-button"]');
         
         // Verify toast notification appears
         await OptimizedWaitHelpers.waitForToast(page);
