@@ -510,4 +510,116 @@ test.describe('Comprehensive Gallery Workflow', () => {
       }
     }
   });
+
+  test('enhanced upload integration in comprehensive workflow', async ({ page }) => {
+    // ========== PHASE 0: ENHANCED UPLOAD TEST ==========
+    console.log('Phase 0: Testing enhanced upload functionality...');
+    
+    // Navigate to enhanced upload page
+    await page.goto('/images/upload');
+    await expect(page.getByText('Upload Images')).toBeVisible();
+    
+    // Test the enhanced upload interface
+    await expect(page.getByText('Select Images')).toBeVisible();
+    await expect(page.locator('[role="button"][aria-label*="Upload area"]')).toBeVisible();
+    
+    // Simulate file upload using enhanced interface
+    const testImage1Path = './test-data/images/test-image-1.jpg';
+    const testImage2Path = './test-data/images/test-image-2.jpg';
+    
+    const fileChooserPromise = page.waitForEvent('filechooser');
+    await page.locator('[role="button"][aria-label*="Upload area"]').click();
+    
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles([testImage1Path, testImage2Path]);
+    
+    // Verify enhanced upload features
+    await expect(page.getByText('Add Details')).toBeVisible();
+    await expect(page.getByText('2 files selected')).toBeVisible();
+    await expect(page.getByText('Apply to All Images')).toBeVisible();
+    
+    // Use bulk tagging feature
+    const commonTagInput = page.locator('input[placeholder="Add common tags..."]');
+    await commonTagInput.fill('comprehensive,e2e,test');
+    await commonTagInput.press('Enter');
+    await page.getByText('Apply Tags to All').click();
+    
+    // Fill individual image details
+    const titleInputs = page.locator('input[placeholder="Enter image title"]');
+    await titleInputs.nth(0).clear();
+    await titleInputs.nth(0).fill('Comprehensive Test Image 1');
+    
+    await titleInputs.nth(1).clear();
+    await titleInputs.nth(1).fill('Comprehensive Test Image 2');
+    
+    // Upload the images
+    const uploadButton = page.getByTestId('upload-submit');
+    await expect(uploadButton).toContainText('Upload 2 Images');
+    await uploadButton.click();
+    
+    // Wait for upload completion
+    await expect(page.getByText(/2 images uploaded successfully/)).toBeVisible({ timeout: 20000 });
+    
+    // ========== PHASE 1: GALLERY CREATION WITH ENHANCED UPLOADED IMAGES ==========
+    console.log('Phase 1: Creating gallery with enhanced uploaded images...');
+    
+    await page.goto('/galleries/create');
+    await expect(page.getByTestId('create-gallery-form')).toBeVisible();
+    
+    const galleryTitle = `Enhanced Upload Test Gallery ${Date.now()}`;
+    await page.getByTestId('gallery-title').fill(galleryTitle);
+    await page.getByTestId('gallery-description').fill('Gallery created to test enhanced upload integration in comprehensive workflow');
+    
+    // Select the uploaded images
+    await OptimizedWaitHelpers.waitForModalOpen(
+      page, 
+      '[data-testid="select-images-button"]', 
+      '[data-testid="select-images-modal-overlay"]'
+    );
+    
+    // Search for our uploaded images
+    await OptimizedWaitHelpers.waitForSearchResults(
+      page, 
+      '[data-testid="select-images-search-input"]', 
+      'Comprehensive Test', 
+      '[data-testid^="select-images-image-card-"]'
+    );
+    
+    const imageCards = page.locator('[data-testid^="select-images-image-card-"]');
+    const imageCount = await imageCards.count();
+    
+    if (imageCount > 0) {
+      // Select the enhanced upload images
+      for (let i = 0; i < Math.min(2, imageCount); i++) {
+        await imageCards.nth(i).click();
+      }
+      
+      const addButton = page.getByTestId('select-images-add-button');
+      await expect(addButton).toBeEnabled();
+      await addButton.click();
+      
+      await expect(page.getByTestId('select-images-search-input')).not.toBeVisible();
+    }
+    
+    // Create the gallery
+    await page.getByTestId('create-gallery-submit').click();
+    await expect(page).toHaveURL(/\/galleries\/[a-zA-Z0-9-]+$/, { timeout: 10000 });
+    
+    // ========== PHASE 2: VERIFY ENHANCED UPLOAD INTEGRATION ==========
+    console.log('Phase 2: Verifying enhanced upload integration...');
+    
+    // Verify gallery was created with enhanced uploaded images
+    await expect(page.getByTestId('gallery-detail-title')).toContainText(galleryTitle);
+    
+    // Verify the enhanced upload tags are preserved in the gallery
+    const galleryImages = page.locator('[data-testid^="gallery-image-"]');
+    if (await galleryImages.count() > 0) {
+      // Check that images have the tags we applied during enhanced upload
+      await expect(page.getByText('comprehensive')).toBeVisible();
+      await expect(page.getByText('e2e')).toBeVisible();
+      await expect(page.getByText('test')).toBeVisible();
+    }
+    
+    console.log('✅ Enhanced upload integration test completed successfully');
+  });
 });

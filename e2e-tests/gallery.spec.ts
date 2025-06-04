@@ -75,13 +75,12 @@ test.describe('Upload Form Elements', () => {
       return;
     } else {
       try {
-        // Check form elements have proper data-testid attributes
-        await expect(page.getByTestId('upload-form')).toBeDefined();
-        await expect(page.getByTestId('upload-title')).toBeDefined();
-        await expect(page.getByTestId('upload-description')).toBeDefined();
-        await expect(page.getByTestId('upload-tags')).toBeDefined();
-        await expect(page.getByTestId('upload-file')).toBeDefined(); 
-        await expect(page.getByTestId('upload-submit')).toBeDefined();
+        // Check enhanced upload form elements have proper data-testid attributes
+        await expect(page.getByText('Upload Images')).toBeDefined(); // Enhanced upload header
+        await expect(page.getByText('Select Images')).toBeDefined(); // Step 1
+        await expect(page.locator('[role="button"][aria-label*="Upload area"]')).toBeDefined(); // Drag drop zone
+        await expect(page.getByTestId('file-input')).toBeDefined(); // File input (hidden)
+        await expect(page.getByTestId('upload-submit')).toBeDefined(); // Submit button (appears after file selection)
       } catch (e) {
         console.log('Could not access upload form:', e);
         return;
