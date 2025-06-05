@@ -59,7 +59,8 @@ export class TestPerformanceMetrics {
     let report = '\n📊 E2E Test Performance Report\n';
     report += '═'.repeat(50) + '\n';
 
-    for (const [testName, durations] of this.metrics.entries()) {
+    for (const entry of Array.from(this.metrics.entries())) {
+      const [testName] = entry; // Only need testName, durations accessed via getTestStats
       const stats = this.getTestStats(testName);
       if (stats) {
         report += `\n🔍 ${testName}\n`;
@@ -98,7 +99,7 @@ export class TestPerformanceMetrics {
     operation: () => Promise<void>, 
     label: string
   ): Promise<number> {
-    const startTime = Date.now();
+    const startTime: number = Date.now();
     
     // Start navigation timing
     await page.evaluate(() => {

@@ -52,7 +52,7 @@ class PerformanceReporter implements Reporter {
     console.log(`═══════════════════════════════════════`);
     console.log(`Workers: ${config.workers}`);
     console.log(`Projects: ${config.projects.length}`);
-    console.log(`Test Directory: ${config.testDir}`);
+    console.log(`Test Directory: ${(config as { testDir?: string }).testDir || './e2e-tests'}`);
     console.log(`═══════════════════════════════════════\n`);
   }
 

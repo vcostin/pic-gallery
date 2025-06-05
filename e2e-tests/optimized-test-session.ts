@@ -335,7 +335,8 @@ export class OptimizedTestSession {
    */
   static async cleanup(): Promise<void> {
     // Close active sessions
-    for (const [name, context] of this.activeSessions.entries()) {
+    for (const entry of Array.from(this.activeSessions.entries())) {
+      const [, context] = entry; // name is not used, only context
       try {
         await context.close();
       } catch {
