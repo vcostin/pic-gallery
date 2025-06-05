@@ -61,21 +61,19 @@ test.describe('Enhanced Gallery Layouts - E2E Tests', () => {
     // Test grid view (default)
     if (await gridViewButton.isVisible()) {
       await gridViewButton.click();
-      await page.waitForTimeout(500);
       
-      // Verify grid layout
+      // Wait for grid layout to be visible instead of arbitrary timeout
       const gridContainer = page.locator('[data-testid="image-grid"], .grid');
-      await expect(gridContainer).toBeVisible();
+      await expect(gridContainer).toBeVisible({ timeout: 3000 });
     }
     
     // Test list view
     if (await listViewButton.isVisible()) {
       await listViewButton.click();
-      await page.waitForTimeout(500);
       
-      // Verify list layout changes
+      // Wait for list layout to become visible instead of arbitrary timeout
       const listContainer = page.locator('[data-testid="image-list"], .list-view');
-      if (await listContainer.isVisible()) {
+      if (await listContainer.isVisible({ timeout: 3000 }).catch(() => false)) {
         await expect(listContainer).toBeVisible();
       }
     }

@@ -88,7 +88,15 @@ test.describe('Complete Images Page Workflow - E2E Integration', () => {
       
       // Test click to view image details or modal
       await firstImage.click();
-      await page.waitForTimeout(1000); // Give more time for modal to appear
+      
+      // Wait for modal to become visible instead of arbitrary timeout
+      await page.waitForSelector('[data-testid="image-modal"], [data-testid="image-viewer-modal"]', { 
+        state: 'visible', 
+        timeout: 3000 
+      }).catch(() => {
+        // Modal might not appear if navigation occurs instead
+        console.log('Modal did not appear - checking for navigation');
+      });
       
       // Check if modal opened or navigated to details page
       const isModal = await page.locator('[data-testid="image-modal"], [data-testid="image-viewer-modal"]').isVisible();
