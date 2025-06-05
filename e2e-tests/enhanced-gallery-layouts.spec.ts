@@ -42,7 +42,7 @@ test.describe('Enhanced Gallery Layouts - E2E Tests', () => {
     const images = page.locator('[data-testid="gallery-image"]');
     const imageCount = await images.count();
     expect(imageCount).toBeGreaterThanOrEqual(1); // At least 1 image should be present
-    console.log(`Gallery has ${imageCount} images for layout testing`);
+    console.log('Gallery has images for layout testing');
   });
 
   test('should switch between grid and list layout modes', async ({ page }) => {
@@ -73,7 +73,8 @@ test.describe('Enhanced Gallery Layouts - E2E Tests', () => {
       
       // Wait for list layout to become visible instead of arbitrary timeout
       const listContainer = page.locator('[data-testid="image-list"], .list-view');
-      if (await listContainer.isVisible({ timeout: 3000 }).catch(() => false)) {
+      const visible = await listContainer.isVisible({ timeout: 3000 }).catch(() => false);
+      if (visible) {
         await expect(listContainer).toBeVisible();
       }
     }
