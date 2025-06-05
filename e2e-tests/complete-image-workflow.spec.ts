@@ -84,7 +84,6 @@ test.describe('Complete Images Page Workflow - E2E Integration', () => {
       
       // Test hover effects
       await firstImage.hover();
-      await page.waitForTimeout(500);
       
       // Test click to view image details or modal
       await firstImage.click();

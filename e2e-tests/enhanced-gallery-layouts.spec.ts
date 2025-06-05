@@ -92,11 +92,10 @@ test.describe('Enhanced Gallery Layouts - E2E Tests', () => {
     const masonryButton = page.locator('[data-testid="masonry-view"], button[title*="Masonry"]');
     if (await masonryButton.isVisible()) {
       await masonryButton.click();
-      await page.waitForTimeout(500);
       
       // Verify masonry layout
       const masonryContainer = page.locator('[data-testid="masonry-grid"], .masonry');
-      await expect(masonryContainer).toBeVisible();
+      await expect(masonryContainer).toBeVisible({ timeout: 3000 });
       
       // In masonry layout, items should have varying heights
       const imageItems = page.locator('[data-testid="gallery-image"]');
