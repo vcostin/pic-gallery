@@ -11,8 +11,8 @@ export class TestHelpers {
    */
   static async isAuthenticated(page: Page): Promise<boolean> {
     try {
-      // Quick check for logout button or auth indicators
-      const hasLogoutButton = await page.getByTestId('logout-button').isVisible({ timeout: 1000 }).catch(() => false);
+      // Quick check for logout button or auth indicators (longer timeout)
+      const hasLogoutButton = await page.getByTestId('logout-button').isVisible({ timeout: 5000 }).catch(() => false);
       if (hasLogoutButton) return true;
       
       // Check if on protected page without being redirected to login
@@ -43,11 +43,13 @@ export class TestHelpers {
       await page.fill('[data-testid="login-password"]', password);
       await page.click('[data-testid="login-submit"]');
       
-      // Wait for navigation
-      await page.waitForURL(/\/galleries|\/home|\/dashboard|\//,
-        { timeout: 10000 });
+      // Wait for navigation away from login page
+      await page.waitForURL((url) => !url.toString().includes('/auth/'), { timeout: 10000 });
       
-      // Verify authentication
+      // Give a moment for the page to settle
+      await page.waitForLoadState('networkidle');
+      
+      // Verify authentication with a longer timeout
       return await this.isAuthenticated(page);
     } catch {
       return false;
@@ -242,43 +244,141 @@ export class TestHelpers {
   }
 
   /**
-   * Create a gallery with test images (from original TestHelpers)
+   * Create a gallery with specified name and description
    */
-  static async createGalleryWithImages(page: Page): Promise<{ galleryId: string, galleryName: string } | null> {
+  static async createGallery(page: Page, name: string, description?: string): Promise<{ galleryId: string, galleryName: string } | null> {
     try {
       // Navigate to galleries page
       await page.goto('/galleries');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
-      // Create a new gallery
-      const galleryName = `Test Gallery ${Date.now()}`;
-      
-      // Look for create gallery button
-      const createButton = page.getByTestId('create-gallery-button').or(
-        page.getByRole('button', { name: /create|new gallery/i })
-      );
+      // Look for create gallery link (not button)
+      const createButton = page.getByTestId('create-gallery-link');
       
       if (await createButton.isVisible({ timeout: 5000 })) {
         await createButton.click();
         
-        // Fill gallery form
-        await page.fill('[data-testid="gallery-title"]', galleryName);
-        await page.fill('[data-testid="gallery-description"]', 'Test gallery description');
+        // Wait for navigation to create page
+        await page.waitForURL('**/galleries/create');
         
-        // Submit form with optimized wait
-        await OptimizedWaitHelpers.waitForFormSubmission(page, '[data-testid="create-gallery-submit"]');
+        // Fill gallery form using the correct testids from the component
+        await page.fill('[data-testid="gallery-title"]', name);
+        await page.fill('[data-testid="gallery-description"]', description || 'Test gallery description');
         
-        // Get gallery ID from URL or response
+        // Submit form
+        await page.click('[data-testid="create-gallery-submit"]');
+        
+        // Wait for navigation to the new gallery page
+        await page.waitForURL('**/galleries/**');
+        
+        // Get gallery ID from URL
         const url = page.url();
-        const galleryIdMatch = url.match(/\/galleries\/([^\/]+)/);
+        const galleryIdMatch = url.match(/\/galleries\/([^\/]+)$/);
         const galleryId = galleryIdMatch ? galleryIdMatch[1] : Date.now().toString();
         
-        return { galleryId, galleryName };
+        return { galleryId, galleryName: name };
       }
       
       return null;
     } catch (error) {
       console.log('Failed to create gallery:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Create a gallery with test images - proper workflow that associates images with gallery
+   */
+  static async createGalleryWithImages(page: Page, imageCount: number = 3, galleryName?: string): Promise<{ galleryId: string, galleryName: string } | null> {
+    try {
+      console.log(`Creating gallery with ${imageCount} images...`);
+      
+      // Step 1: Upload test images first
+      const uploadedImages = await this.uploadTestImages(page, imageCount);
+      console.log(`Successfully uploaded ${uploadedImages.length} test images:`, uploadedImages);
+      
+      if (uploadedImages.length === 0) {
+        console.log('No images were uploaded, cannot create gallery with images');
+        return null;
+      }
+      
+      // Step 2: Navigate to gallery creation
+      await page.goto('/galleries');
+      await page.waitForLoadState('load');
+      
+      const uniqueGalleryName = galleryName || `Test Gallery ${Date.now()}`;
+      
+      // Look for create gallery link (not button)
+      const createButton = page.getByTestId('create-gallery-link');
+      
+      if (await createButton.isVisible({ timeout: 5000 })) {
+        await createButton.click();
+        
+        // Wait for navigation to create page
+        await page.waitForURL('**/galleries/create');
+        
+        // Step 3: Fill gallery form
+        await page.fill('[data-testid="gallery-title"]', uniqueGalleryName);
+        await page.fill('[data-testid="gallery-description"]', 'Test gallery with images for E2E testing');
+        
+        // Step 4: Select images using the SelectImagesDialog workflow
+        console.log('Opening image selection dialog...');
+        await page.getByTestId('select-images-button').click();
+        
+        // Wait for dialog to open
+        await page.waitForSelector('[data-testid="select-images-modal-overlay"]');
+        
+        // Wait for images to load in the dialog
+        await page.waitForSelector('[data-testid^="select-images-image-card-"]', { timeout: 10000 });
+        
+        // Select the uploaded images - get all available image cards
+        const imageCards = page.locator('[data-testid^="select-images-image-card-"]');
+        const availableImageCount = await imageCards.count();
+        
+        if (availableImageCount > 0) {
+          console.log(`Found ${availableImageCount} images available for selection`);
+          
+          // Select up to imageCount or all available images
+          const imagesToSelect = Math.min(imageCount, availableImageCount);
+          for (let i = 0; i < imagesToSelect; i++) {
+            await imageCards.nth(i).click();
+            console.log(`Selected image ${i + 1} of ${imagesToSelect}`);
+          }
+          
+          // Add selected images to gallery
+          const addButton = page.getByTestId('select-images-add-button');
+          await addButton.click();
+          
+          // Wait for dialog to close
+          await page.waitForSelector('[data-testid="select-images-modal-overlay"]', { state: 'hidden' });
+          console.log('Images selected and added to gallery');
+        } else {
+          console.log('No images found in selection dialog, closing dialog');
+          const closeButton = page.getByTestId('select-images-close-button');
+          await closeButton.click();
+        }
+        
+        // Step 5: Submit gallery creation form
+        await page.click('[data-testid="create-gallery-submit"]');
+        
+        // Wait for navigation to the new gallery page with a longer timeout
+        await page.waitForURL('**/galleries/**', { timeout: 10000 });
+        
+        // Wait for the page to be fully loaded
+        await page.waitForLoadState('networkidle', { timeout: 10000 });
+        
+        // Get gallery ID from URL
+        const url = page.url();
+        const galleryIdMatch = url.match(/\/galleries\/([^\/]+)$/);
+        const galleryId = galleryIdMatch ? galleryIdMatch[1] : Date.now().toString();
+        
+        console.log(`Successfully created gallery: ${uniqueGalleryName} with ID: ${galleryId}`);
+        return { galleryId, galleryName: uniqueGalleryName };
+      }
+      
+      return null;
+    } catch (error) {
+      console.log('Failed to create gallery with images:', error);
       return null;
     }
   }
@@ -304,7 +404,7 @@ export class TestHelpers {
   static async navigateToGallery(page: Page, galleryIndex: number = 0): Promise<string | null> {
     try {
       await page.goto('/galleries');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       
       const galleryLinks = page.getByTestId('gallery-link').or(
         page.locator('a[href*="/galleries/"]')
@@ -313,7 +413,7 @@ export class TestHelpers {
       const galleryCount = await galleryLinks.count();
       if (galleryCount > galleryIndex) {
         await galleryLinks.nth(galleryIndex).click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('load');
         
         const url = page.url();
         const galleryIdMatch = url.match(/\/galleries\/([^\/]+)/);
@@ -332,7 +432,7 @@ export class TestHelpers {
   static async navigateToImageUpload(page: Page): Promise<boolean> {
     try {
       await page.goto('/images/upload');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
       return true;
     } catch {
       return false;
@@ -343,33 +443,16 @@ export class TestHelpers {
    * Upload test images to ensure images exist for selection
    */
   static async uploadTestImages(page: Page, count: number = 2): Promise<string[]> {
-    // Import test assets using require to avoid ES module issues
-    const testAssetsPath = require('path').resolve(__dirname, './test-assets');
-    const { TEST_ASSETS } = require(testAssetsPath);
-    
-    // For CI, use fallback paths since the dynamic import has ES module issues
-    let TEST_ASSETS_CI: any = null;
-    let ensureTestImagesExist: any = null;
-    
-    if (process.env.CI) {
-      try {
-        // Try to use CI assets if available, fallback to regular assets
-        const testAssetsCiPath = require('path').resolve(__dirname, './test-assets-ci');
-        const ciModule = require(testAssetsCiPath);
-        TEST_ASSETS_CI = ciModule.TEST_ASSETS_CI;
-        ensureTestImagesExist = ciModule.ensureTestImagesExist;
-        
-        if (ensureTestImagesExist) {
-          await ensureTestImagesExist();
-        }
-      } catch (e) {
-        console.warn('Could not load CI test assets, falling back to regular assets:', e);
-        TEST_ASSETS_CI = TEST_ASSETS; // Fallback to regular assets
-      }
-    }
-    
     const uploadedImageNames: string[] = [];
     const uniqueId = Date.now();
+    
+    // Define test assets inline to avoid module issues
+    const TEST_ASSETS = {
+      images: {
+        testImage1: './test-data/images/test-image-1.jpg',
+        testImage2: './test-data/images/test-image-2.jpg'
+      }
+    };
     
     for (let i = 0; i < count; i++) {
       try {
@@ -377,15 +460,13 @@ export class TestHelpers {
         
         // Navigate to upload page
         await page.goto('/images/upload');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('load');
         
         // Generate unique image name
         const imageName = `E2E Test Image ${uniqueId}-${i + 1}`;
         
         // Use appropriate image path
-        const imagePath = process.env.CI && TEST_ASSETS_CI
-          ? (i === 0 ? TEST_ASSETS_CI.images.testImage1 : TEST_ASSETS_CI.images.testImage2)
-          : (i === 0 ? TEST_ASSETS.images.testImage1 : TEST_ASSETS.images.testImage2);
+        const imagePath = i === 0 ? TEST_ASSETS.images.testImage1 : TEST_ASSETS.images.testImage2;
         
         // Fill upload form using enhanced upload component
         await page.getByTestId('file-input').setInputFiles(imagePath);
@@ -402,7 +483,7 @@ export class TestHelpers {
             page.getByText(/uploaded successfully/i).waitFor({ timeout: 15000 }),
             page.getByText(/upload complete/i).waitFor({ timeout: 15000 }),
             page.getByText(/image uploaded/i).waitFor({ timeout: 15000 }),
-            page.waitForURL(url => !url.pathname.includes('/upload'), { timeout: 15000 })
+            page.waitForURL((url: URL) => !url.pathname.includes('/upload'), { timeout: 15000 })
           ]);
           
           uploadedImageNames.push(imageName);

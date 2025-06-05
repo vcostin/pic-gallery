@@ -27,7 +27,7 @@ const getPerformanceConfig = () => {
   } else {
     return {
       workers: isFastMode ? 3 : 1, // More aggressive locally
-      timeout: 45000,
+      timeout: 3000, // FAST: 3s timeout for reasonable development feedback
       retries: 0,
       parallelization: isFastMode,
     };
@@ -54,11 +54,19 @@ process.on('exit', () => {
  * 
  * Key Optimizations:
  * 1. Selective parallelization based on test type and environment
- * 2. Environment-aware timeout settings  
+ * 2. Environment-aware timeout settings 
  * 3. CI/CD optimized configurations
  * 4. Faster browser launching with resource management
  * 5. Performance monitoring and regression detection
  * 6. Cross-platform compatibility
+ * 
+ * FAST LOCAL DEV TIMEOUTS: 3000ms test timeout for quick feedback
+ * - Global test timeout: 3000ms (reasonable for file uploads and complex interactions)
+ * - Action timeout: 1500ms-2500ms (depending on test type)
+ * - Navigation timeout: 2000ms-2500ms
+ * - Expect timeout: 1000ms
+ * 
+ * CI TIMEOUTS: 15s actions, 30s navigation, 60s test timeout
  */
 export default defineConfig({
   testDir: './e2e-tests',
@@ -74,19 +82,22 @@ export default defineConfig({
   workers: perfConfig.workers,
   
   /* Timeout Optimizations */
-  timeout: perfConfig.timeout, // Reduced from default 30s, but enough for slower tests
+  timeout: perfConfig.timeout, // 3000ms locally for FAST feedback, 60s in CI
   expect: {
-    timeout: isCI ? 15000 : 10000, // More time for assertions in CI
+    timeout: isCI ? 15000 : 1000, // Fast expects locally, 1s max
   },
   
   /* Build and CI Configuration */
   forbidOnly: isCI,
   retries: perfConfig.retries,
   
-  /* Optimized Reporting */
+  /* ULTRA FAST DEV: Stop on first failure locally */
+  maxFailures: isCI ? undefined : 1, // Stop immediately on first failure for local dev
+  
+  /* Optimized Reporting - NO HTML for local dev (completely disabled for speed) */
   reporter: process.env.CI 
-    ? [['github'], ['html', { outputFolder: 'playwright-report' }]] 
-    : [['list'], ['html', { outputFolder: 'playwright-report' }]],
+    ? [['github'], ['html', { outputFolder: 'playwright-report', open: 'never' }]] 
+    : [['list']], // Only list reporter locally - HTML completely disabled
   
   /* Artifact Management */
   outputDir: './test-screenshots',
@@ -96,13 +107,13 @@ export default defineConfig({
     baseURL: 'http://localhost:3000',
     
     /* Performance Settings */
-    actionTimeout: 15000, // Faster action timeouts
-    navigationTimeout: 30000, // Reasonable navigation timeout
+    actionTimeout: isCI ? 15000 : 2000, // 2s locally for FAST feedback, 15s in CI
+    navigationTimeout: isCI ? 30000 : 2500, // 2.5s locally, 30s in CI
     
-    /* Tracing and Screenshots - Only when needed */
-    trace: process.env.CI ? 'retain-on-failure' : 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: process.env.CI ? 'retain-on-failure' : 'off',
+    /* Tracing and Screenshots - Minimal for local dev */
+    trace: process.env.CI ? 'retain-on-failure' : 'off', // No trace locally
+    screenshot: process.env.CI ? 'only-on-failure' : 'off', // No screenshots locally  
+    video: 'off', // No video anywhere - too slow
     
     /* Browser Performance Optimizations */
     launchOptions: {
@@ -121,119 +132,86 @@ export default defineConfig({
 
   /* Optimized Project Configuration */
   projects: [
-    // Fast independent tests that can run in parallel
+    // Authentication lifecycle (sequential - must run first)
     {
-      name: 'fast-independent',
+      name: 'auth-lifecycle',
       testMatch: [
-        '**/auth.spec.ts',
-        '**/basic.spec.ts',
-        '**/toast-component.spec.ts',
+        '**/01-auth-lifecycle.spec.ts',
       ],
       use: { 
         ...devices['Desktop Chrome'],
-        // Faster settings for simple tests
-        actionTimeout: 10000,
-        navigationTimeout: 20000,
+        // Standard settings for auth tests
+        actionTimeout: isCI ? 15000 : 2500,  // 2.5s locally
+        navigationTimeout: isCI ? 30000 : 3000, // 3s locally
       },
-      fullyParallel: true, // These can safely run in parallel
+      fullyParallel: false, // Sequential for auth setup
     },
 
-    // Data-dependent tests that need careful sequencing
+    // Core feature tests (can run in parallel with shared auth state)
     {
-      name: 'data-dependent',
+      name: 'feature-tests',
       testMatch: [
-        '**/authenticated.spec.ts',
-        '**/comprehensive-gallery-workflow.spec.ts',
-        '**/gallery-management.spec.ts',
+        '**/02-feature-tests.spec.ts',
         '**/enhanced-upload.spec.ts',
-        '**/setup-basic-gallery.spec.ts',
-        '**/setup-gallery.spec.ts',
       ],
       use: { 
         ...devices['Desktop Chrome'],
         storageState: './playwright/.auth/single-user.json',
+        // FAST timeouts for immediate feedback on complex tests
+        actionTimeout: isCI ? 15000 : 2500, // 2.5s locally, 15s in CI
+        navigationTimeout: isCI ? 30000 : 2500, // 2.5s locally, 30s in CI
       },
-      dependencies: ['fast-independent'],
-      fullyParallel: false, // Sequential for data safety
+      dependencies: ['auth-lifecycle'],
+      fullyParallel: isFastMode, // Can be parallel in fast mode
     },
 
-    // Gallery-specific tests that can share data
+    // Image and gallery tests (can share data and run in parallel)
     {
-      name: 'gallery-tests',
+      name: 'image-tests',
       testMatch: [
-        '**/gallery-edit.spec.ts',
-        '**/check-gallery-exists.spec.ts',
-        '**/simple-gallery-toast.spec.ts',
+        '**/complete-image-workflow.spec.ts',
+        '**/enhanced-gallery-layouts.spec.ts',
+        '**/image-grid.spec.ts',
+        '**/responsive-mobile-images.spec.ts',
       ],
+      timeout: isCI ? 60000 : 8000, // 8s timeout for image tests (complex workflows with uploads)
       use: { 
         ...devices['Desktop Chrome'],
         storageState: './playwright/.auth/single-user.json',
+        // FAST settings for image loading and interactions
+        actionTimeout: isCI ? 15000 : 2500, // 2.5s locally
+        navigationTimeout: isCI ? 30000 : 3500, // 3.5s locally for page loads
       },
-      dependencies: ['data-dependent'],
+      dependencies: ['feature-tests'],
       fullyParallel: isSharedData, // Can be parallel if sharing data
     },
 
-    // Notification tests (can be fast and parallel)
-    {
-      name: 'notification-tests',
-      testMatch: [
-        '**/toast-notification.spec.ts',
-        '**/verify-toast-implementation.spec.ts',
-      ],
-      use: { 
-        ...devices['Desktop Chrome'],
-        storageState: './playwright/.auth/single-user.json',
-        // Faster settings for UI-only tests
-        actionTimeout: 8000,
-      },
-      dependencies: ['data-dependent'],
-      fullyParallel: true, // UI tests can run in parallel
-    },
-
-    // Debugging and development tests (can run independently)
-    {
-      name: 'debugging-tests',
-      testMatch: [
-        '**/enhanced-debugging-demo.spec.ts',
-        '**/e2e-utils-demo.spec.ts',
-      ],
-      use: { 
-        ...devices['Desktop Chrome'],
-        storageState: './playwright/.auth/single-user.json',
-        // Extended timeouts for debugging output
-        actionTimeout: 15000,
-        navigationTimeout: 30000,
-      },
-      dependencies: ['fast-independent'],
-      fullyParallel: false, // Sequential for clear debugging output
-    },
-
-    // Cleanup tests (must run last, sequential)
+    // Data cleanup tests (must run after image tests)
     {
       name: 'cleanup-tests',
       testMatch: [
-        '**/e2e-cleanup-comprehensive.spec.ts',
+        '**/03-data-cleanup.spec.ts',
       ],
       use: { 
         ...devices['Desktop Chrome'],
         storageState: './playwright/.auth/single-user.json',
       },
-      dependencies: ['gallery-tests', 'notification-tests', 'debugging-tests'],
-      fullyParallel: false,
+      dependencies: ['image-tests'],
+      fullyParallel: false, // Sequential for cleanup safety
     },
 
-    // Final deletion (must be last)
+    // Final user deletion (must be last)
     {
       name: 'deletion-tests',
       testMatch: [
-        '**/profile-deletion.spec.ts',
+        '**/04-final-user-deletion.spec.ts',
       ],
       use: { 
         ...devices['Desktop Chrome'],
         storageState: './playwright/.auth/single-user.json',
       },
       dependencies: ['cleanup-tests'],
-      fullyParallel: false,
+      fullyParallel: false, // Must be sequential and last
     },
   ],
 

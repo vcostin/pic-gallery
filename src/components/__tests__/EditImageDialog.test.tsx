@@ -39,7 +39,10 @@ jest.mock('next/navigation', () => ({
 // Mock Next.js Image component
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: (props: any) => <div data-testid="mock-image" {...props} />
+  default: (props: any) => {
+    const { fill, sizes, priority, loading, onError, ...domProps } = props;
+    return <div data-testid="mock-image" style={{ width: '100%', height: '100%' }} {...domProps} />;
+  }
 }));
 
 // Mock DeleteImageConfirmDialog

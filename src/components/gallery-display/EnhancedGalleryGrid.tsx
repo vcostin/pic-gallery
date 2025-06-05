@@ -135,6 +135,7 @@ export function EnhancedGalleryGrid({
                 onClick={() => onImageClick?.(image, globalIndex)}
                 whileHover={{ y: -8, scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                data-testid="gallery-image"
               >
                 <div className="relative h-full overflow-hidden">
                   <Image
@@ -192,6 +193,7 @@ export function EnhancedGalleryGrid({
           onClick={() => onImageClick?.(image, index)}
           whileHover={{ y: -4 }}
           whileTap={{ scale: 0.95 }}
+          data-testid="gallery-image"
         >
           <div className="aspect-square overflow-hidden rounded-2xl bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300">
             <div className="relative h-full">
@@ -249,6 +251,7 @@ export function EnhancedGalleryGrid({
           onClick={() => onImageClick?.(image, index)}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          data-testid="gallery-image"
         >
           <div className="aspect-square overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
             <Image
@@ -287,6 +290,7 @@ export function EnhancedGalleryGrid({
             }`}
             onClick={() => onImageClick?.(image, index)}
             whileHover={{ y: -6 }}
+            data-testid="gallery-image"
           >
             <div className={`overflow-hidden rounded-2xl bg-white dark:bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 ${
               isFeatured ? 'aspect-[4/3]' : 'aspect-square'
@@ -347,6 +351,7 @@ export function EnhancedGalleryGrid({
           style={{
             rotate: initialRotations[index] // Memoized initial rotation
           }}
+          data-testid="gallery-image"
         >
         <div className="bg-white dark:bg-gray-100 p-4 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300">
           <div className="aspect-square overflow-hidden rounded-sm mb-4">

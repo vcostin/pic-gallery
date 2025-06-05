@@ -5,8 +5,10 @@ import { useMemo, useState, useEffect, useCallback, memo } from 'react';
 import { EditImageDialog } from '@/components/EditImage';
 import { EmptyState, SkeletonLoader } from '@/components/StatusMessages';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ImageViewer } from '@/components/ui/ImageViewer';
 import logger from '@/lib/logger';
 import { ImageTags } from '@/components/ui/ImageTags';
+import { PencilIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { type Image as ImageType } from '@/lib/services/imageService';
 
 interface ImageGridProps {
@@ -15,10 +17,21 @@ interface ImageGridProps {
 }
 
 // Memoized image card component to prevent unnecessary re-renders
-const ImageCard = memo(({ image, onEdit }: { image: ImageType; onEdit: (image: ImageType) => void }) => {
+const ImageCard = memo(({ 
+  image, 
+  onEdit, 
+  onView 
+}: { 
+  image: ImageType; 
+  onEdit: (image: ImageType) => void;
+  onView: (image: ImageType) => void;
+}) => {
   return (
     <div className="group relative bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden gallery-image" data-testid="gallery-image">
-      <div className="aspect-square relative">
+      <div 
+        className="aspect-square relative cursor-pointer"
+        onClick={() => onView(image)}
+      >
         <Image
           src={image.url}
           alt={image.title}
@@ -26,22 +39,49 @@ const ImageCard = memo(({ image, onEdit }: { image: ImageType; onEdit: (image: I
           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
           priority={false} // Only prioritize loading for visible images
           loading="lazy"
-          className="object-cover"
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
           onError={() => logger.error(`Failed to load image: ${image.url}`)}
         />
-        <div className="absolute inset-0 bg-opacity-0 group-hover:bg-gray-900/30 transition-all duration-200 flex items-center justify-center">
+        
+        {/* Overlay with action buttons */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center gap-3">
           <button
-            onClick={() => onEdit(image)}
-            className="opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+            onClick={(e) => {
+              e.stopPropagation();
+              onView(image);
+            }}
+            className="opacity-0 group-hover:opacity-100 bg-white/90 hover:bg-white text-gray-700 p-3 rounded-full transition-all duration-200 transform scale-95 hover:scale-100"
+            title="View full image"
           >
-            Edit
+            <EyeIcon className="w-5 h-5" />
+          </button>
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(image);
+            }}
+            className="opacity-0 group-hover:opacity-100 bg-white/90 hover:bg-white text-gray-700 p-3 rounded-full transition-all duration-200 transform scale-95 hover:scale-100"
+            title="Edit image"
+          >
+            <PencilIcon className="w-5 h-5" />
           </button>
         </div>
+        
+        {/* Click indicator */}
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+            Click to view
+          </div>
+        </div>
       </div>
+      
       <div className="p-4">
-        <h3 className="font-semibold mb-2">{image.title}</h3>
+        <h3 className="font-semibold mb-2 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => onView(image)}>
+          {image.title}
+        </h3>
         {image.description && (
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-2">
             {image.description}
           </p>
         )}
@@ -65,10 +105,10 @@ const TagFilterButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className={`px-3 py-1 rounded-full text-sm ${
+    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
       isSelected
-        ? 'bg-blue-500 text-white' 
-        : 'bg-gray-200 dark:bg-gray-700'
+        ? 'bg-blue-500 text-white hover:bg-blue-600' 
+        : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
     }`}
     data-testid={`image-grid-tag-filter-${tag.toLowerCase().replace(/\s+/g, '-')}`}
   >
@@ -80,6 +120,7 @@ TagFilterButton.displayName = 'TagFilterButton';
 
 export function ImageGrid({ images, 'data-testid': testId }: ImageGridProps) {
   const [editingImage, setEditingImage] = useState<ImageType | null>(null);
+  const [viewingImageId, setViewingImageId] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState('');
   const [isInitializing, setIsInitializing] = useState(true);
   const [imagesData, setImagesData] = useState<ImageType[]>(images);
@@ -115,6 +156,10 @@ export function ImageGrid({ images, 'data-testid': testId }: ImageGridProps) {
   // Memoized callbacks
   const handleImageEdit = useCallback((image: ImageType) => {
     setEditingImage(image);
+  }, []);
+
+  const handleImageView = useCallback((image: ImageType) => {
+    setViewingImageId(image.id);
   }, []);
 
   const handleImageUpdated = useCallback((deletedImageId?: string) => {
@@ -184,7 +229,8 @@ export function ImageGrid({ images, 'data-testid': testId }: ImageGridProps) {
               <ImageCard 
                 key={image.id} 
                 image={image} 
-                onEdit={handleImageEdit} 
+                onEdit={handleImageEdit}
+                onView={handleImageView}
               />
             ))}
           </div>
@@ -195,6 +241,16 @@ export function ImageGrid({ images, 'data-testid': testId }: ImageGridProps) {
             image={editingImage}
             isOpen={true}
             onClose={handleImageUpdated}
+          />
+        )}
+
+        {viewingImageId && (
+          <ImageViewer
+            images={filteredImages}
+            currentImageId={viewingImageId}
+            isOpen={!!viewingImageId}
+            onClose={() => setViewingImageId(null)}
+            onImageChange={(imageId) => setViewingImageId(imageId)}
           />
         )}
       </div>

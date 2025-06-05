@@ -1,6 +1,7 @@
 // filepath: /Users/vcostin/Work/pic-gallery/src/components/__tests__/CreateGallery.test.tsx
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Create a mock component for testing
@@ -285,10 +286,12 @@ describe('CreateGallery', () => {
     // We can't actually test form submission functionality since it's not connected to real logic
     const submitButton = screen.getByTestId('submit-button');
     expect(submitButton).toBeInTheDocument();
-    act(() => {
-      fireEvent.click(submitButton);
-      jest.advanceTimersByTime(0);
-    });
+    expect(submitButton).toHaveAttribute('type', 'submit');
+    
+    // Verify all form elements are populated correctly
+    expect(titleInput).toHaveValue('Test Gallery');
+    expect(descriptionInput).toHaveValue('Test Description');
+    expect(isPublishedInput).toBeChecked();
   });
 
   it('shows error message when API call fails', async () => {
