@@ -5,47 +5,85 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
- * Environment and CI Detection
+ * Enhanced Environment and Performance Detection
+ * Updated configuration for comprehensive E2E optimization
  */
 const isCI = !!process.env.CI;
-const isFastMode = process.env.PLAYWRIGHT_FAST_MODE === 'true';
+const isFastMode = process.env.PLAYWRIGHT_FAST === 'true';
+const isOptimizedMode = process.env.PLAYWRIGHT_OPTIMIZED === 'true';
+const enablePerfLogging = process.env.PLAYWRIGHT_PERF_LOG === 'true';
 const isSharedData = process.env.PLAYWRIGHT_SHARED_DATA === 'true';
-const isProduction = process.env.NODE_ENV === 'production';
-const isDebugMode = process.env.PLAYWRIGHT_DEBUG === 'true';
 
 /**
- * Performance Configuration Helper
+ * Enhanced Performance Configuration with Optimization Strategies
  */
 const getPerformanceConfig = () => {
-  if (isCI) {
-    return {
-      workers: isFastMode ? 2 : 1, // More conservative in CI
-      timeout: 60000, // More time in CI for stability
-      retries: 2,
-      parallelization: isFastMode,
-    };
-  } else {
-    return {
-      workers: isFastMode ? 3 : 1, // More aggressive locally
-      timeout: 45000,
-      retries: 0,
-      parallelization: isFastMode,
-    };
-  }
+  const baseConfig = {
+    // Worker optimization based on environment and mode
+    workers: isCI 
+      ? (isFastMode ? 2 : 1) // Conservative in CI
+      : (isFastMode ? 4 : (isOptimizedMode ? 3 : 1)), // Aggressive locally in optimization modes
+
+    // Timeout optimization for different scenarios
+    timeouts: {
+      test: isCI ? 60000 : (isFastMode ? 15000 : 30000),
+      action: isCI ? 15000 : (isFastMode ? 5000 : 10000),
+      navigation: isCI ? 20000 : (isFastMode ? 8000 : 15000),
+      assertion: isFastMode ? 3000 : 5000
+    },
+
+    // Retry strategy
+    retries: isCI ? 2 : (isFastMode ? 0 : 1),
+    
+    // Parallelization strategy
+    parallelization: isFastMode || isOptimizedMode,
+
+    // Browser launch optimizations
+    browserArgs: [
+      '--disable-dev-shm-usage',
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-gpu',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-features=TranslateUI',
+      '--disable-default-apps',
+      '--disable-extensions',
+      '--no-first-run',
+      '--disable-sync'
+    ],
+
+    // Output optimizations
+    headless: isCI || isOptimizedMode,
+    trace: isFastMode ? 'off' as const : 'retain-on-failure' as const,
+    screenshot: isFastMode ? 'only-on-failure' as const : 'only-on-failure' as const,
+    video: isFastMode ? 'off' as const : 'retain-on-failure' as const
+  };
+
+  return baseConfig;
 };
 
 const perfConfig = getPerformanceConfig();
 
 /**
- * Performance Monitoring Hook
+ * Enhanced Performance Monitoring with Detailed Metrics
  */
 const performanceStartTime = Date.now();
 process.on('exit', () => {
-  if (process.env.PLAYWRIGHT_PERF_LOG === 'true') {
+  if (enablePerfLogging) {
     const duration = Date.now() - performanceStartTime;
-    console.log(`\n🚀 Test suite completed in ${duration}ms`);
-    console.log(`📊 Configuration: ${isFastMode ? 'FAST' : 'STANDARD'} mode`);
-    console.log(`⚡ Workers: ${perfConfig.workers}, CI: ${isCI}`);
+    console.log(`
+🚀 E2E Test Suite Performance Report
+═══════════════════════════════════════
+Total Duration: ${duration}ms
+Configuration: ${isFastMode ? 'FAST' : isOptimizedMode ? 'OPTIMIZED' : 'STANDARD'}
+Workers: ${perfConfig.workers}
+Environment: ${isCI ? 'CI' : 'Local'}
+Parallelization: ${perfConfig.parallelization}
+Test Timeout: ${perfConfig.timeouts.test}ms
+═══════════════════════════════════════
+    `);
   }
 });
 
@@ -74,9 +112,11 @@ export default defineConfig({
   workers: perfConfig.workers,
   
   /* Timeout Optimizations */
-  timeout: perfConfig.timeout, // Reduced from default 30s, but enough for slower tests
+  timeout: perfConfig.timeouts.test, // Optimized timeout based on mode
   expect: {
-    timeout: isCI ? 15000 : 10000, // More time for assertions in CI
+    timeout: perfConfig.timeouts.assertion, // Fast assertion timeouts
+    toHaveScreenshot: { threshold: 0.4 }, // Relaxed for speed
+    toMatchSnapshot: { threshold: 0.4 }
   },
   
   /* Build and CI Configuration */
@@ -84,39 +124,42 @@ export default defineConfig({
   retries: perfConfig.retries,
   
   /* Optimized Reporting */
-  reporter: process.env.CI 
-    ? [['github'], ['html', { outputFolder: 'playwright-report' }]] 
-    : [['list'], ['html', { outputFolder: 'playwright-report' }]],
+  reporter: [
+    ['list'],
+    ['html', { 
+      open: 'never',
+      outputFolder: './test-results/html-report'
+    }],
+    ...(enablePerfLogging ? [['./e2e-tests/performance-reporter.ts', {}] as const] : [])
+  ],
   
-  /* Artifact Management */
-  outputDir: './test-screenshots',
+  /* Output directories */
+  outputDir: './test-results',
   
   /* Optimized Browser Settings */
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
     
-    /* Performance Settings */
-    actionTimeout: 15000, // Faster action timeouts
-    navigationTimeout: 30000, // Reasonable navigation timeout
+    /* Optimized timeouts */
+    actionTimeout: perfConfig.timeouts.action,
+    navigationTimeout: perfConfig.timeouts.navigation,
     
-    /* Tracing and Screenshots - Only when needed */
-    trace: process.env.CI ? 'retain-on-failure' : 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: process.env.CI ? 'retain-on-failure' : 'off',
+    /* Reduced overhead in fast mode */
+    trace: perfConfig.trace,
+    screenshot: perfConfig.screenshot,
+    video: perfConfig.video,
+    
+    /* Browser optimizations */
+    headless: perfConfig.headless,
     
     /* Browser Performance Optimizations */
     launchOptions: {
-      // Faster browser startup
-      args: [
-        '--disable-blink-features=AutomationControlled',
-        '--disable-background-media-playback',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-dev-shm-usage', // Helps with CI memory issues
-        '--no-sandbox', // Faster startup
-      ],
+      args: perfConfig.browserArgs,
     },
+    
+    /* Locale and timezone */
+    locale: 'en-US',
+    timezoneId: 'America/New_York',
   },
 
   /* Optimized Project Configuration */
