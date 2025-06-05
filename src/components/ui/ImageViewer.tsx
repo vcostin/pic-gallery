@@ -32,39 +32,6 @@ export function ImageViewer({ images, currentImageId, isOpen, onClose, onImageCh
     setIsDragging(false);
   }, [currentImageId]);
 
-  // Keyboard navigation
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'Escape':
-          onClose();
-          break;
-        case 'ArrowLeft':
-          handlePrevious();
-          break;
-        case 'ArrowRight':
-          handleNext();
-          break;
-        case '+':
-        case '=':
-          handleZoomIn();
-          break;
-        case '-':
-          handleZoomOut();
-          break;
-        case ' ':
-          e.preventDefault();
-          toggleZoom();
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, currentIndex, scale]);
-
   const handlePrevious = useCallback(() => {
     if (images.length <= 1) return;
     const prevIndex = (currentIndex - 1 + images.length) % images.length;
@@ -110,6 +77,39 @@ export function ImageViewer({ images, currentImageId, isOpen, onClose, onImageCh
     }
   }, [isZoomed, toggleZoom]);
 
+  // Keyboard navigation - moved after function definitions
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'Escape':
+          onClose();
+          break;
+        case 'ArrowLeft':
+          handlePrevious();
+          break;
+        case 'ArrowRight':
+          handleNext();
+          break;
+        case '+':
+        case '=':
+          handleZoomIn();
+          break;
+        case '-':
+          handleZoomOut();
+          break;
+        case ' ':
+          e.preventDefault();
+          toggleZoom();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, currentIndex, scale, handleNext, handlePrevious, handleZoomIn, handleZoomOut, onClose, toggleZoom]);
+
   if (!isOpen || !currentImage) return null;
 
   return (
@@ -123,6 +123,7 @@ export function ImageViewer({ images, currentImageId, isOpen, onClose, onImageCh
         role="dialog"
         aria-modal="true"
         aria-labelledby="image-viewer-title"
+        data-testid="image-viewer-modal"
       >
         <div className="absolute inset-0 flex items-center justify-center p-4">
           {/* Controls */}
@@ -174,6 +175,7 @@ export function ImageViewer({ images, currentImageId, isOpen, onClose, onImageCh
                 className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
                 title="Close (Esc)"
                 aria-label="Close viewer"
+                data-testid="close-modal"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>

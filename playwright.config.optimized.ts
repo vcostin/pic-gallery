@@ -121,100 +121,79 @@ export default defineConfig({
 
   /* Optimized Project Configuration */
   projects: [
-    // Fast independent tests that can run in parallel
+    // Authentication lifecycle (sequential - must run first)
     {
-      name: 'fast-independent',
+      name: 'auth-lifecycle',
       testMatch: [
-        '**/auth.spec.ts',
-        '**/basic.spec.ts',
-        '**/toast-component.spec.ts',
+        '**/01-auth-lifecycle.spec.ts',
       ],
       use: { 
         ...devices['Desktop Chrome'],
-        // Faster settings for simple tests
-        actionTimeout: 10000,
-        navigationTimeout: 20000,
+        // Standard settings for auth tests
+        actionTimeout: 15000,
+        navigationTimeout: 30000,
       },
-      fullyParallel: true, // These can safely run in parallel
+      fullyParallel: false, // Sequential for auth setup
     },
 
-    // Data-dependent tests that need careful sequencing
+    // Core feature tests (can run in parallel with shared auth state)
     {
-      name: 'data-dependent',
+      name: 'feature-tests',
       testMatch: [
-        '**/authenticated.spec.ts',
-        '**/comprehensive-gallery-workflow.spec.ts',
-        '**/gallery-management.spec.ts',
-        '**/setup-basic-gallery.spec.ts',
-        '**/setup-gallery.spec.ts',
+        '**/02-feature-tests.spec.ts',
+        '**/enhanced-upload.spec.ts',
       ],
       use: { 
         ...devices['Desktop Chrome'],
         storageState: './playwright/.auth/single-user.json',
       },
-      dependencies: ['fast-independent'],
-      fullyParallel: false, // Sequential for data safety
+      dependencies: ['auth-lifecycle'],
+      fullyParallel: isFastMode, // Can be parallel in fast mode
     },
 
-    // Gallery-specific tests that can share data
+    // Image and gallery tests (can share data and run in parallel)
     {
-      name: 'gallery-tests',
+      name: 'image-tests',
       testMatch: [
-        '**/gallery-edit.spec.ts',
-        '**/check-gallery-exists.spec.ts',
-        '**/simple-gallery-toast.spec.ts',
+        '**/complete-image-workflow.spec.ts',
+        '**/enhanced-gallery-layouts.spec.ts',
+        '**/image-grid.spec.ts',
+        '**/responsive-mobile-images.spec.ts',
       ],
       use: { 
         ...devices['Desktop Chrome'],
         storageState: './playwright/.auth/single-user.json',
       },
-      dependencies: ['data-dependent'],
+      dependencies: ['feature-tests'],
       fullyParallel: isSharedData, // Can be parallel if sharing data
     },
 
-    // Notification tests (can be fast and parallel)
-    {
-      name: 'notification-tests',
-      testMatch: [
-        '**/toast-notification.spec.ts',
-        '**/verify-toast-implementation.spec.ts',
-      ],
-      use: { 
-        ...devices['Desktop Chrome'],
-        storageState: './playwright/.auth/single-user.json',
-        // Faster settings for UI-only tests
-        actionTimeout: 8000,
-      },
-      dependencies: ['data-dependent'],
-      fullyParallel: true, // UI tests can run in parallel
-    },
-
-    // Cleanup tests (must run last, sequential)
+    // Data cleanup tests (must run after feature tests)
     {
       name: 'cleanup-tests',
       testMatch: [
-        '**/e2e-cleanup-comprehensive.spec.ts',
+        '**/03-data-cleanup.spec.ts',
       ],
       use: { 
         ...devices['Desktop Chrome'],
         storageState: './playwright/.auth/single-user.json',
       },
-      dependencies: ['gallery-tests', 'notification-tests'],
-      fullyParallel: false,
+      dependencies: ['image-tests'],
+      fullyParallel: false, // Sequential for cleanup safety
     },
 
-    // Final deletion (must be last)
+    // Final user deletion (must be last)
     {
       name: 'deletion-tests',
       testMatch: [
-        '**/profile-deletion.spec.ts',
+        '**/04-final-user-deletion.spec.ts',
       ],
       use: { 
         ...devices['Desktop Chrome'],
         storageState: './playwright/.auth/single-user.json',
       },
       dependencies: ['cleanup-tests'],
-      fullyParallel: false,
+      fullyParallel: false, // Must be sequential and last
     },
   ],
 

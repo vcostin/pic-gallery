@@ -29,6 +29,20 @@ export function GalleryFullscreen({
   accentColor,
   backgroundColor
 }: GalleryFullscreenProps) {
+  // Add a keyboard event listener for the Escape key
+  React.useEffect(() => {
+    if (!image) return; // Don't add listeners if no image
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, image]);
+
   if (!image) {
     return null;
   }
@@ -50,7 +64,7 @@ export function GalleryFullscreen({
         color: themeColor || 'white'
       }}
       onClick={onClose} // Close on backdrop click
-      data-testid="gallery-fullscreen"
+      data-testid="image-viewer-modal" // Using the data-testid that the test expects
     >
       <div 
         style={{ padding: '20px', background: 'black', borderRadius: '5px', position: 'relative'}} 
@@ -59,6 +73,7 @@ export function GalleryFullscreen({
         <button 
             onClick={onClose} 
             style={{ position: 'absolute', top: '10px', right: '10px', background: accentColor || 'red', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer' }}
+            data-testid="close-modal"
         >
             Close
         </button>
