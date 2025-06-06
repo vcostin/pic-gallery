@@ -18,7 +18,30 @@ npm run test:e2e:perf
 
 # Parallel Mode - Run independent tests in parallel
 npm run test:e2e:parallel
+
+# Fail-Fast Mode - Stop on first failure for rapid debugging
+npm run test:e2e:fail-fast
+
+# Development Mode - Fast + Fail-Fast combined
+npm run test:e2e:dev
 ```
+
+## 🔥 Fail-Fast Development Rule
+
+**CRITICAL RULE**: During active development and debugging, **always use fail-fast mode** to stop at the first failing test. This provides immediate feedback and prevents wasting time on subsequent failures that may be caused by the same root issue.
+
+### Fail-Fast Commands
+- `npm run test:e2e:fail-fast` - Basic fail-fast mode
+- `npm run test:e2e:dev` - Fast + Fail-Fast (recommended for development)
+
+### When to Use Each Mode
+- **Development/Debugging**: Use `npm run test:e2e:dev` (fail-fast enabled)
+- **Full Validation**: Use `npm run test:e2e:fast` (see all failures)
+- **CI/Production**: Use standard mode with retries
+
+### Environment Variables
+- `PLAYWRIGHT_FAIL_FAST=true` - Enables fail-fast behavior (maxFailures: 1)
+- `PLAYWRIGHT_FAST=true` - Enables fast mode optimizations
 
 ## 📊 Optimization Modes
 

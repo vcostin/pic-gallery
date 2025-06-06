@@ -126,6 +126,7 @@ export function DragDropZone({
             document.getElementById('file-input')?.click();
           }
         }}
+        data-testid="upload-area"
       >
         <input
           id="file-input"

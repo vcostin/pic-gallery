@@ -92,7 +92,7 @@ export class TestPerformanceMetrics {
   }
 
   /**
-   * Measure page navigation performance
+   * Measure page navigation performance with smart mark handling
    */
   static async measureNavigation(
     page: Page, 
@@ -101,27 +101,43 @@ export class TestPerformanceMetrics {
   ): Promise<number> {
     const startTime: number = Date.now();
     
-    // Start navigation timing
-    await page.evaluate(() => {
-      performance.mark('nav-start');
-    });
-
-    await operation();
-
-    // End navigation timing
-    const duration = await page.evaluate(() => {
-      performance.mark('nav-end');
-      const measure = performance.measure('navigation', 'nav-start', 'nav-end');
-      return measure.duration;
-    });
-
-    const totalTime = Date.now() - startTime;
+    // Create unique mark names to avoid conflicts
+    const startMark = `nav-start-${Date.now()}`;
+    const endMark = `nav-end-${Date.now()}`;
     
-    if (process.env.PLAYWRIGHT_PERF_LOG === 'true') {
-      console.log(`🚀 ${label}: ${totalTime}ms (Browser: ${duration.toFixed(0)}ms)`);
-    }
+    try {
+      // Start navigation timing
+      await page.evaluate((markName) => {
+        performance.mark(markName);
+      }, startMark);
 
-    return totalTime;
+      await operation();
+
+      // End navigation timing and measure
+      const duration = await page.evaluate(({ startMark, endMark, label }) => {
+        performance.mark(endMark);
+        try {
+          const measure = performance.measure(`navigation-${label}`, startMark, endMark);
+          return measure.duration;
+        } catch (error) {
+          // Fallback if performance.measure fails
+          console.warn('Performance measurement failed:', error);
+          return 0;
+        }
+      }, { startMark, endMark, label });
+
+      const totalTime = Date.now() - startTime;
+      
+      if (process.env.PLAYWRIGHT_PERF_LOG === 'true') {
+        console.log(`🚀 ${label}: ${totalTime}ms (Browser: ${duration.toFixed(0)}ms)`);
+      }
+
+      return totalTime;
+    } catch {
+      const totalTime = Date.now() - startTime;
+      console.warn(`⚠️ Performance measurement failed for ${label}, using fallback timing: ${totalTime}ms`);
+      return totalTime;
+    }
   }
 
   /**

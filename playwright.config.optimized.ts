@@ -13,6 +13,7 @@ const isFastMode = process.env.PLAYWRIGHT_FAST === 'true';
 const isOptimizedMode = process.env.PLAYWRIGHT_OPTIMIZED === 'true';
 const enablePerfLogging = process.env.PLAYWRIGHT_PERF_LOG === 'true';
 const isSharedData = process.env.PLAYWRIGHT_SHARED_DATA === 'true';
+const isFailFast = process.env.PLAYWRIGHT_FAIL_FAST !== 'false'; // DEFAULT TO TRUE
 
 /**
  * Enhanced Performance Configuration with Optimization Strategies
@@ -33,7 +34,7 @@ const getPerformanceConfig = () => {
     },
 
     // Retry strategy
-    retries: isCI ? 2 : (isFastMode ? 0 : 1),
+    retries: isCI ? 2 : (isFastMode || isFailFast ? 0 : 1),
     
     // Parallelization strategy
     parallelization: isFastMode || isOptimizedMode,
@@ -77,11 +78,12 @@ process.on('exit', () => {
 🚀 E2E Test Suite Performance Report
 ═══════════════════════════════════════
 Total Duration: ${duration}ms
-Configuration: ${isFastMode ? 'FAST' : isOptimizedMode ? 'OPTIMIZED' : 'STANDARD'}
+Configuration: ${isFastMode ? 'FAST' : isOptimizedMode ? 'OPTIMIZED' : 'STANDARD'}${isFailFast ? ' + FAIL-FAST' : ''}
 Workers: ${perfConfig.workers}
 Environment: ${isCI ? 'CI' : 'Local'}
 Parallelization: ${perfConfig.parallelization}
 Test Timeout: ${perfConfig.timeouts.test}ms
+Max Failures: ${isFailFast ? '1 (fail-fast)' : 'unlimited'}
 ═══════════════════════════════════════
     `);
   }
@@ -97,6 +99,7 @@ Test Timeout: ${perfConfig.timeouts.test}ms
  * 4. Faster browser launching with resource management
  * 5. Performance monitoring and regression detection
  * 6. Cross-platform compatibility
+ * 7. Fail-fast mode for rapid development cycles
  */
 export default defineConfig({
   testDir: './e2e-tests',
@@ -123,18 +126,21 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: perfConfig.retries,
   
+  /* Fail-fast configuration for development */
+  maxFailures: isFailFast ? 1 : undefined,
+  
   /* Optimized Reporting */
   reporter: [
     ['list'],
-    ['html', { 
+    ['html', {
       open: 'never',
-      outputFolder: './test-results/html-report'
+      outputFolder: './test-results/report/html' // Changed path
     }],
     ...(enablePerfLogging ? [['./e2e-tests/performance-reporter.ts', {}] as const] : [])
   ],
-  
+
   /* Output directories */
-  outputDir: './test-results',
+  outputDir: './test-results/artifacts', // Changed path
   
   /* Optimized Browser Settings */
   use: {
@@ -202,6 +208,8 @@ export default defineConfig({
         '**/enhanced-gallery-layouts.spec.ts',
         '**/image-grid.spec.ts',
         '**/responsive-mobile-images.spec.ts',
+        '**/simple-gallery-workflow.spec.ts', // Replaced complex test with simple one
+        '**/optimized-upload-workflow.spec.ts',
       ],
       use: { 
         ...devices['Desktop Chrome'],

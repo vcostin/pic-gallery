@@ -19,6 +19,8 @@
     "test:coverage": "jest --coverage --coverageReporters=lcov",
     "test:e2e": "AUTH_ONLY=1 playwright test",
     "test:e2e:fast": "PLAYWRIGHT_FAST=true playwright test --config=playwright.config.optimized.ts",
+    "test:e2e:fail-fast": "PLAYWRIGHT_FAIL_FAST=true playwright test --config=playwright.config.optimized.ts",
+    "test:e2e:dev": "PLAYWRIGHT_FAIL_FAST=true PLAYWRIGHT_FAST=true playwright test --config=playwright.config.optimized.ts",
     "test:e2e:optimized": "PLAYWRIGHT_OPTIMIZED=true playwright test --config=playwright.config.optimized.ts",
     "test:e2e:perf": "PLAYWRIGHT_PERF_LOG=true PLAYWRIGHT_OPTIMIZED=true playwright test --config=playwright.config.optimized.ts",
     "test:e2e:parallel": "PLAYWRIGHT_FAST=true PLAYWRIGHT_SHARED_DATA=true playwright test --config=playwright.config.optimized.ts",

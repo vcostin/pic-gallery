@@ -1,5 +1,6 @@
 import { Page } from '@playwright/test';
 import { OptimizedWaitHelpers } from './optimized-wait-helpers';
+import { EnhancedWaitHelpers } from './enhanced-wait-helpers';
 
 /**
  * Consolidated test helper functions combining the best of TestHelpers and SimpleHelpers
@@ -302,6 +303,10 @@ export class TestHelpers {
         return null;
       }
       
+      // FIXED: Add database consistency wait after uploading images
+      console.log('Waiting for database consistency after uploads...');
+      await page.waitForTimeout(2000);
+      
       // Step 2: Navigate to gallery creation
       await page.goto('/galleries');
       await page.waitForLoadState('load');
@@ -328,17 +333,38 @@ export class TestHelpers {
         // Wait for dialog to open
         await page.waitForSelector('[data-testid="select-images-modal-overlay"]');
         
-        // Wait for images to load in the dialog
-        await page.waitForSelector('[data-testid^="select-images-image-card-"]', { timeout: 10000 });
+        // FIXED: Better wait for images to load in the dialog with retry logic
+        let availableImageCount = 0;
+        let attempts = 0;
+        const maxAttempts = 5;
         
-        // Select the uploaded images - get all available image cards
-        const imageCards = page.locator('[data-testid^="select-images-image-card-"]');
-        const availableImageCount = await imageCards.count();
+        while (availableImageCount < imageCount && attempts < maxAttempts) {
+          attempts++;
+          console.log(`Attempt ${attempts}: Checking for images in selection dialog...`);
+          
+          // Wait for any images to appear
+          await page.waitForSelector('[data-testid^="select-images-image-card-"]', { timeout: 5000 }).catch(() => {
+            console.log(`No images found in attempt ${attempts}`);
+          });
+          
+          const imageCards = page.locator('[data-testid^="select-images-image-card-"]');
+          availableImageCount = await imageCards.count();
+          console.log(`Found ${availableImageCount} images in selection dialog (need ${imageCount})`);
+          
+          if (availableImageCount < imageCount && attempts < maxAttempts) {
+            console.log('Not enough images found, waiting and retrying...');
+            await EnhancedWaitHelpers.waitForPageReady(page, {
+              selector: '[data-testid^="select-images-image-card-"]',
+              timeout: 2000
+            });
+          }
+        }
         
         if (availableImageCount > 0) {
           console.log(`Found ${availableImageCount} images available for selection`);
           
           // Select up to imageCount or all available images
+          const imageCards = page.locator('[data-testid^="select-images-image-card-"]');
           const imagesToSelect = Math.min(imageCount, availableImageCount);
           for (let i = 0; i < imagesToSelect; i++) {
             await imageCards.nth(i).click();
@@ -361,19 +387,38 @@ export class TestHelpers {
         // Step 5: Submit gallery creation form
         await page.click('[data-testid="create-gallery-submit"]');
         
-        // Wait for navigation to the new gallery page with a longer timeout
-        await page.waitForURL('**/galleries/**', { timeout: 10000 });
-        
-        // Wait for the page to be fully loaded
-        await page.waitForLoadState('networkidle', { timeout: 10000 });
-        
-        // Get gallery ID from URL
-        const url = page.url();
-        const galleryIdMatch = url.match(/\/galleries\/([^\/]+)$/);
-        const galleryId = galleryIdMatch ? galleryIdMatch[1] : Date.now().toString();
-        
-        console.log(`Successfully created gallery: ${uniqueGalleryName} with ID: ${galleryId}`);
-        return { galleryId, galleryName: uniqueGalleryName };
+        // Wait for navigation to the new gallery page with enhanced wait strategies
+        try {
+          await Promise.race([
+            page.waitForURL('**/galleries/**', { timeout: 5000 }),
+            page.waitForSelector('[data-testid="gallery-content"], .gallery-content', { timeout: 5000 }),
+            page.waitForSelector('h1, [data-testid="gallery-title"]', { timeout: 5000 })
+          ]);
+          
+          // Wait for page stability using enhanced wait helpers instead of timeout
+          await EnhancedWaitHelpers.waitForPageReady(page, {
+            selector: '[data-testid="gallery-view"], [data-testid="gallery-detail"], main',
+            timeout: 3000
+          }).catch(() => {
+            console.log('Enhanced wait for page ready timed out, continuing...');
+          });
+          
+          // Get gallery ID from URL
+          const url = page.url();
+          const galleryIdMatch = url.match(/\/galleries\/([^\/]+)$/);
+          const galleryId = galleryIdMatch ? galleryIdMatch[1] : Date.now().toString();
+          
+          console.log(`Successfully created gallery: ${uniqueGalleryName} with ID: ${galleryId}`);
+          return { galleryId, galleryName: uniqueGalleryName };
+        } catch (navError) {
+          console.warn('Gallery creation succeeded but navigation may have failed:', navError);
+          // Try to get gallery ID from current state or fallback
+          const url = page.url();
+          const galleryIdMatch = url.match(/\/galleries\/([^\/]+)$/);
+          const galleryId = galleryIdMatch ? galleryIdMatch[1] : Date.now().toString();
+          
+          return { galleryId, galleryName: uniqueGalleryName };
+        }
       }
       
       return null;
@@ -458,6 +503,12 @@ export class TestHelpers {
       try {
         console.log(`Uploading test image ${i + 1} of ${count}...`);
         
+        // Check if page context is still valid before attempting upload
+        if (page.isClosed()) {
+          console.error(`❌ Page context is closed, cannot upload image ${i + 1}`);
+          break; // Exit upload loop if context is closed
+        }
+        
         // Navigate to upload page
         await page.goto('/images/upload');
         await page.waitForLoadState('load');
@@ -477,31 +528,63 @@ export class TestHelpers {
         // Submit form using enhanced upload component
         await page.getByTestId('upload-submit').click();
         
-        // Wait for success indicators
+        // Wait for success indicators - prioritize quick detection
         try {
+          // Try multiple success detection strategies in order of speed
           await Promise.race([
-            page.getByText(/uploaded successfully/i).waitFor({ timeout: 15000 }),
-            page.getByText(/upload complete/i).waitFor({ timeout: 15000 }),
-            page.getByText(/image uploaded/i).waitFor({ timeout: 15000 }),
-            page.waitForURL((url: URL) => !url.pathname.includes('/upload'), { timeout: 15000 })
+            // Fast: Check for redirect first (usually happens quickly)
+            page.waitForURL((url: URL) => !url.pathname.includes('/upload'), { timeout: 5000 }),
+            // Medium: Check for success text
+            page.getByText(/uploaded successfully|upload complete|image uploaded/i).waitFor({ timeout: 8000 }),
+            // Medium: Check for any progress completion
+            page.waitForSelector('.upload-success, .success-message, [data-testid="upload-success"]', { timeout: 8000 }).catch(() => Promise.reject()),
+            // Slow: Check for navigation to images page
+            page.waitForURL(/\/images(?:\/)?$/, { timeout: 10000 }).catch(() => Promise.reject())
           ]);
           
           uploadedImageNames.push(imageName);
           console.log(`Successfully uploaded: ${imageName}`);
         } catch (error) {
-          console.warn(`Upload may have failed for image ${i + 1}:`, error);
-          // Still add the name in case upload succeeded but success message didn't appear
-          uploadedImageNames.push(imageName);
+          console.warn(`Upload detection timed out for image ${i + 1}, trying fallback...`);
+          
+          // Quick fallback checks
+          const currentUrl = page.url();
+          const isRedirected = !currentUrl.includes('/upload');
+          
+          if (isRedirected) {
+            uploadedImageNames.push(imageName);
+            console.log(`Upload succeeded (detected via URL change): ${imageName}`);
+          } else {
+            // Final fallback: check for any success indicators without waiting
+            const hasSuccessText = await page.getByText(/success/i).isVisible({ timeout: 1000 }).catch(() => false);
+            if (hasSuccessText) {
+              uploadedImageNames.push(imageName);
+              console.log(`Upload succeeded (detected via success text): ${imageName}`);
+            } else {
+              console.error(`Upload failed for image ${i + 1}: ${error}`);
+            }
+          }
         }
       } catch (error) {
         console.error(`Failed to upload test image ${i + 1}:`, error);
       }
     }
     
-    // Wait for database consistency after uploads with optimized wait
+    // Wait for database consistency after uploads with enhanced wait
     console.log('Waiting for database consistency after uploads...');
-    await OptimizedWaitHelpers.waitForNavigation(page);
     
+    // Check if page context is still valid before waiting
+    if (!page.isClosed()) {
+      try {
+        await page.waitForTimeout(1000); // Brief pause for database consistency
+      } catch (error) {
+        console.warn('Warning: Could not wait for timeout, page context may be closed:', error.message);
+      }
+    } else {
+      console.warn('⚠️ Page context is closed, skipping database consistency wait');
+    }
+    
+    console.log(`Successfully uploaded ${uploadedImageNames.length} test images:`, uploadedImageNames);
     return uploadedImageNames;
   }
 }

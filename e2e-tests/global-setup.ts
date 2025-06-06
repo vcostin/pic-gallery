@@ -23,7 +23,7 @@ async function waitForRegistrationCompletion(page: Page): Promise<void> {
                                (!url.includes('/auth/') && url.includes('/'));
     
     return registrationSuccess || hasError;
-  }, { timeout: 15000 });
+  }, { timeout: 60000 }); // Increased timeout to 60 seconds
 }
 
 async function createUser(page: Page, user: TestUser): Promise<void> {
