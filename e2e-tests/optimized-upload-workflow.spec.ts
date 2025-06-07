@@ -1,148 +1,105 @@
 import { test, expect } from '@playwright/test';
-import { EnhancedWaitHelpers } from './enhanced-wait-helpers';
-import { OptimizedTestSession } from './optimized-test-session';
-import { TestPerformanceMetrics } from './test-performance-metrics';
 import path from 'path';
 
 test.describe('Optimized Upload Workflow - E2E Tests', () => {
+  let startTime: number;
+  const performanceMetrics: { [key: string]: number } = {};
+
   test.beforeEach(async ({ page }) => {
-    OptimizedTestSession.initializeTestSession('upload-workflow');
+    startTime = Date.now();
     
-    // Setup optimized page for upload testing
-    await OptimizedTestSession.setupOptimizedPage(page, {
-      route: '/images/upload',
-      waitForAuth: true,
-      disableAnimations: true
-    });
+    // Navigate to upload page with simple, reliable approach
+    await page.goto('/images/upload');
+    
+    // Verify we're on the upload page
+    await expect(page).toHaveURL(/\/images\/upload/);
+    await expect(page.getByText('Upload Images')).toBeVisible();
+    
+    performanceMetrics.pageLoadTime = Date.now() - startTime;
   });
 
-  test.afterEach(async ({ page }) => {
-    await OptimizedTestSession.completeTestSession('upload-workflow', page, {
-      cleanupLevel: 'full', // Clean up uploaded files
-      logPerformance: true
-    });
+  test.afterEach(async () => {
+    const totalTime = Date.now() - startTime;
+    console.log(`🎯 Test Performance Metrics:`);
+    console.log(`  Page Load: ${performanceMetrics.pageLoadTime}ms`);
+    console.log(`  File Selection: ${performanceMetrics.fileSelectionTime || 0}ms`);
+    console.log(`  Form Filling: ${performanceMetrics.formFillingTime || 0}ms`);
+    console.log(`  Upload Time: ${performanceMetrics.uploadTime || 0}ms`);
+    console.log(`  Total Time: ${totalTime}ms`);
+    console.log(`  Target: 8000ms - ${totalTime < 8000 ? '✅ PASSED' : '❌ EXCEEDED'}`);
   });
 
   test('should complete single file upload with optimized workflow', async ({ page }) => {
     // Verify upload interface loads quickly
-    const interfaceChecks = await OptimizedTestSession.batchElementChecks(page, [
-      { selector: '[data-testid="upload-area"]', expectation: 'visible', timeout: 3000 },
-      { selector: 'text=Select Images', expectation: 'visible', timeout: 2000 },
-      { selector: 'text=Drag and drop your images here', expectation: 'visible', timeout: 2000 }
-    ]);
+    await expect(page.locator('[data-testid="upload-area"]')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText('Select Images')).toBeVisible();
+    await expect(page.getByText('Drag and drop your images here')).toBeVisible();
 
-    // Expect at least the upload area to be visible (most important element)
-    expect(interfaceChecks.passed).toBeGreaterThanOrEqual(1);
-    // Ensure the main upload area is definitely visible
-    await expect(page.locator('[data-testid="upload-area"]')).toBeVisible({ timeout: 5000 });
-
-    // Optimized file selection
+    // File selection with performance measurement
+    const fileSelectionStart = Date.now();
     const testImagePath = path.resolve('./test-data/images/test-image-1.jpg');
     
-    await TestPerformanceMetrics.measureElementWait(
-      async () => {
-        const fileChooserPromise = page.waitForEvent('filechooser');
-        await OptimizedTestSession.smartInteraction(
-          page,
-          '[role="button"][aria-label*="Upload area"]',
-          'click',
-          undefined,
-          { timeout: 3000 }
-        );
-        
-        const fileChooser = await fileChooserPromise;
-        await fileChooser.setFiles([testImagePath]);
-      },
-      'File selection'
-    );
+    const fileChooserPromise = page.waitForEvent('filechooser');
+    await page.locator('[role="button"][aria-label*="Upload area"]').click();
+    
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles([testImagePath]);
+    
+    performanceMetrics.fileSelectionTime = Date.now() - fileSelectionStart;
 
-    // Wait for step 2 to appear with enhanced waiting
-    await EnhancedWaitHelpers.waitForPageReady(page, {
-      selector: 'text=Add Details',
-      timeout: 4000
-    });
+    // Wait for step 2 to appear
+    await expect(page.getByText('Add Details')).toBeVisible({ timeout: 4000 });
+    await expect(page.getByText('1 file selected')).toBeVisible();
+    await expect(page.locator('img[alt="Preview"]')).toBeVisible();
 
-    // Batch form filling for efficiency
-    const formOperations = [
-      {
-        operation: () => OptimizedTestSession.smartInteraction(
-          page,
-          'input[placeholder="Enter image title"]',
-          'fill',
-          'Optimized E2E Upload Test'
-        ),
-        label: 'Title input',
-        required: true
-      },
-      {
-        operation: () => OptimizedTestSession.smartInteraction(
-          page,
-          'textarea[placeholder="Describe your image..."]',
-          'fill',
-          'Test image uploaded via optimized E2E workflow'
-        ),
-        label: 'Description input',
-        required: false
-      }
-    ];
+    // Form filling with performance measurement
+    const formFillingStart = Date.now();
+    
+    // Fill title
+    const titleInput = page.locator('input[placeholder="Enter image title"]');
+    await titleInput.clear();
+    await titleInput.fill('Optimized E2E Upload Test');
+    
+    // Fill description
+    const descriptionInput = page.locator('textarea[placeholder="Describe your image..."]');
+    await descriptionInput.fill('Test image uploaded via optimized E2E workflow');
+    
+    // Add tags
+    const tagInput = page.locator('input[placeholder="Add tags..."]').first();
+    await tagInput.fill('optimized,e2e,performance');
+    await tagInput.press('Enter');
+    
+    performanceMetrics.formFillingTime = Date.now() - formFillingStart;
 
-    const formResults = await EnhancedWaitHelpers.waitForMultiple(
-      formOperations,
-      5000
-    );
-
-    expect(formResults.failed.length).toBe(0);
-
-    // Optimized tag input
-    const tagInputSuccess = await OptimizedTestSession.smartInteraction(
-      page,
-      '[data-testid="tag-input"]',
-      'fill',
-      'optimized,e2e,performance'
-    );
-
-    if (tagInputSuccess) {
-      await page.keyboard.press('Enter');
-    }
-
-    // Verify upload button state
-    await EnhancedWaitHelpers.waitForActionableElement(
-      page.getByTestId('upload-submit'),
-      'click',
-      3000
-    );
+    // Verify upload button is enabled
+    const uploadButton = page.getByTestId('upload-submit');
+    await expect(uploadButton).toBeEnabled();
+    await expect(uploadButton).toContainText('Upload Image');
 
     // Perform upload with performance measurement
-    await TestPerformanceMetrics.measureNavigation(
-      page,
-      async () => {
-        await page.getByTestId('upload-submit').click();
-        
-        // Wait for upload progress
-        await page.waitForSelector('text=/Uploading 1 of 1/', { 
-          state: 'visible', 
-          timeout: 5000 
-        }).catch(() => {
-          // Upload might be too fast to catch progress
-        });
-        
-        // Wait for success message with optimized timeout
-        await page.waitForSelector('text=/uploaded successfully/', { 
-          state: 'visible', 
-          timeout: 15000 
-        });
-      },
-      'Upload completion'
-    );
+    const uploadStart = Date.now();
+    
+    await uploadButton.click();
+    
+    // Wait for upload progress (may be fast)
+    await page.waitForSelector('text=/Uploading 1 of 1/', { 
+      state: 'visible', 
+      timeout: 5000 
+    }).catch(() => {
+      // Upload might be too fast to catch progress
+    });
+    
+    // Wait for success message
+    await expect(page.getByText(/uploaded successfully/)).toBeVisible({ timeout: 15000 });
+    
+    performanceMetrics.uploadTime = Date.now() - uploadStart;
 
-    // Verify form reset efficiently
-    const resetChecks = await OptimizedTestSession.batchElementChecks(page, [
-      { selector: 'text=Add Details', expectation: 'hidden', timeout: 2000 },
-      { selector: 'img[alt="Preview"]', expectation: 'hidden', timeout: 2000 },
-      { selector: 'text=Drag and drop your images here', expectation: 'visible', timeout: 2000 }
-    ]);
-
-    expect(resetChecks.passed).toBeGreaterThanOrEqual(2);
+    // Verify form reset
+    await expect(page.getByText('Add Details')).not.toBeVisible();
+    await expect(page.locator('img[alt="Preview"]')).not.toBeVisible();
+    await expect(page.getByText('Drag and drop your images here')).toBeVisible();
+    
+    console.log('✅ Single file upload completed successfully');
   });
 
   test('should handle bulk upload with optimized performance', async ({ page }) => {
@@ -152,86 +109,68 @@ test.describe('Optimized Upload Workflow - E2E Tests', () => {
       path.resolve('./test-data/images/test-image-2.jpg')
     ];
 
-    // Optimized multi-file selection
-    await TestPerformanceMetrics.measureElementWait(
-      async () => {
-        const fileChooserPromise = page.waitForEvent('filechooser');
-        await page.locator('[role="button"][aria-label*="Upload area"]').click();
-        
-        const fileChooser = await fileChooserPromise;
-        await fileChooser.setFiles(testFiles);
-      },
-      'Bulk file selection'
-    );
+    // Multi-file selection with performance measurement
+    const fileSelectionStart = Date.now();
+    
+    const fileChooserPromise = page.waitForEvent('filechooser');
+    await page.locator('[role="button"][aria-label*="Upload area"]').click();
+    
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles(testFiles);
+    
+    performanceMetrics.fileSelectionTime = Date.now() - fileSelectionStart;
 
     // Wait for bulk upload interface
-    await EnhancedWaitHelpers.waitForPageReady(page, {
-      selector: 'text=2 files selected',
-      timeout: 4000
-    });
+    await expect(page.getByText('2 files selected')).toBeVisible({ timeout: 4000 });
+    await expect(page.getByText('Add Details')).toBeVisible();
 
     // Verify bulk upload features appear
-    const bulkFeatureChecks = await OptimizedTestSession.batchElementChecks(page, [
-      { selector: 'text=Apply to All Images', expectation: 'visible', timeout: 3000 },
-      { selector: 'input[placeholder="Add common tags..."]', expectation: 'visible', timeout: 3000 },
-      { selector: 'text=Image 1', expectation: 'visible', timeout: 3000 },
-      { selector: 'text=Image 2', expectation: 'visible', timeout: 3000 }
-    ]);
+    await expect(page.getByText('Apply to All Images')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('input[placeholder="Add common tags..."]')).toBeVisible();
+    await expect(page.getByText('Image 1')).toBeVisible();
+    await expect(page.getByText('Image 2')).toBeVisible();
 
-    expect(bulkFeatureChecks.passed).toBeGreaterThanOrEqual(3);
-
-    // Add common tags efficiently
-    await OptimizedTestSession.smartInteraction(
-      page,
-      'input[placeholder="Add common tags..."]',
-      'fill',
-      'bulk,optimized,test'
-    );
+    // Form filling with performance measurement
+    const formFillingStart = Date.now();
     
-    await page.keyboard.press('Enter');
+    // Add common tags efficiently
+    const commonTagInput = page.locator('input[placeholder="Add common tags..."]');
+    await commonTagInput.fill('bulk,optimized,test');
+    await commonTagInput.press('Enter');
     
     // Apply tags to all
-    await OptimizedTestSession.smartInteraction(
-      page,
-      'text=Apply Tags to All',
-      'click'
-    );
+    await page.getByText('Apply Tags to All').click();
 
     // Fill individual titles quickly
     const titleInputs = page.locator('input[placeholder="Enter image title"]');
+    await titleInputs.nth(0).clear();
     await titleInputs.nth(0).fill('Optimized Bulk Upload 1');
+    await titleInputs.nth(1).clear();
     await titleInputs.nth(1).fill('Optimized Bulk Upload 2');
+    
+    performanceMetrics.formFillingTime = Date.now() - formFillingStart;
 
     // Verify upload button shows correct count
     await expect(page.getByText('Upload 2 Images')).toBeVisible({ timeout: 3000 });
 
     // Perform bulk upload with measurement
-    await TestPerformanceMetrics.measureNavigation(
-      page,
-      async () => {
-        await page.getByTestId('upload-submit').click();
-        
-        // Wait for bulk upload completion
-        await page.waitForSelector('text=/2 images uploaded successfully/', { 
-          state: 'visible', 
-          timeout: 25000 
-        });
-      },
-      'Bulk upload completion'
-    );
-
+    const uploadStart = Date.now();
+    
+    await page.getByTestId('upload-submit').click();
+    
+    // Wait for bulk upload completion
+    await expect(page.getByText(/2 images uploaded successfully/)).toBeVisible({ timeout: 25000 });
+    
+    performanceMetrics.uploadTime = Date.now() - uploadStart;
+    
     console.log('✅ Bulk upload completed successfully');
   });
 
   test('should validate file constraints with minimal overhead', async ({ page }) => {
-    // Test file type validation efficiently
-    const constraintChecks = await OptimizedTestSession.batchElementChecks(page, [
-      { selector: 'text=/Supports JPG, PNG, WebP/', expectation: 'visible', timeout: 2000 },
-      { selector: 'text=/Maximum 5 files/', expectation: 'visible', timeout: 2000 },
-      { selector: 'text=/4\\.0MB/', expectation: 'visible', timeout: 2000 }
-    ]);
-
-    expect(constraintChecks.passed).toBeGreaterThanOrEqual(2);
+    // Test file constraint display
+    await expect(page.getByText(/Supports JPG, PNG, WebP/)).toBeVisible({ timeout: 2000 });
+    await expect(page.getByText(/Maximum 5 files/)).toBeVisible({ timeout: 2000 });
+    await expect(page.getByText(/4\.0MB/)).toBeVisible({ timeout: 2000 });
 
     // Test file input attributes
     const fileInput = page.getByTestId('file-input');
@@ -252,30 +191,19 @@ test.describe('Optimized Upload Workflow - E2E Tests', () => {
     await fileChooser.setFiles([testImagePath]);
 
     // Wait for form to appear
-    await EnhancedWaitHelpers.waitForPageReady(page, {
-      selector: 'text=Add Details',
-      timeout: 4000
-    });
+    await expect(page.getByText('Add Details')).toBeVisible({ timeout: 4000 });
 
     // Clear title to trigger validation error
-    await OptimizedTestSession.smartInteraction(
-      page,
-      'input[placeholder="Enter image title"]',
-      'fill',
-      ''
-    );
+    const titleInput = page.locator('input[placeholder="Enter image title"]');
+    await titleInput.clear();
+    await titleInput.fill('');
 
     // Verify upload button is disabled
     const uploadButton = page.getByTestId('upload-submit');
     await expect(uploadButton).toBeDisabled({ timeout: 2000 });
 
     // Fix the error quickly
-    await OptimizedTestSession.smartInteraction(
-      page,
-      'input[placeholder="Enter image title"]',
-      'fill',
-      'Error Recovery Test'
-    );
+    await titleInput.fill('Error Recovery Test');
 
     // Verify button becomes enabled
     await expect(uploadButton).toBeEnabled({ timeout: 2000 });
@@ -294,30 +222,18 @@ test.describe('Optimized Upload Workflow - E2E Tests', () => {
     await fileChooser.setFiles([testImagePath]);
 
     // Fill form data
-    await EnhancedWaitHelpers.waitForPageReady(page, {
-      selector: 'text=Add Details',
-      timeout: 4000
-    });
+    await expect(page.getByText('Add Details')).toBeVisible({ timeout: 4000 });
 
-    await OptimizedTestSession.smartInteraction(
-      page,
-      'input[placeholder="Enter image title"]',
-      'fill',
-      'Persistence Test'
-    );
+    const titleInput = page.locator('input[placeholder="Enter image title"]');
+    await titleInput.clear();
+    await titleInput.fill('Persistence Test');
 
     // Navigate away and back quickly
     await page.goto('/images');
-    await EnhancedWaitHelpers.waitForPageReady(page, {
-      selector: '[data-testid="images-page"]',
-      timeout: 4000
-    });
+    await expect(page.locator('[data-testid="images-page"]')).toBeVisible({ timeout: 4000 });
 
     await page.goto('/images/upload');
-    await EnhancedWaitHelpers.waitForPageReady(page, {
-      selector: 'text=Upload Images',
-      timeout: 4000
-    });
+    await expect(page.getByText('Upload Images')).toBeVisible({ timeout: 4000 });
 
     // Verify form is reset (expected behavior)
     await expect(page.getByText('Drag and drop your images here')).toBeVisible({ timeout: 3000 });
@@ -328,7 +244,9 @@ test.describe('Optimized Upload Workflow - E2E Tests', () => {
 
 // Performance report after upload tests
 test.afterAll(async () => {
-  const report = OptimizedTestSession.generateOptimizationReport();
   console.log('\n🎯 Upload Workflow Optimization Results:');
-  console.log(report);
+  console.log('- Removed complex abstraction layers for better reliability');
+  console.log('- Used direct Playwright interactions matching working tests');
+  console.log('- Maintained performance measurement for optimization tracking');
+  console.log('- Target: Complete upload workflow under 8 seconds');
 });

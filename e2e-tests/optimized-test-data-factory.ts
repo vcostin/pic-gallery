@@ -50,16 +50,24 @@ export class OptimizedTestDataFactory {
     
     const newImageTitles = await TestHelpers.uploadTestImages(page, needed);
     
-    // Get the actual database IDs for the newly created images with validation
-    const newImageIds = await this.getImageIdsByTitles(page, newImageTitles);
+    // Add database consistency wait before checking for uploaded images
+    if (newImageTitles.length > 0) {
+      console.log('⏳ Waiting for database consistency after uploads...');
+      await this.waitForDatabaseConsistency(page, existingImageIds.length + newImageTitles.length);
+    }
+    
+    // Get the actual database IDs for the newly created images with retry logic
+    const newImageIds = await this.getImageIdsByTitlesWithRetry(page, newImageTitles);
     
     // Validate that we actually got the expected number of image IDs
     if (newImageIds.length !== newImageTitles.length) {
       console.warn(`⚠️ Expected ${newImageTitles.length} new images but only found ${newImageIds.length} in database`);
       console.warn(`Missing images: ${newImageTitles.filter((title, i) => !newImageIds[i])}`);
+      console.warn(`Successfully found: ${newImageIds.length} images`);
       
       // If we have some existing images, fall back to using more of those
       if (existingImageIds.length > 0) {
+        console.log('🔄 Attempting fallback to existing images...');
         const allExisting = await this.getExistingTestImages(page, count + 10); // Get more existing images
         const finalImageIds = allExisting.slice(0, count);
         
@@ -72,9 +80,21 @@ export class OptimizedTestDataFactory {
         }
       }
       
-      // If we still don't have enough images, throw an error
-      if (existingImageIds.length + newImageIds.length < count) {
-        throw new Error(`Failed to create sufficient test images: needed ${count}, got ${existingImageIds.length + newImageIds.length}`);
+      // Check if we can proceed with partial success
+      const totalAvailable = existingImageIds.length + newImageIds.length;
+      if (totalAvailable >= count) {
+        console.log(`✅ Using combination of ${existingImageIds.length} existing + ${newImageIds.length} new images`);
+      } else {
+        // Log detailed diagnostic information
+        console.error('🔍 Upload diagnostic information:');
+        console.error(`  - Requested: ${count} images`);
+        console.error(`  - Existing available: ${existingImageIds.length}`);
+        console.error(`  - Needed: ${needed}`);
+        console.error(`  - Upload titles returned: ${newImageTitles.length}`);
+        console.error(`  - Database IDs found: ${newImageIds.length}`);
+        console.error(`  - Total available: ${totalAvailable}`);
+        
+        throw new Error(`Failed to create sufficient test images: needed ${count}, got ${totalAvailable} (${existingImageIds.length} existing + ${newImageIds.length} new)`);
       }
     }
     
@@ -182,7 +202,7 @@ export class OptimizedTestDataFactory {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
           
-          const response = await fetch(`http://localhost:3000/api/images?limit=100`, {
+          const response = await fetch(`/api/images?limit=100`, {
             signal: controller.signal,
             headers: {
               'Accept': 'application/json',
@@ -228,6 +248,119 @@ export class OptimizedTestDataFactory {
       console.log('❌ Error in getExistingTestImages:', error);
       return [];
     }
+  }
+
+  /**
+   * Wait for database consistency after upload operations
+   */
+  private static async waitForDatabaseConsistency(page: Page, expectedCount: number, maxWaitMs: number = 10000): Promise<void> {
+    const startTime = Date.now();
+    const checkInterval = 500; // Check every 500ms
+    
+    console.log(`⏳ Waiting for database consistency: expecting ${expectedCount} images`);
+    
+    while (Date.now() - startTime < maxWaitMs) {
+      try {
+        const currentCount = await page.evaluate(async () => {
+          const response = await fetch('/api/images?limit=100');
+          if (!response.ok) return 0;
+          
+          const result = await response.json();
+          const images = result?.success && result?.data?.data ? result.data.data : [];
+          
+          // Count E2E test images
+          const e2eImages = images.filter((img: { title?: string }) => 
+            img.title?.includes('E2E') || img.title?.includes('Test')
+          );
+          return e2eImages.length;
+        });
+        
+        if (currentCount >= expectedCount) {
+          console.log(`✅ Database consistency achieved: found ${currentCount} images`);
+          return;
+        }
+        
+        console.log(`⏳ Database consistency check: ${currentCount}/${expectedCount} images found`);
+        await page.waitForTimeout(checkInterval);
+        
+      } catch (error) {
+        console.log('⚠️ Error during database consistency check:', error);
+        await page.waitForTimeout(checkInterval);
+      }
+    }
+    
+    console.log(`⚠️ Database consistency timeout reached after ${maxWaitMs}ms`);
+  }
+
+  /**
+   * Get database IDs for images by their titles with retry logic
+   */
+  private static async getImageIdsByTitlesWithRetry(page: Page, titles: string[], maxRetries: number = 3): Promise<string[]> {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 Attempt ${attempt}/${maxRetries} to get image IDs for titles`);
+        
+        const imageIds = await this.getImageIdsByTitles(page, titles);
+        
+        if (imageIds.length === titles.length) {
+          console.log(`✅ Successfully retrieved all ${imageIds.length} image IDs`);
+          return imageIds;
+        }
+        
+        if (imageIds.length > 0) {
+          console.log(`⚠️ Partial success: got ${imageIds.length}/${titles.length} image IDs`);
+        }
+        
+        if (attempt < maxRetries) {
+          const backoffMs = Math.pow(2, attempt) * 1000; // Exponential backoff: 2s, 4s, 8s
+          console.log(`⏳ Waiting ${backoffMs}ms before retry...`);
+          try {
+            await page.waitForTimeout(backoffMs);
+          } catch (timeoutError) {
+            // If timeout fails due to test ending, break out
+            if ((timeoutError as Error).message.includes('Test ended')) {
+              console.log(`🛑 Test ending detected during timeout, stopping retry attempts`);
+              break;
+            }
+            throw timeoutError;
+          }
+        }
+        
+      } catch (error) {
+        lastError = error as Error;
+        console.log(`❌ Attempt ${attempt} failed:`, error);
+        
+        // Check if test is ending (fail-fast mode) to avoid hanging
+        if (error.message && error.message.includes('Test ended')) {
+          console.log(`🛑 Test ending detected, stopping retry attempts`);
+          break;
+        }
+        
+        if (attempt < maxRetries) {
+          const backoffMs = Math.pow(2, attempt) * 1000;
+          console.log(`⏳ Waiting ${backoffMs}ms before retry...`);
+          try {
+            await page.waitForTimeout(backoffMs);
+          } catch (timeoutError) {
+            // If timeout fails due to test ending, break out
+            if ((timeoutError as Error).message.includes('Test ended')) {
+              console.log(`🛑 Test ending detected during timeout, stopping retry attempts`);
+              break;
+            }
+            throw timeoutError;
+          }
+        }
+      }
+    }
+    
+    console.log(`❌ Failed to retrieve image IDs after ${maxRetries} attempts`);
+    if (lastError) {
+      throw lastError;
+    }
+    
+    return [];
   }
 
   /**
@@ -478,20 +611,20 @@ export class OptimizedTestDataFactory {
     titlePrefix: string = 'E2E Test Image'
   ): Promise<string[]> {
     const uniqueId = Date.now();
-    const imageIds: string[] = [];
+    const successfullyCreatedIds: string[] = [];
 
     for (let i = 0; i < count; i++) {
       try {
         const imageName = `${titlePrefix} ${uniqueId}-${i + 1}`;
         
         // Create image directly via API
-        const result = await page.evaluate(async ({ title }) => {
+        const result = await page.evaluate(async ({ title, baseUrl }) => {
           try {
-            // For test purposes, we'll use a static URL since we don't need actual file uploads
+            // For test purposes, we'll use a predictable URL since we don't need actual file uploads
             // In a real scenario, you might upload to a test file location
-            const testUrl = `/test-images/placeholder-${Math.random()}.png`;
+            const testUrl = `https://picsum.photos/400/300?random=${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             
-            const response = await fetch('http://localhost:3000/api/images', {
+            const response = await fetch(`${baseUrl}/api/images`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -514,10 +647,11 @@ export class OptimizedTestDataFactory {
             console.error('❌ API image creation error:', error);
             return { success: false, error: error.message };
           }
-        }, { title: imageName });
+        }, { title: imageName, baseUrl: 'http://localhost:3000' });
 
+        // Only add ID to tracking array if creation was successful
         if (result.success && result.imageId) {
-          imageIds.push(result.imageId);
+          successfullyCreatedIds.push(result.imageId);
         } else {
           console.error(`Failed to create image ${imageName}: ${result.error}`);
         }
@@ -526,7 +660,176 @@ export class OptimizedTestDataFactory {
       }
     }
 
-    console.log(`🎉 Successfully created ${imageIds.length}/${count} images via API`);
-    return imageIds;
+    // Wait for database consistency after all uploads (ID-based verification)
+    if (successfullyCreatedIds.length > 0) {
+      console.log(`⏳ Waiting for database persistence of ${successfullyCreatedIds.length} images...`);
+      await this.waitForImagePersistenceByIds(page, successfullyCreatedIds, 8000); // Reduced timeout to 8 seconds
+    }
+
+    console.log(`✅ Successfully created ${successfullyCreatedIds.length} test images via API: [${successfullyCreatedIds.map(id => `'${id}'`).join(', ')}]`);
+    
+    return successfullyCreatedIds;
+  }
+
+  /**
+   * Wait for images to actually persist to database by checking IDs (more reliable than titles)
+   */
+  private static async waitForImagePersistenceByIds(page: Page, imageIds: string[], maxWaitMs: number = 8000): Promise<void> {
+    const startTime = Date.now();
+    const checkInterval = 500; // Check every 500ms
+    
+    console.log(`⏳ Waiting for image persistence: expecting IDs: [${imageIds.map(id => `'${id}'`).join(', ')}]`);
+    
+    // Add initial delay to allow database transactions to commit
+    try {
+      await page.waitForTimeout(1000);
+    } catch {
+      console.log('⚠️ Initial delay failed (page may be closed), stopping persistence check');
+      return;
+    }
+    
+    while (Date.now() - startTime < maxWaitMs) {
+      // Check if page/context is still valid before proceeding
+      if (page.isClosed()) {
+        console.log('⚠️ Page is closed, stopping persistence check');
+        return;
+      }
+      
+      try {
+        const foundIds = await page.evaluate(async (expectedIds) => {
+          const response = await fetch('/api/images?limit=100');
+          if (!response.ok) return [];
+          
+          const result = await response.json();
+          const images = result?.success && result?.data?.data ? result.data.data : [];
+          
+          // Find images with matching IDs
+          const foundIds = images
+            .filter((img: { id?: string }) => img.id && expectedIds.includes(img.id))
+            .map((img: { id: string }) => img.id);
+          
+          return foundIds;
+        }, imageIds);
+        
+        if (foundIds.length === imageIds.length) {
+          console.log(`✅ Image persistence confirmed: found all ${foundIds.length} images by ID`);
+          return;
+        }
+        
+        console.log(`⏳ Image persistence check: ${foundIds.length}/${imageIds.length} images persisted by ID`);
+        
+        // Check again if page is still valid before waiting
+        if (page.isClosed()) {
+          console.log('⚠️ Page is closed, stopping persistence check');
+          return;
+        }
+        
+        try {
+          await page.waitForTimeout(checkInterval);
+        } catch {
+          console.log('⚠️ Timeout failed (page may be closed), stopping persistence check');
+          return;
+        }
+        
+      } catch (error) {
+        console.log('⚠️ Error during image persistence check by ID:', error);
+        
+        // Check if page is still valid before waiting
+        if (page.isClosed()) {
+          console.log('⚠️ Page is closed, stopping persistence check');
+          return;
+        }
+        
+        try {
+          await page.waitForTimeout(checkInterval);
+        } catch {
+          console.log('⚠️ Timeout failed (page may be closed), stopping persistence check');
+          return;
+        }
+      }
+    }
+    
+    console.log(`⚠️ Image persistence by ID timeout reached after ${maxWaitMs}ms`);
+  }
+
+  /**
+   * Wait for images to actually persist to database by checking titles
+   */
+  private static async waitForImagePersistence(page: Page, titles: string[], maxWaitMs: number = 15000): Promise<void> {
+    const startTime = Date.now();
+    const checkInterval = 500; // Check every 500ms
+    
+    console.log(`⏳ Waiting for image persistence: expecting titles: ${titles.join(', ')}`);
+    
+    // Add initial delay to allow database transactions to commit
+    try {
+      await page.waitForTimeout(1000);
+    } catch {
+      console.log('⚠️ Initial delay failed (page may be closed), stopping persistence check');
+      return;
+    }
+    
+    while (Date.now() - startTime < maxWaitMs) {
+      // Check if page/context is still valid before proceeding
+      if (page.isClosed()) {
+        console.log('⚠️ Page is closed, stopping persistence check');
+        return;
+      }
+      
+      try {
+        const foundTitles = await page.evaluate(async (expectedTitles) => {
+          const response = await fetch('/api/images?limit=100');
+          if (!response.ok) return [];
+          
+          const result = await response.json();
+          const images = result?.success && result?.data?.data ? result.data.data : [];
+          
+          // Find images with matching titles
+          const foundTitles = images
+            .filter((img: { title?: string }) => img.title && expectedTitles.includes(img.title))
+            .map((img: { title: string }) => img.title);
+          
+          return foundTitles;
+        }, titles);
+        
+        if (foundTitles.length === titles.length) {
+          console.log(`✅ Image persistence confirmed: found all ${foundTitles.length} images`);
+          return;
+        }
+        
+        console.log(`⏳ Image persistence check: ${foundTitles.length}/${titles.length} images persisted`);
+        
+        // Check again if page is still valid before waiting
+        if (page.isClosed()) {
+          console.log('⚠️ Page is closed, stopping persistence check');
+          return;
+        }
+        
+        try {
+          await page.waitForTimeout(checkInterval);
+        } catch {
+          console.log('⚠️ Timeout failed (page may be closed), stopping persistence check');
+          return;
+        }
+        
+      } catch (error) {
+        console.log('⚠️ Error during image persistence check:', error);
+        
+        // Check if page is still valid before waiting
+        if (page.isClosed()) {
+          console.log('⚠️ Page is closed, stopping persistence check');
+          return;
+        }
+        
+        try {
+          await page.waitForTimeout(checkInterval);
+        } catch {
+          console.log('⚠️ Timeout failed (page may be closed), stopping persistence check');
+          return;
+        }
+      }
+    }
+    
+    console.log(`⚠️ Image persistence timeout reached after ${maxWaitMs}ms`);
   }
 }

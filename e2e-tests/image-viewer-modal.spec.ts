@@ -3,26 +3,36 @@ import { TestHelpers } from './test-helpers';
 import { OptimizedTestDataFactory } from './optimized-test-data-factory';
 
 test.describe('Image Viewer Modal - Navigation and Interactions', () => {
-  test.beforeAll(async ({ browser }) => {
-    // Set up test images for modal testing via API
-    const page = await browser.newPage();
-    await OptimizedTestDataFactory.createTestImagesViaAPI(page, 3);
-    await page.close();
-  });
-
   test.beforeEach(async ({ page }) => {
-    await page.goto('/images');
-    await page.waitForLoadState('load');
+    // Ensure we're authenticated for all tests
+    const isAuthenticated = await TestHelpers.isAuthenticated(page);
+    if (!isAuthenticated) {
+      const testUser = {
+        email: process.env.E2E_TEST_USER_EMAIL || 'e2e-single-user@example.com',
+        password: process.env.E2E_TEST_USER_PASSWORD || 'TestPassword123!'
+      };
+      const loginSuccess = await TestHelpers.quickLogin(page, testUser.email, testUser.password);
+      
+      if (!loginSuccess) {
+        throw new Error('Could not authenticate with the E2E test user');
+      }
+    }
   });
   
-  test.afterAll(async ({ browser }) => {
-    // Clean up test data
-    const page = await browser.newPage();
-    await TestHelpers.completeCleanup(page);
-    await page.close();
+  test.afterEach(async ({ page }) => {
+    // Clean up test data but keep user account
+    await TestHelpers.cleanupTestData(page);
   });
 
   test('should open image viewer modal when clicking on image', async ({ page }) => {
+    // Create test images first
+    const imageIds = await OptimizedTestDataFactory.createTestImagesViaAPI(page, 3);
+    expect(imageIds.length).toBeGreaterThan(0);
+    
+    // Navigate to images page to see the test images
+    await page.goto('/images');
+    await page.waitForLoadState('load');
+    
     // Wait for images to load
     await expect(page.getByTestId('image-grid')).toBeVisible();
     
@@ -38,6 +48,17 @@ test.describe('Image Viewer Modal - Navigation and Interactions', () => {
   });
 
   test('should close image viewer modal using close button', async ({ page }) => {
+    // Create test images first
+    const imageIds = await OptimizedTestDataFactory.createTestImagesViaAPI(page, 3);
+    expect(imageIds.length).toBeGreaterThan(0);
+    
+    // Navigate to images page to see the test images
+    await page.goto('/images');
+    await page.waitForLoadState('load');
+    
+    // Wait for images to load
+    await expect(page.getByTestId('image-grid')).toBeVisible();
+    
     // Open modal
     const firstImage = page.getByTestId('gallery-image').first();
     await firstImage.click();
@@ -52,6 +73,17 @@ test.describe('Image Viewer Modal - Navigation and Interactions', () => {
   });
 
   test('should close image viewer modal using Escape key', async ({ page }) => {
+    // Create test images first  
+    const imageIds = await OptimizedTestDataFactory.createTestImagesViaAPI(page, 3);
+    expect(imageIds.length).toBeGreaterThan(0);
+    
+    // Navigate to images page to see the test images
+    await page.goto('/images');
+    await page.waitForLoadState('load');
+
+    // Wait for images to load
+    await expect(page.getByTestId('image-grid')).toBeVisible();
+    
     // Open modal
     const firstImage = page.getByTestId('gallery-image').first();
     await firstImage.click();
@@ -66,6 +98,17 @@ test.describe('Image Viewer Modal - Navigation and Interactions', () => {
   });
 
   test('should navigate to next image using arrow button', async ({ page }) => {
+    // Create test images first
+    const imageIds = await OptimizedTestDataFactory.createTestImagesViaAPI(page, 3);
+    expect(imageIds.length).toBeGreaterThan(0);
+    
+    // Navigate to images page to see the test images
+    await page.goto('/images');
+    await page.waitForLoadState('load');
+
+    // Wait for images to load  
+    await expect(page.getByTestId('image-grid')).toBeVisible();
+    
     // Open modal
     const firstImage = page.getByTestId('gallery-image').first();
     await firstImage.click();
@@ -73,7 +116,7 @@ test.describe('Image Viewer Modal - Navigation and Interactions', () => {
     await expect(page.locator('[role="dialog"][aria-modal="true"]')).toBeVisible();
     
     // Click next arrow if available (depends on having multiple images)
-    const nextButton = page.getByRole('button', { name: /next/i });
+    const nextButton = page.getByRole('button', { name: /next image/i });
     if (await nextButton.isVisible()) {
       await nextButton.click();
       // Verify modal still open and showing an image
@@ -82,6 +125,17 @@ test.describe('Image Viewer Modal - Navigation and Interactions', () => {
   });
 
   test('should navigate to previous image using arrow button', async ({ page }) => {
+    // Create test images first
+    const imageIds = await OptimizedTestDataFactory.createTestImagesViaAPI(page, 3);
+    expect(imageIds.length).toBeGreaterThan(0);
+    
+    // Navigate to images page to see the test images
+    await page.goto('/images');
+    await page.waitForLoadState('load');
+
+    // Wait for images to load
+    await expect(page.getByTestId('image-grid')).toBeVisible();
+    
     // Try to open modal on second image if available
     const images = page.getByTestId('gallery-image');
     const imageCount = await images.count();
@@ -92,7 +146,7 @@ test.describe('Image Viewer Modal - Navigation and Interactions', () => {
       await expect(page.locator('[role="dialog"][aria-modal="true"]')).toBeVisible();
       
       // Click previous arrow
-      const prevButton = page.getByRole('button', { name: /previous/i });
+      const prevButton = page.getByRole('button', { name: /previous image/i });
       if (await prevButton.isVisible()) {
         await prevButton.click();
         // Verify modal still open and showing an image
@@ -102,6 +156,17 @@ test.describe('Image Viewer Modal - Navigation and Interactions', () => {
   });
 
   test('should navigate using keyboard arrow keys', async ({ page }) => {
+    // Create test images first
+    const imageIds = await OptimizedTestDataFactory.createTestImagesViaAPI(page, 3);
+    expect(imageIds.length).toBeGreaterThan(0);
+    
+    // Navigate to images page to see the test images
+    await page.goto('/images');
+    await page.waitForLoadState('load');
+
+    // Wait for images to load
+    await expect(page.getByTestId('image-grid')).toBeVisible();
+    
     // Open modal
     const firstImage = page.getByTestId('gallery-image').first();
     await firstImage.click();
@@ -118,6 +183,17 @@ test.describe('Image Viewer Modal - Navigation and Interactions', () => {
   });
 
   test('should handle zoom functionality', async ({ page }) => {
+    // Create test images first
+    const imageIds = await OptimizedTestDataFactory.createTestImagesViaAPI(page, 3);
+    expect(imageIds.length).toBeGreaterThan(0);
+    
+    // Navigate to images page to see the test images
+    await page.goto('/images');
+    await page.waitForLoadState('load');
+
+    // Wait for images to load
+    await expect(page.getByTestId('image-grid')).toBeVisible();
+    
     // Open modal
     const firstImage = page.getByTestId('gallery-image').first();
     await firstImage.click();
@@ -142,6 +218,17 @@ test.describe('Image Viewer Modal - Navigation and Interactions', () => {
   });
 
   test('should show image information correctly', async ({ page }) => {
+    // Create test images first
+    const imageIds = await OptimizedTestDataFactory.createTestImagesViaAPI(page, 3);
+    expect(imageIds.length).toBeGreaterThan(0);
+    
+    // Navigate to images page to see the test images
+    await page.goto('/images');
+    await page.waitForLoadState('load');
+
+    // Wait for images to load
+    await expect(page.getByTestId('image-grid')).toBeVisible();
+    
     // Open modal
     const firstImage = page.getByTestId('gallery-image').first();
     await firstImage.click();
@@ -156,6 +243,17 @@ test.describe('Image Viewer Modal - Navigation and Interactions', () => {
   });
 
   test('should handle edge cases (navigation boundaries)', async ({ page }) => {
+    // Create test images first
+    const imageIds = await OptimizedTestDataFactory.createTestImagesViaAPI(page, 3);
+    expect(imageIds.length).toBeGreaterThan(0);
+    
+    // Navigate to images page to see the test images
+    await page.goto('/images');
+    await page.waitForLoadState('load');
+
+    // Wait for images to load
+    await expect(page.getByTestId('image-grid')).toBeVisible();
+    
     // Open modal on first image
     const firstImage = page.getByTestId('gallery-image').first();
     await firstImage.click();
@@ -171,6 +269,17 @@ test.describe('Image Viewer Modal - Navigation and Interactions', () => {
   });
 
   test('should maintain focus management and accessibility', async ({ page }) => {
+    // Create test images first
+    const imageIds = await OptimizedTestDataFactory.createTestImagesViaAPI(page, 3);
+    expect(imageIds.length).toBeGreaterThan(0);
+    
+    // Navigate to images page to see the test images
+    await page.goto('/images');
+    await page.waitForLoadState('load');
+
+    // Wait for images to load
+    await expect(page.getByTestId('image-grid')).toBeVisible();
+    
     // Open modal
     const firstImage = page.getByTestId('gallery-image').first();
     await firstImage.click();

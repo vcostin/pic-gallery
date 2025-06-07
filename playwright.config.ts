@@ -173,6 +173,9 @@ export default defineConfig({
         '**/enhanced-gallery-layouts.spec.ts',
         '**/image-grid.spec.ts',
         '**/responsive-mobile-images.spec.ts',
+        '**/optimized-upload-workflow.spec.ts',
+        '**/debug-upload-network.spec.ts',
+        '**/image-viewer-modal.spec.ts',
       ],
       timeout: isCI ? 60000 : 8000, // 8s timeout for image tests (complex workflows with uploads)
       use: { 

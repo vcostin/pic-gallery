@@ -92,7 +92,25 @@ Max Failures: ${isFailFast ? '1 (fail-fast)' : 'unlimited'}
 /**
  * Optimized Playwright Configuration for Better Performance
  * 
- * Key Optimizations:
+ * EMERGENCY FIX APPLIED: Database Race Condition Resolution
+ * ========================================================
+ * - Disabled parallel execution (fullyParallel: false)
+ * - Reduced workers to 1 to eliminate database race conditions
+ * - This fixes the 4-worker async/priority issues causing test failures
+ * - Gallery creation 404 errors were due to parallel workers competing for same test data
+ * - Database cleanup interference resolved by sequential execution
+ * 
+ * PERFORMANCE IMPACT:
+ * - Test execution time will increase (trade-off for stability)
+ * - All tests will run sequentially, preventing data conflicts
+ * - UI tests will be reliable but slower
+ * 
+ * NEXT STEPS for optimization:
+ * 1. Implement worker isolation with separate test data per worker
+ * 2. Add database transaction boundaries in API routes
+ * 3. Enhance test data factory with proper consistency checking
+ * 
+ * Key Optimizations (when parallel execution is re-enabled):
  * 1. Selective parallelization based on test type and environment
  * 2. Environment-aware timeout settings  
  * 3. CI/CD optimized configurations
@@ -109,10 +127,11 @@ export default defineConfig({
   globalTeardown: './e2e-tests/global-teardown.ts',
   
   /* Performance Optimizations */
-  // Enable parallel execution for non-conflicting tests
-  fullyParallel: isFastMode,
-  // More workers for parallel execution, but respect single-user strategy when needed
-  workers: perfConfig.workers,
+  // EMERGENCY FIX: Disable parallel execution for data-dependent tests
+  // This prevents database race conditions between workers
+  fullyParallel: false,
+  // Reduce workers to 1 to eliminate race conditions
+  workers: 1,
   
   /* Timeout Optimizations */
   timeout: perfConfig.timeouts.test, // Optimized timeout based on mode

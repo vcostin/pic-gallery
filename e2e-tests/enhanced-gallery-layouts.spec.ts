@@ -103,9 +103,24 @@ test.describe('Enhanced Gallery Layouts - E2E Tests', () => {
       ];
       
       for (const selector of alternativeSelectors) {
-        const found = await page.locator(selector).count();
-        if (found > 0) {
-          console.log(`Found ${found} elements with selector: ${selector}`);
+        // Check if page is still open before attempting to interact with it
+        if (page.isClosed()) {
+          console.log('⚠️ Page is closed, stopping alternative selector checks');
+          break;
+        }
+        
+        try {
+          const found = await page.locator(selector).count();
+          if (found > 0) {
+            console.log(`Found ${found} elements with selector: ${selector}`);
+          }
+        } catch (error) {
+          console.log(`⚠️ Error checking selector ${selector}:`, error.message);
+          // If page context is closed, break out of the loop
+          if (error.message.includes('Target page, context or browser has been closed')) {
+            console.log('⚠️ Browser context closed, stopping selector checks');
+            break;
+          }
         }
       }
       
