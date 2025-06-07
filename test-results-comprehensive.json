@@ -1,0 +1,2375 @@
+🧪 Starting E2E Global Setup - Single User Strategy...
+
+🗑️  Step 0: Deleting any existing test user (e2e-single-user@example.com)...
+✅ Existing test user deleted successfully
+
+📝 Step 1: Creating single test user...
+Creating user: e2e-single-user@example.com
+✅ User e2e-single-user@example.com registered, now logging in...
+✅ User e2e-single-user@example.com logged in successfully
+✅ Authentication verified - user can access protected pages
+✅ Authentication state saved for e2e-single-user@example.com
+
+✅ Global Setup Complete - Single test user strategy initialized
+📋 Test Execution Strategy:
+   0. ✅ Delete existing test user (clean slate)
+   1. ✅ Create single test user
+   2. Auth tests (register verification, login/logout) - User persists
+   3. Feature tests (galleries, images, etc.) - Same user
+   4. Cleanup tests (delete galleries/images via API) - Same user
+   5. Final test: Delete user profile and verify deletion
+🧹 E2E Global Teardown - User deletion handled in test sequence
+✅ Global Teardown Complete
+{
+  "config": {
+    "configFile": "/Users/vcostin/Work/pic-gallery/playwright.config.ts",
+    "rootDir": "/Users/vcostin/Work/pic-gallery/e2e-tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": "/Users/vcostin/Work/pic-gallery/e2e-tests/global-setup.ts",
+    "globalTeardown": "/Users/vcostin/Work/pic-gallery/e2e-tests/global-teardown.ts",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 1,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/vcostin/Work/pic-gallery/test-screenshots",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "auth-lifecycle",
+        "name": "auth-lifecycle",
+        "testDir": "/Users/vcostin/Work/pic-gallery/e2e-tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/01-auth-lifecycle.spec.ts"
+        ],
+        "timeout": 3000
+      },
+      {
+        "outputDir": "/Users/vcostin/Work/pic-gallery/test-screenshots",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "feature-tests",
+        "name": "feature-tests",
+        "testDir": "/Users/vcostin/Work/pic-gallery/e2e-tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/02-feature-tests.spec.ts",
+          "**/enhanced-upload.spec.ts"
+        ],
+        "timeout": 3000
+      },
+      {
+        "outputDir": "/Users/vcostin/Work/pic-gallery/test-screenshots",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "image-tests",
+        "name": "image-tests",
+        "testDir": "/Users/vcostin/Work/pic-gallery/e2e-tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/complete-image-workflow.spec.ts",
+          "**/enhanced-gallery-layouts.spec.ts",
+          "**/image-grid.spec.ts",
+          "**/responsive-mobile-images.spec.ts",
+          "**/optimized-upload-workflow.spec.ts",
+          "**/debug-upload-network.spec.ts"
+        ],
+        "timeout": 8000
+      },
+      {
+        "outputDir": "/Users/vcostin/Work/pic-gallery/test-screenshots",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "cleanup-tests",
+        "name": "cleanup-tests",
+        "testDir": "/Users/vcostin/Work/pic-gallery/e2e-tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/03-data-cleanup.spec.ts"
+        ],
+        "timeout": 3000
+      },
+      {
+        "outputDir": "/Users/vcostin/Work/pic-gallery/test-screenshots",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "deletion-tests",
+        "name": "deletion-tests",
+        "testDir": "/Users/vcostin/Work/pic-gallery/e2e-tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/04-final-user-deletion.spec.ts"
+        ],
+        "timeout": 3000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.52.0",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000,
+      "stdout": "pipe",
+      "stderr": "pipe"
+    }
+  },
+  "suites": [
+    {
+      "title": "01-auth-lifecycle.spec.ts",
+      "file": "01-auth-lifecycle.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Authentication Lifecycle (User Persists)",
+          "file": "01-auth-lifecycle.spec.ts",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "verify user registration/existence",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "auth-lifecycle",
+                  "projectName": "auth-lifecycle",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1702,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔐 Testing user registration/existence...\n"
+                        },
+                        {
+                          "text": "✅ User exists and can login\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:34.485Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "cfc56fa4fe303aa6ab09-5b8cb80452b25a5465df",
+              "file": "01-auth-lifecycle.spec.ts",
+              "line": 10,
+              "column": 7
+            },
+            {
+              "title": "login and logout flow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "auth-lifecycle",
+                  "projectName": "auth-lifecycle",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1661,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔑 Testing login/logout flow...\n"
+                        },
+                        {
+                          "text": "✅ Login successful\n"
+                        },
+                        {
+                          "text": "✅ Logout successful\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:36.295Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "cfc56fa4fe303aa6ab09-f32a1fe0963331712db7",
+              "file": "01-auth-lifecycle.spec.ts",
+              "line": 35,
+              "column": 7
+            },
+            {
+              "title": "authentication persistence check",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "auth-lifecycle",
+                  "projectName": "auth-lifecycle",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1575,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🔄 Testing authentication state...\n"
+                        },
+                        {
+                          "text": "✅ Authentication state saved for feature tests\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:37.959Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "cfc56fa4fe303aa6ab09-b25bcba825a9eaf141eb",
+              "file": "01-auth-lifecycle.spec.ts",
+              "line": 63,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "02-feature-tests.spec.ts",
+      "file": "02-feature-tests.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Feature Tests (Authenticated User)",
+          "file": "02-feature-tests.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "dashboard access with authenticated user",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 706,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🏠 Testing dashboard access...\n"
+                        },
+                        {
+                          "text": "✅ Dashboard accessible with authenticated user\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:39.944Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "46fb4e98fcf2a54e64fb-bc5e6ad7ae34b5471fbb",
+              "file": "02-feature-tests.spec.ts",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "gallery creation and management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 661,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🖼️ Testing gallery features...\n"
+                        },
+                        {
+                          "text": "✅ Gallery features working with single user\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:40.756Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "46fb4e98fcf2a54e64fb-9d1aa0a03361d98b764d",
+              "file": "02-feature-tests.spec.ts",
+              "line": 23,
+              "column": 7
+            },
+            {
+              "title": "image upload and management",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 658,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📸 Testing image features...\n"
+                        },
+                        {
+                          "text": "✅ Image features working with single user\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:41.421Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "46fb4e98fcf2a54e64fb-02064f97d1fca3aa28b8",
+              "file": "02-feature-tests.spec.ts",
+              "line": 34,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "enhanced-upload.spec.ts",
+      "file": "enhanced-upload.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Enhanced Upload Image E2E Tests",
+          "file": "enhanced-upload.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should display enhanced upload interface with progressive steps",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 718,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:42.088Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-fdd38d73f52965874273",
+              "file": "enhanced-upload.spec.ts",
+              "line": 28,
+              "column": 7
+            },
+            {
+              "title": "should handle single file upload with drag and drop",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2256,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:42.808Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-c295831a4abedcdd3d18",
+              "file": "enhanced-upload.spec.ts",
+              "line": 46,
+              "column": 7
+            },
+            {
+              "title": "should handle bulk upload with multiple files",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 776,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:45.066Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-de0ed2bc1b57b90fd3b9",
+              "file": "enhanced-upload.spec.ts",
+              "line": 106,
+              "column": 7
+            },
+            {
+              "title": "should validate file size and type constraints",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 193,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:45.845Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-b0e603429623a5971f77",
+              "file": "enhanced-upload.spec.ts",
+              "line": 175,
+              "column": 7
+            },
+            {
+              "title": "should handle individual file removal in bulk upload",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 291,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:46.039Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-59f4beaeab5958fce810",
+              "file": "enhanced-upload.spec.ts",
+              "line": 190,
+              "column": 7
+            },
+            {
+              "title": "should handle clear all functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 296,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:46.332Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-d23cf2911d700ba2164e",
+              "file": "enhanced-upload.spec.ts",
+              "line": 217,
+              "column": 7
+            },
+            {
+              "title": "should require titles for all images before upload",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 273,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:46.630Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-94365980f1115a456b9e",
+              "file": "enhanced-upload.spec.ts",
+              "line": 240,
+              "column": 7
+            },
+            {
+              "title": "should show enhanced tag input with autocomplete functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 289,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:46.905Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-2e21bceb1510ad48b492",
+              "file": "enhanced-upload.spec.ts",
+              "line": 263,
+              "column": 7
+            },
+            {
+              "title": "should maintain progressive disclosure workflow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 260,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:47.196Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-b55d404fb5eec4684a1a",
+              "file": "enhanced-upload.spec.ts",
+              "line": 296,
+              "column": 7
+            },
+            {
+              "title": "should handle upload cancellation and cleanup",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1442,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:47.458Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-0966ba44fc6c4a8d5f37",
+              "file": "enhanced-upload.spec.ts",
+              "line": 318,
+              "column": 7
+            },
+            {
+              "title": "should handle tag removal functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 326,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:48.902Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-685796bd34c45263c59d",
+              "file": "enhanced-upload.spec.ts",
+              "line": 346,
+              "column": 7
+            },
+            {
+              "title": "should display upload errors gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 284,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:49.229Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-14a9f93632fa66b09f45",
+              "file": "enhanced-upload.spec.ts",
+              "line": 376,
+              "column": 7
+            },
+            {
+              "title": "should handle common tags workflow for bulk uploads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 322,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:49.515Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-674c6bddcb2fc54dc658",
+              "file": "enhanced-upload.spec.ts",
+              "line": 399,
+              "column": 7
+            },
+            {
+              "title": "should maintain form state during navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "feature-tests",
+                  "projectName": "feature-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 321,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:49.839Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac3b3755ed8dc865c51-3474dc0a681ca1c3e379",
+              "file": "enhanced-upload.spec.ts",
+              "line": 436,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "complete-image-workflow.spec.ts",
+      "file": "complete-image-workflow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Complete Images Page Workflow - E2E Integration",
+          "file": "complete-image-workflow.spec.ts",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "complete images workflow: upload, view, search, and manage images",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3244,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Phase 1: Creating test images via API...\n"
+                        },
+                        {
+                          "text": "🚀 Creating 4 test images via API (0 existing)\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database persistence of 4 images...\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for image persistence: expecting IDs: ['cmblkbvup000ds0u8el0z6l1d', 'cmblkbvvc000is0u8l0wl75y9', 'cmblkbvvz000ns0u8v1lo7gqt', 'cmblkbvwm000ss0u8tq7o92dl']\n"
+                        },
+                        {
+                          "text": "✅ Image persistence confirmed: found all 4 images by ID\n"
+                        },
+                        {
+                          "text": "✅ Successfully created 4 test images via API: ['cmblkbvup000ds0u8el0z6l1d', 'cmblkbvvc000is0u8l0wl75y9', 'cmblkbvvz000ns0u8v1lo7gqt', 'cmblkbvwm000ss0u8tq7o92dl']\n"
+                        },
+                        {
+                          "text": "✅ Successfully created 4 test images via API: [\n  \u001b[32m'cmblkbvup000ds0u8el0z6l1d'\u001b[39m,\n  \u001b[32m'cmblkbvvc000is0u8l0wl75y9'\u001b[39m,\n  \u001b[32m'cmblkbvvz000ns0u8v1lo7gqt'\u001b[39m,\n  \u001b[32m'cmblkbvwm000ss0u8tq7o92dl'\u001b[39m\n]\n"
+                        },
+                        {
+                          "text": "Phase 2: Navigating to images page...\n"
+                        },
+                        {
+                          "text": "Phase 3: Verifying uploaded images appear in grid...\n"
+                        },
+                        {
+                          "text": "🔍 Page state debug:\n"
+                        },
+                        {
+                          "text": "  - Loading: false\n"
+                        },
+                        {
+                          "text": "  - Error: false\n"
+                        },
+                        {
+                          "text": "  - Empty state: false\n"
+                        },
+                        {
+                          "text": "  - Image grid: false\n"
+                        },
+                        {
+                          "text": "⏳ No grid visible but no other states either - waiting for images to load...\n"
+                        },
+                        {
+                          "text": "🔄 After waiting - Image grid: true, Empty state: false\n"
+                        },
+                        {
+                          "text": "Waiting for database consistency...\n"
+                        },
+                        {
+                          "text": "Attempt 1: Found 4 images on images page\n"
+                        },
+                        {
+                          "text": "Phase 4: Testing search functionality...\n"
+                        },
+                        {
+                          "text": "Search for \"E2E Test\" returned 4 images\n"
+                        },
+                        {
+                          "text": "Phase 5: Testing image interaction...\n"
+                        },
+                        {
+                          "text": "✅ Image modal opened successfully\n"
+                        },
+                        {
+                          "text": "✅ Image modal opened successfully\n"
+                        },
+                        {
+                          "text": "Close button visible: true\n"
+                        },
+                        {
+                          "text": "Clicking close button...\n"
+                        },
+                        {
+                          "text": "✅ Modal closed successfully via close button\n"
+                        },
+                        {
+                          "text": "✅ Modal closed successfully\n"
+                        },
+                        {
+                          "text": "Phase 6: Testing tag filtering...\n"
+                        },
+                        {
+                          "text": "Found 4 tag filters, testing first one...\n"
+                        },
+                        {
+                          "text": "After tag filter: 4 images shown\n"
+                        },
+                        {
+                          "text": "Cleared tag filter\n"
+                        },
+                        {
+                          "text": "Phase 7: Testing responsive behavior...\n"
+                        },
+                        {
+                          "text": "Mobile view shows 4 images\n"
+                        },
+                        {
+                          "text": "✅ Complete images workflow test completed successfully!\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:51.125Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a25b8773a8c75a50fb7-0e1679f2f08b2c1378b4",
+              "file": "complete-image-workflow.spec.ts",
+              "line": 28,
+              "column": 7
+            },
+            {
+              "title": "images page empty state handling",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1123,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Testing empty state when no images exist...\n"
+                        },
+                        {
+                          "text": "ℹ️ No specific empty state found, but page loads normally\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:54.473Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a25b8773a8c75a50fb7-84117329bf8c85b2ee15",
+              "file": "complete-image-workflow.spec.ts",
+              "line": 286,
+              "column": 7
+            },
+            {
+              "title": "images page error handling",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1275,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Testing error handling and recovery...\n"
+                        },
+                        {
+                          "text": "✅ Navigation and error handling test completed\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:55.598Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a25b8773a8c75a50fb7-578907f378b5e4bc2a1b",
+              "file": "complete-image-workflow.spec.ts",
+              "line": 312,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "debug-upload-network.spec.ts",
+      "file": "debug-upload-network.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Debug Upload Network",
+          "file": "debug-upload-network.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should replicate working enhanced upload pattern",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2531,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "=== STARTING UPLOAD ===\n"
+                        },
+                        {
+                          "text": "✅ Upload succeeded!\n"
+                        },
+                        {
+                          "text": "=== NETWORK REQUESTS ===\n"
+                        },
+                        {
+                          "text": "1: GET http://localhost:3000/api/tags -> 200 (1749260157056)\n"
+                        },
+                        {
+                          "text": "2: POST http://localhost:3000/api/upload -> 200 (1749260157225)\n"
+                        },
+                        {
+                          "text": "3: POST http://localhost:3000/api/images -> 201 (1749260157241)\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:56.877Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bd3e7b103c06445d4afd-bf4f31fc70b00518aa42",
+              "file": "debug-upload-network.spec.ts",
+              "line": 5,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "enhanced-gallery-layouts.spec.ts",
+      "file": "enhanced-gallery-layouts.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Enhanced Gallery Layouts - E2E Tests",
+          "file": "enhanced-gallery-layouts.spec.ts",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should display gallery with different layout modes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4051,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🖼️ Creating 2 fresh test images (1 existing)\n"
+                        },
+                        {
+                          "text": "Uploading test image 1 of 2...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260160423-1\n"
+                        },
+                        {
+                          "text": "Uploading test image 2 of 2...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260160423-2\n"
+                        },
+                        {
+                          "text": "Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded 2 test images: [ \u001b[32m'E2E Test Image 1749260160423-1'\u001b[39m, \u001b[32m'E2E Test Image 1749260160423-2'\u001b[39m ]\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency: expecting 3 images\n"
+                        },
+                        {
+                          "text": "✅ Database consistency achieved: found 3 images\n"
+                        },
+                        {
+                          "text": "🔄 Attempt 1/3 to get image IDs for titles\n"
+                        },
+                        {
+                          "text": "✅ Successfully retrieved all 2 image IDs\n"
+                        },
+                        {
+                          "text": "Gallery state: empty=false, hasImages=true\n"
+                        },
+                        {
+                          "text": "Gallery has 3 images for layout testing\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:35:59.413Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c2aecb72a49efb1c1f77-d298bb6e24136ac55b90",
+              "file": "enhanced-gallery-layouts.spec.ts",
+              "line": 28,
+              "column": 7
+            },
+            {
+              "title": "should switch between grid and list layout modes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4129,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🖼️ Creating 6 fresh test images (0 existing)\n"
+                        },
+                        {
+                          "text": "Uploading test image 1 of 6...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260164480-1\n"
+                        },
+                        {
+                          "text": "Uploading test image 2 of 6...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260164480-2\n"
+                        },
+                        {
+                          "text": "Uploading test image 3 of 6...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260164480-3\n"
+                        },
+                        {
+                          "text": "Uploading test image 4 of 6...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260164480-4\n"
+                        },
+                        {
+                          "text": "Uploading test image 5 of 6...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260164480-5\n"
+                        },
+                        {
+                          "text": "Uploading test image 6 of 6...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260164480-6\n"
+                        },
+                        {
+                          "text": "Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded 6 test images: [\n  \u001b[32m'E2E Test Image 1749260164480-1'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260164480-2'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260164480-3'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260164480-4'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260164480-5'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260164480-6'\u001b[39m\n]\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency: expecting 6 images\n"
+                        },
+                        {
+                          "text": "✅ Database consistency achieved: found 6 images\n"
+                        },
+                        {
+                          "text": "🔄 Attempt 1/3 to get image IDs for titles\n"
+                        },
+                        {
+                          "text": "✅ Successfully retrieved all 6 image IDs\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:36:03.468Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c2aecb72a49efb1c1f77-ca67ad0d5e54bd2273ff",
+              "file": "enhanced-gallery-layouts.spec.ts",
+              "line": 136,
+              "column": 7
+            },
+            {
+              "title": "should handle masonry layout if available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5181,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🖼️ Creating 10 fresh test images (0 existing)\n"
+                        },
+                        {
+                          "text": "Uploading test image 1 of 10...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260168606-1\n"
+                        },
+                        {
+                          "text": "Uploading test image 2 of 10...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260168606-2\n"
+                        },
+                        {
+                          "text": "Uploading test image 3 of 10...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260168606-3\n"
+                        },
+                        {
+                          "text": "Uploading test image 4 of 10...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260168606-4\n"
+                        },
+                        {
+                          "text": "Uploading test image 5 of 10...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260168606-5\n"
+                        },
+                        {
+                          "text": "Uploading test image 6 of 10...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260168606-6\n"
+                        },
+                        {
+                          "text": "Uploading test image 7 of 10...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260168606-7\n"
+                        },
+                        {
+                          "text": "Uploading test image 8 of 10...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260168606-8\n"
+                        },
+                        {
+                          "text": "Uploading test image 9 of 10...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260168606-9\n"
+                        },
+                        {
+                          "text": "Uploading test image 10 of 10...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260168606-10\n"
+                        },
+                        {
+                          "text": "Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded 10 test images: [\n  \u001b[32m'E2E Test Image 1749260168606-1'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260168606-2'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260168606-3'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260168606-4'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260168606-5'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260168606-6'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260168606-7'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260168606-8'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260168606-9'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260168606-10'\u001b[39m\n]\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency: expecting 10 images\n"
+                        },
+                        {
+                          "text": "✅ Database consistency achieved: found 10 images\n"
+                        },
+                        {
+                          "text": "🔄 Attempt 1/3 to get image IDs for titles\n"
+                        },
+                        {
+                          "text": "✅ Successfully retrieved all 10 image IDs\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:36:07.599Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c2aecb72a49efb1c1f77-d5fe1d76567883d1176d",
+              "file": "enhanced-gallery-layouts.spec.ts",
+              "line": 179,
+              "column": 7
+            },
+            {
+              "title": "should handle carousel layout mode",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3722,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🖼️ Creating 5 fresh test images (0 existing)\n"
+                        },
+                        {
+                          "text": "Uploading test image 1 of 5...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260173805-1\n"
+                        },
+                        {
+                          "text": "Uploading test image 2 of 5...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260173805-2\n"
+                        },
+                        {
+                          "text": "Uploading test image 3 of 5...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260173805-3\n"
+                        },
+                        {
+                          "text": "Uploading test image 4 of 5...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260173805-4\n"
+                        },
+                        {
+                          "text": "Uploading test image 5 of 5...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260173805-5\n"
+                        },
+                        {
+                          "text": "Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded 5 test images: [\n  \u001b[32m'E2E Test Image 1749260173805-1'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260173805-2'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260173805-3'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260173805-4'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260173805-5'\u001b[39m\n]\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency: expecting 5 images\n"
+                        },
+                        {
+                          "text": "✅ Database consistency achieved: found 5 images\n"
+                        },
+                        {
+                          "text": "🔄 Attempt 1/3 to get image IDs for titles\n"
+                        },
+                        {
+                          "text": "✅ Successfully retrieved all 5 image IDs\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:36:12.782Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c2aecb72a49efb1c1f77-acc27b32ef6922269c66",
+              "file": "enhanced-gallery-layouts.spec.ts",
+              "line": 212,
+              "column": 7
+            },
+            {
+              "title": "should maintain layout preferences across page reloads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3365,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🖼️ Creating 4 fresh test images (0 existing)\n"
+                        },
+                        {
+                          "text": "Uploading test image 1 of 4...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260177522-1\n"
+                        },
+                        {
+                          "text": "Uploading test image 2 of 4...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260177522-2\n"
+                        },
+                        {
+                          "text": "Uploading test image 3 of 4...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260177522-3\n"
+                        },
+                        {
+                          "text": "Uploading test image 4 of 4...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260177522-4\n"
+                        },
+                        {
+                          "text": "Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded 4 test images: [\n  \u001b[32m'E2E Test Image 1749260177522-1'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260177522-2'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260177522-3'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260177522-4'\u001b[39m\n]\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency: expecting 4 images\n"
+                        },
+                        {
+                          "text": "✅ Database consistency achieved: found 4 images\n"
+                        },
+                        {
+                          "text": "🔄 Attempt 1/3 to get image IDs for titles\n"
+                        },
+                        {
+                          "text": "✅ Successfully retrieved all 4 image IDs\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:36:16.506Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c2aecb72a49efb1c1f77-569ea6318c01de71c253",
+              "file": "enhanced-gallery-layouts.spec.ts",
+              "line": 259,
+              "column": 7
+            },
+            {
+              "title": "should handle fullscreen gallery mode",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3966,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🖼️ Creating 3 fresh test images (0 existing)\n"
+                        },
+                        {
+                          "text": "Uploading test image 1 of 3...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260180908-1\n"
+                        },
+                        {
+                          "text": "Uploading test image 2 of 3...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260180908-2\n"
+                        },
+                        {
+                          "text": "Uploading test image 3 of 3...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260180908-3\n"
+                        },
+                        {
+                          "text": "Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded 3 test images: [\n  \u001b[32m'E2E Test Image 1749260180908-1'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260180908-2'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260180908-3'\u001b[39m\n]\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency: expecting 3 images\n"
+                        },
+                        {
+                          "text": "✅ Database consistency achieved: found 3 images\n"
+                        },
+                        {
+                          "text": "🔄 Attempt 1/3 to get image IDs for titles\n"
+                        },
+                        {
+                          "text": "✅ Successfully retrieved all 3 image IDs\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:36:19.874Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c2aecb72a49efb1c1f77-371cae834df988742f65",
+              "file": "enhanced-gallery-layouts.spec.ts",
+              "line": 296,
+              "column": 7
+            },
+            {
+              "title": "should handle responsive layout adjustments",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6021,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🖼️ Creating 6 fresh test images (0 existing)\n"
+                        },
+                        {
+                          "text": "Uploading test image 1 of 6...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260184862-1\n"
+                        },
+                        {
+                          "text": "Uploading test image 2 of 6...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260184862-2\n"
+                        },
+                        {
+                          "text": "Uploading test image 3 of 6...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260184862-3\n"
+                        },
+                        {
+                          "text": "Uploading test image 4 of 6...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260184862-4\n"
+                        },
+                        {
+                          "text": "Uploading test image 5 of 6...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260184862-5\n"
+                        },
+                        {
+                          "text": "Uploading test image 6 of 6...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded: E2E Test Image 1749260184862-6\n"
+                        },
+                        {
+                          "text": "Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "Successfully uploaded 6 test images: [\n  \u001b[32m'E2E Test Image 1749260184862-1'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260184862-2'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260184862-3'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260184862-4'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260184862-5'\u001b[39m,\n  \u001b[32m'E2E Test Image 1749260184862-6'\u001b[39m\n]\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency after uploads...\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database consistency: expecting 6 images\n"
+                        },
+                        {
+                          "text": "✅ Database consistency achieved: found 6 images\n"
+                        },
+                        {
+                          "text": "🔄 Attempt 1/3 to get image IDs for titles\n"
+                        },
+                        {
+                          "text": "✅ Successfully retrieved all 6 image IDs\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:36:23.843Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "c2aecb72a49efb1c1f77-f02769ae63690c38ef8a",
+              "file": "enhanced-gallery-layouts.spec.ts",
+              "line": 337,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "image-grid.spec.ts",
+      "file": "image-grid.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Image Grid - E2E Tests",
+          "file": "image-grid.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load image grid and display images correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2811,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🚀 Creating 2 test images via API (0 existing)\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database persistence of 2 images...\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for image persistence: expecting IDs: ['cmblkcpm2004es0u8ryhxyxfu', 'cmblkcpmk004js0u8ejet2pwf']\n"
+                        },
+                        {
+                          "text": "✅ Image persistence confirmed: found all 2 images by ID\n"
+                        },
+                        {
+                          "text": "✅ Successfully created 2 test images via API: ['cmblkcpm2004es0u8ryhxyxfu', 'cmblkcpmk004js0u8ejet2pwf']\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:36:29.871Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1cd59706f66aec1f79e4-4be462a3769c345d445f",
+              "file": "image-grid.spec.ts",
+              "line": 27,
+              "column": 7
+            },
+            {
+              "title": "should handle image grid interactions correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3100,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🚀 Creating 3 test images via API (0 existing)\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for database persistence of 3 images...\n"
+                        },
+                        {
+                          "text": "⏳ Waiting for image persistence: expecting IDs: ['cmblkcrrv004os0u86fnlf3db', 'cmblkcrse004ts0u8scmdswod', 'cmblkcrsw004ys0u8o6v57dro']\n"
+                        },
+                        {
+                          "text": "✅ Image persistence confirmed: found all 3 images by ID\n"
+                        },
+                        {
+                          "text": "✅ Successfully created 3 test images via API: ['cmblkcrrv004os0u86fnlf3db', 'cmblkcrse004ts0u8scmdswod', 'cmblkcrsw004ys0u8o6v57dro']\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:36:32.683Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1cd59706f66aec1f79e4-904aefaef1f048bdb0a7",
+              "file": "image-grid.spec.ts",
+              "line": 63,
+              "column": 7
+            },
+            {
+              "title": "should handle empty state when no images exist",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1667,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:36:35.785Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1cd59706f66aec1f79e4-4b8ae8819afb84344eb2",
+              "file": "image-grid.spec.ts",
+              "line": 91,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "optimized-upload-workflow.spec.ts",
+      "file": "optimized-upload-workflow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Optimized Upload Workflow - E2E Tests",
+          "file": "optimized-upload-workflow.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should complete single file upload with optimized workflow",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 8022,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 8000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 8000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 8000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/vcostin/Work/pic-gallery/e2e-tests/optimized-upload-workflow.spec.ts",
+                            "column": 59,
+                            "line": 93
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m\n\nLocator: getByText(/uploaded successfully/)\nExpected: visible\nReceived: <element(s) not found>\nCall log:\n\u001b[2m  - expect.toBeVisible with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByText(/uploaded successfully/)\u001b[22m\n\n\n  91 |     \n  92 |     // Wait for success message\n> 93 |     await expect(page.getByText(/uploaded successfully/)).toBeVisible({ timeout: 15000 });\n     |                                                           ^\n  94 |     \n  95 |     performanceMetrics.uploadTime = Date.now() - uploadStart;\n  96 |\n    at /Users/vcostin/Work/pic-gallery/e2e-tests/optimized-upload-workflow.spec.ts:93:59"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "🎯 Test Performance Metrics:\n"
+                        },
+                        {
+                          "text": "  Page Load: 127ms\n"
+                        },
+                        {
+                          "text": "  File Selection: 45ms\n"
+                        },
+                        {
+                          "text": "  Form Filling: 33ms\n"
+                        },
+                        {
+                          "text": "  Upload Time: 0ms\n"
+                        },
+                        {
+                          "text": "  Total Time: 7970ms\n"
+                        },
+                        {
+                          "text": "  Target: 8000ms - ✅ PASSED\n"
+                        },
+                        {
+                          "text": "\n🎯 Upload Workflow Optimization Results:\n"
+                        },
+                        {
+                          "text": "- Removed complex abstraction layers for better reliability\n"
+                        },
+                        {
+                          "text": "- Used direct Playwright interactions matching working tests\n"
+                        },
+                        {
+                          "text": "- Maintained performance measurement for optimization tracking\n"
+                        },
+                        {
+                          "text": "- Target: Complete upload workflow under 8 seconds\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-06-07T01:36:37.458Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "_error-context-1",
+                          "contentType": "text/markdown",
+                          "path": "/Users/vcostin/Work/pic-gallery/test-screenshots/optimized-upload-workflow--466f6-oad-with-optimized-workflow-image-tests/error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "6ed246c48bc77ba8c1c5-227c03b015ed2c3886d2",
+              "file": "optimized-upload-workflow.spec.ts",
+              "line": 32,
+              "column": 7
+            },
+            {
+              "title": "should handle bulk upload with optimized performance",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6ed246c48bc77ba8c1c5-678ea9ecfaba07821079",
+              "file": "optimized-upload-workflow.spec.ts",
+              "line": 105,
+              "column": 7
+            },
+            {
+              "title": "should validate file constraints with minimal overhead",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6ed246c48bc77ba8c1c5-18f6029fe1886a0e8996",
+              "file": "optimized-upload-workflow.spec.ts",
+              "line": 169,
+              "column": 7
+            },
+            {
+              "title": "should handle upload errors gracefully with optimized recovery",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6ed246c48bc77ba8c1c5-609fc6977d08afefb3dc",
+              "file": "optimized-upload-workflow.spec.ts",
+              "line": 183,
+              "column": 7
+            },
+            {
+              "title": "should handle form state persistence during navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 8000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "image-tests",
+                  "projectName": "image-tests",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6ed246c48bc77ba8c1c5-e7461c3660f2b90ea469",
+              "file": "optimized-upload-workflow.spec.ts",
+              "line": 214,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "03-data-cleanup.spec.ts",
+      "file": "03-data-cleanup.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Data Cleanup (User Persists)",
+          "file": "03-data-cleanup.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "cleanup galleries via API",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "cleanup-tests",
+                  "projectName": "cleanup-tests",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "16e2ac418aa7b7e21b89-53d8cf7b4f97a8248d07",
+              "file": "03-data-cleanup.spec.ts",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "cleanup images via API",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "cleanup-tests",
+                  "projectName": "cleanup-tests",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "16e2ac418aa7b7e21b89-cfc617cbe049c34117c8",
+              "file": "03-data-cleanup.spec.ts",
+              "line": 23,
+              "column": 7
+            },
+            {
+              "title": "verify data cleanup completion",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "cleanup-tests",
+                  "projectName": "cleanup-tests",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "16e2ac418aa7b7e21b89-fa0d7e474f93b735d636",
+              "file": "03-data-cleanup.spec.ts",
+              "line": 34,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "04-final-user-deletion.spec.ts",
+      "file": "04-final-user-deletion.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Final User Profile Deletion",
+          "file": "04-final-user-deletion.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "delete user profile from /profile page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "deletion-tests",
+                  "projectName": "deletion-tests",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aa8274265cf0e425cd9d-7d04277c527cce09e8c6",
+              "file": "04-final-user-deletion.spec.ts",
+              "line": 12,
+              "column": 7
+            },
+            {
+              "title": "verify user deletion by attempting login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 3000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "deletion-tests",
+                  "projectName": "deletion-tests",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "aa8274265cf0e425cd9d-cae002f0216be7ec9bb0",
+              "file": "04-final-user-deletion.spec.ts",
+              "line": 81,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "message": "\u001b[31mTesting stopped early after 1 maximum allowed failures.\u001b[39m"
+    }
+  ],
+  "stats": {
+    "startTime": "2025-06-07T01:35:24.862Z",
+    "duration": 80687.54299999999,
+    "expected": 34,
+    "skipped": 9,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

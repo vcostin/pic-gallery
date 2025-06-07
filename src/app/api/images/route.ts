@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
-import { apiSuccess, apiUnauthorized, withApiHandler } from "@/lib/apiResponse";
+import { apiSuccess, apiUnauthorized, apiError, withApiHandler } from "@/lib/apiResponse";
 import { getPaginationOptions, formatPaginatedResponse } from "@/lib/dataFetching";
 import { Image, Prisma } from "@prisma/client";
 import logger from "@/lib/logger";
@@ -23,29 +23,48 @@ const getImagesQuerySchema = z.object({
  * POST /api/images - Create a new image
  */
 export const POST = withApiHandler(async (req) => {
-  const session = await getServerSession(authOptions);
-  if (!session?.user.id) {
-    return apiUnauthorized();
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user.id) {
+      return apiUnauthorized();
+    }
+    
+    const json = await req.json();
+    logger.log('POST /api/images - Raw request body:', json);
+    
+    // Validate with detailed error logging
+    const validationResult = CreateImageSchema.safeParse(json);
+    if (!validationResult.success) {
+      logger.error('POST /api/images - Validation failed:', validationResult.error);
+      return apiError('Invalid request data', 400, validationResult.error.issues);
+    }
+    
+    const body = validationResult.data;
+    logger.log('POST /api/images - Validated body:', body);
+    logger.log('POST /api/images - User ID:', session.user.id);
+    
+    const image = await prisma.image.create({
+      data: {
+        title: body.title,
+        description: body.description,
+        url: body.url,
+        userId: session.user.id,
+        tags: body.tags ? {
+          connectOrCreate: body.tags.map(tag => ({
+            where: { name: tag },
+            create: { name: tag },
+          }))
+        } : undefined,
+      },
+      include: { tags: true },
+    });
+    
+    logger.log(`Image created: ${image.id} by user ${session.user.id}`);
+    return apiSuccess(image, 201);
+  } catch (error) {
+    logger.error('POST /api/images - Unexpected error:', error);
+    return apiError('Internal server error', 500, error instanceof Error ? error.message : 'Unknown error');
   }
-  const json = await req.json();
-  const body = CreateImageSchema.parse(json);
-  const image = await prisma.image.create({
-    data: {
-      title: body.title,
-      description: body.description,
-      url: body.url,
-      userId: session.user.id,
-      tags: body.tags ? {
-        connectOrCreate: body.tags.map(tag => ({
-          where: { name: tag },
-          create: { name: tag },
-        }))
-      } : undefined,
-    },
-    include: { tags: true },
-  });
-  logger.log(`Image created: ${image.id} by user ${session.user.id}`);
-  return apiSuccess(image, 201);
 });
 
 /**

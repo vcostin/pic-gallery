@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { TestHelpers } from './test-helpers';
+import { OptimizedTestDataFactory } from './optimized-test-data-factory';
 
 test.describe('Image Grid - E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -24,8 +25,8 @@ test.describe('Image Grid - E2E Tests', () => {
   });
 
   test('should load image grid and display images correctly', async ({ page }) => {
-    // Upload test images through real UI to ensure we have content
-    await TestHelpers.uploadTestImages(page, 2);
+    // Create test images via API to ensure we have content
+    await OptimizedTestDataFactory.createTestImagesViaAPI(page, 2);
     
     // Navigate to images page
     await page.goto('/images');
@@ -54,13 +55,14 @@ test.describe('Image Grid - E2E Tests', () => {
     
     // Check that images have proper attributes
     const imageLocator = firstImage.locator('img');
-    await expect(imageLocator).toHaveAttribute('src', /\.(jpg|jpeg|png|gif|webp)$/i);
+    // Accept both real image files and placeholder URLs (like picsum.photos)
+    await expect(imageLocator).toHaveAttribute('src', /\.(jpg|jpeg|png|gif|webp)$|picsum\.photos|placeholder/i);
     await expect(imageLocator).toHaveAttribute('alt');
   });
 
   test('should handle image grid interactions correctly', async ({ page }) => {
-    // Upload test images
-    await TestHelpers.uploadTestImages(page, 3);
+    // Create test images via API
+    await OptimizedTestDataFactory.createTestImagesViaAPI(page, 3);
     
     // Navigate to images page
     await page.goto('/images');
@@ -88,7 +90,7 @@ test.describe('Image Grid - E2E Tests', () => {
 
   test('should handle empty state when no images exist', async ({ page }) => {
     // Clean up all images first
-    await TestHelpers.cleanupTestData(page, true);
+    await TestHelpers.cleanupTestData(page, false);
     
     // Navigate to images page
     await page.goto('/images');

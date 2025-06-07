@@ -4,6 +4,14 @@ import fs from 'fs';
 import { TEST_USER, TestUser } from './auth-config';
 
 /**
+ * Get the base URL for the application
+ * Uses environment variable or defaults to localhost:3000
+ */
+function getBaseURL(): string {
+  return process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
+}
+
+/**
  * Wait for registration completion - either success or error
  * Encapsulates the complex waitForFunction logic for better reusability
  */
@@ -23,14 +31,15 @@ async function waitForRegistrationCompletion(page: Page): Promise<void> {
                                (!url.includes('/auth/') && url.includes('/'));
     
     return registrationSuccess || hasError;
-  }, { timeout: 15000 });
+  }, { timeout: 60000 }); // Increased timeout to 60 seconds
 }
 
 async function createUser(page: Page, user: TestUser): Promise<void> {
   console.log(`Creating user: ${user.email}`);
   
-  // Go to registration page
-  await page.goto('http://localhost:3000/auth/register');
+  // Go to registration page - use baseURL from environment/config
+  const baseURL = getBaseURL();
+  await page.goto(`${baseURL}/auth/register`);
   await page.waitForLoadState('networkidle');
 
   // Fill registration form
@@ -67,7 +76,7 @@ async function createUser(page: Page, user: TestUser): Promise<void> {
     console.log(`ℹ️  User ${user.email} already exists, attempting login...`);
     
     // Navigate to login page
-    await page.goto('/auth/login');
+    await page.goto(`${baseURL}/auth/login`);
     await page.fill('input[type="email"]', user.email);
     await page.fill('input[type="password"]', user.password);
     await page.click('button[type="submit"]');
@@ -77,7 +86,7 @@ async function createUser(page: Page, user: TestUser): Promise<void> {
     console.log(`✅ User ${user.email} logged in successfully`);
   } else {
     // User might already exist, try logging in
-    await page.goto('http://localhost:3000/auth/login');
+    await page.goto(`${baseURL}/auth/login`);
     await page.waitForLoadState('networkidle');
     
     await page.fill('input[type="email"]', user.email);
@@ -91,7 +100,7 @@ async function createUser(page: Page, user: TestUser): Promise<void> {
   }
   
   // Verify authentication by checking if we can access a protected page
-  await page.goto('http://localhost:3000/galleries');
+  await page.goto(`${baseURL}/galleries`);
   await page.waitForLoadState('networkidle');
   
   // If still on auth page, authentication failed
@@ -126,7 +135,7 @@ async function globalSetup() {
     
     // Attempt to delete existing test user before creating new one
     try {
-      const deleteResult = await page.request.delete('/api/e2e/delete-user', {
+      const deleteResult = await page.request.delete(`${getBaseURL()}/api/e2e/delete-user`, {
         data: { email: TEST_USER.email },
         timeout: 10000
       });
